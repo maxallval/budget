@@ -136,6 +136,9 @@ function App(){
   const[delAccMod,setDelAccMod]=useState(false);
   const[delAccInput,setDelAccInput]=useState("");
   const[expandedCatTx,setExpandedCatTx]=useState(null);
+  const[ghToken,setGhToken]=useState("");
+  const[ghGistId,setGhGistId]=useState("");
+  const[ghStatus,setGhStatus]=useState("");
   const[exportMod,setExportMod]=useState(false);
   const[importMod,setImportMod]=useState(false);
   const[importText,setImportText]=useState("");
@@ -157,6 +160,7 @@ function App(){
     try{const r=await window.storage.get("bgt9-bal");if(r)setInitBal(parseFloat(r.value));}catch(e){}
     try{const r=await window.storage.get("bgt9-bud");if(r)setBudgets(JSON.parse(r.value));}catch(e){}
     try{const r=await window.storage.get("bgt9-cfg");if(r){const c=JSON.parse(r.value);if(c.lang)setLang(c.lang);if(c.cur)setCur(c.cur);if(c.disp)setDisp(c.disp);if(c.darkMode)setDarkMode(c.darkMode);if(c.mode)setMode(c.mode);}}catch(e){}
+    try{const r=await window.storage.get("bgt9-gh");if(r){const g=JSON.parse(r.value);if(g.token)setGhToken(g.token);if(g.gistId)setGhGistId(g.gistId);}}catch(e){}
     setLoaded(true);
   })();},[]);
 
@@ -174,6 +178,48 @@ function App(){
       }catch(e){setSaveStatus("error");}
     },600);
   },[txs,initBal,budgets,lang,cur,disp,darkMode,mode,loaded]);
+
+  const saveGhSettings=async(tok,gid)=>{try{await window.storage.set("bgt9-gh",JSON.stringify({token:tok,gistId:gid}));}catch(e){}};
+
+  const ghPush=async()=>{
+    if(!ghToken){setGhStatus("❌ Token manquant");return;}
+    setGhStatus("⏳ Envoi…");
+    const body={files:{"budget.json":{content:getExportJSON()}}};
+    try{
+      let res,data;
+      if(ghGistId){
+        res=await fetch(`https://api.github.com/gists/${ghGistId}`,{method:"PATCH",headers:{"Authorization":"token "+ghToken,"Content-Type":"application/json"},body:JSON.stringify(body)});
+      }else{
+        res=await fetch("https://api.github.com/gists",{method:"POST",headers:{"Authorization":"token "+ghToken,"Content-Type":"application/json"},body:JSON.stringify({...body,description:"Budget App Data",public:false})});
+      }
+      data=await res.json();
+      if(data.id){
+        setGhGistId(data.id);
+        await saveGhSettings(ghToken,data.id);
+        setGhStatus("✓ Sauvegardé sur GitHub");
+      }else setGhStatus("❌ "+(data.message||"Erreur inconnue"));
+    }catch(e){setGhStatus("❌ "+e.message);}
+    setTimeout(()=>setGhStatus(""),4000);
+  };
+
+  const ghPull=async()=>{
+    if(!ghToken||!ghGistId){setGhStatus("❌ Token ou Gist ID manquant");return;}
+    setGhStatus("⏳ Chargement…");
+    try{
+      const res=await fetch(`https://api.github.com/gists/${ghGistId}`,{headers:{"Authorization":"token "+ghToken}});
+      const data=await res.json();
+      const content=data.files?.["budget.json"]?.content;
+      if(!content){setGhStatus("❌ Fichier introuvable");return;}
+      const d=JSON.parse(content);
+      if(Array.isArray(d.txs))setTxs(d.txs);
+      if(typeof d.initBal==="number")setInitBal(d.initBal);
+      if(d.lang)setLang(d.lang);if(d.cur)setCur(d.cur);
+      if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);
+      if(d.budgets)setBudgets(d.budgets);
+      setGhStatus("✓ Données restaurées depuis GitHub");
+    }catch(e){setGhStatus("❌ "+e.message);}
+    setTimeout(()=>setGhStatus(""),4000);
+  };
 
   const showToast=msg=>{setToast(msg);setTimeout(()=>setToast(""),2500);};
   const getExportJSON=()=>JSON.stringify({txs,initBal,lang,cur,disp,darkMode,budgets},null,2);
@@ -254,7 +300,24 @@ function App(){
           <Tog label={t.showNet} value={disp.net} onChange={v=>setDisp(d=>({...d,net:v}))} th={th}/>
           <p style={{...lbl,margin:"24px 0 4px"}}>{t.darkLbl}</p>
           <div style={{paddingBottom:16,borderBottom:"1px solid "+th.border}}><SegCtrl options={[["off",t.darkOff],["auto",t.darkAuto],["on",t.darkOn]]} value={darkMode} onChange={setDarkMode} th={th}/></div>
-          <p style={{...lbl,margin:"24px 0 8px"}}>{t.exportLbl}</p>
+          <p style={{...lbl,margin:"24px 0 8px"}}>☁️ Sauvegarde GitHub</p>
+          <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:16,marginBottom:20}}>
+            <div style={{marginBottom:12}}>
+              <label style={lbl}>Personal Access Token</label>
+              <input type="password" value={ghToken} onChange={e=>setGhToken(e.target.value)} onBlur={()=>saveGhSettings(ghToken,ghGistId)} placeholder="ghp_xxxxxxxxxxxx" style={{...iSt,fontSize:12,fontFamily:"monospace"}}/>
+            </div>
+            <div style={{marginBottom:14}}>
+              <label style={lbl}>Gist ID <span style={{color:th.muted,textTransform:"none",fontSize:10,letterSpacing:0}}>(auto après 1ère sauvegarde)</span></label>
+              <input type="text" value={ghGistId} onChange={e=>setGhGistId(e.target.value)} onBlur={()=>saveGhSettings(ghToken,ghGistId)} placeholder="Laisser vide pour créer un nouveau Gist" style={{...iSt,fontSize:12,fontFamily:"monospace"}}/>
+            </div>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={ghPush} style={{flex:1,padding:"10px 0",fontSize:13,border:"none",borderRadius:10,background:"#24292f",color:"#fff",cursor:"pointer",fontWeight:500}}>↑ Sauvegarder</button>
+              <button onClick={ghPull} style={{flex:1,padding:"10px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:10,background:"none",color:th.text,cursor:"pointer"}}>↓ Restaurer</button>
+            </div>
+            {ghStatus&&<p style={{fontSize:12,margin:"10px 0 0",color:ghStatus.startsWith("✓")?"#059669":ghStatus.startsWith("⏳")?th.sub:"#ef4444"}}>{ghStatus}</p>}
+            <p style={{fontSize:11,color:th.muted,margin:"12px 0 0",lineHeight:1.5}}>Le Gist est <strong>privé</strong>. Token requis : permission <code>gist</code> seulement.</p>
+          </div>
+          <p style={{...lbl,margin:"0 0 8px"}}>{t.exportLbl}</p>
           <div style={{display:"flex",gap:8,paddingBottom:20,borderBottom:"1px solid "+th.border}}>
             <button onClick={()=>setExportMod(true)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:10,background:"none",color:th.text,cursor:"pointer"}}>↑ {t.exportBtn}</button>
             <button onClick={()=>{setImportText("");setImportMod(true);}} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:10,background:"none",color:th.text,cursor:"pointer"}}>↓ {t.importBtn}</button>
