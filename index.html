@@ -139,6 +139,8 @@ function App(){
   const[ghToken,setGhToken]=useState("");
   const[ghGistId,setGhGistId]=useState("");
   const[ghStatus,setGhStatus]=useState("");
+  const[ghAutoSave,setGhAutoSave]=useState(false);
+  const ghTimer=useRef(null);
   const[exportMod,setExportMod]=useState(false);
   const[importMod,setImportMod]=useState(false);
   const[importText,setImportText]=useState("");
@@ -160,7 +162,7 @@ function App(){
     try{const r=await window.storage.get("bgt9-bal");if(r)setInitBal(parseFloat(r.value));}catch(e){}
     try{const r=await window.storage.get("bgt9-bud");if(r)setBudgets(JSON.parse(r.value));}catch(e){}
     try{const r=await window.storage.get("bgt9-cfg");if(r){const c=JSON.parse(r.value);if(c.lang)setLang(c.lang);if(c.cur)setCur(c.cur);if(c.disp)setDisp(c.disp);if(c.darkMode)setDarkMode(c.darkMode);if(c.mode)setMode(c.mode);}}catch(e){}
-    try{const r=await window.storage.get("bgt9-gh");if(r){const g=JSON.parse(r.value);if(g.token)setGhToken(g.token);if(g.gistId)setGhGistId(g.gistId);}}catch(e){}
+    try{const r=await window.storage.get("bgt9-gh");if(r){const g=JSON.parse(r.value);if(g.token)setGhToken(g.token);if(g.gistId)setGhGistId(g.gistId);if(g.autoSave)setGhAutoSave(g.autoSave);}}catch(e){}
     setLoaded(true);
   })();},[]);
 
@@ -179,23 +181,28 @@ function App(){
     },600);
   },[txs,initBal,budgets,lang,cur,disp,darkMode,mode,loaded]);
 
-  const saveGhSettings=async(tok,gid)=>{try{await window.storage.set("bgt9-gh",JSON.stringify({token:tok,gistId:gid}));}catch(e){}};
+  const saveGhSettings=async(tok,gid,auto)=>{try{await window.storage.set("bgt9-gh",JSON.stringify({token:tok,gistId:gid,autoSave:auto}));}catch(e){}};
+
+  const ghPushRaw=async(tok,gid,json)=>{
+    const body={files:{"budget.json":{content:json}}};
+    let res,data;
+    if(gid){
+      res=await fetch(`https://api.github.com/gists/${gid}`,{method:"PATCH",headers:{"Authorization":"token "+tok,"Content-Type":"application/json"},body:JSON.stringify(body)});
+    }else{
+      res=await fetch("https://api.github.com/gists",{method:"POST",headers:{"Authorization":"token "+tok,"Content-Type":"application/json"},body:JSON.stringify({...body,description:"Budget App Data",public:false})});
+    }
+    data=await res.json();
+    return data;
+  };
 
   const ghPush=async()=>{
     if(!ghToken){setGhStatus("❌ Token manquant");return;}
     setGhStatus("⏳ Envoi…");
-    const body={files:{"budget.json":{content:getExportJSON()}}};
     try{
-      let res,data;
-      if(ghGistId){
-        res=await fetch(`https://api.github.com/gists/${ghGistId}`,{method:"PATCH",headers:{"Authorization":"token "+ghToken,"Content-Type":"application/json"},body:JSON.stringify(body)});
-      }else{
-        res=await fetch("https://api.github.com/gists",{method:"POST",headers:{"Authorization":"token "+ghToken,"Content-Type":"application/json"},body:JSON.stringify({...body,description:"Budget App Data",public:false})});
-      }
-      data=await res.json();
+      const data=await ghPushRaw(ghToken,ghGistId,getExportJSON());
       if(data.id){
         setGhGistId(data.id);
-        await saveGhSettings(ghToken,data.id);
+        await saveGhSettings(ghToken,data.id,ghAutoSave);
         setGhStatus("✓ Sauvegardé sur GitHub");
       }else setGhStatus("❌ "+(data.message||"Erreur inconnue"));
     }catch(e){setGhStatus("❌ "+e.message);}
@@ -220,6 +227,20 @@ function App(){
     }catch(e){setGhStatus("❌ "+e.message);}
     setTimeout(()=>setGhStatus(""),4000);
   };
+
+  // Auto-save GitHub
+  useEffect(()=>{
+    if(!loaded||!ghAutoSave||!ghToken)return;
+    clearTimeout(ghTimer.current);
+    ghTimer.current=setTimeout(async()=>{
+      try{
+        const json=JSON.stringify({txs,initBal,lang,cur,disp,darkMode,budgets},null,2);
+        const data=await ghPushRaw(ghToken,ghGistId,json);
+        if(data.id&&data.id!==ghGistId){setGhGistId(data.id);await saveGhSettings(ghToken,data.id,ghAutoSave);}
+        setGhStatus("✓ GitHub sync");setTimeout(()=>setGhStatus(""),3000);
+      }catch(e){setGhStatus("⚠ Sync GitHub échoué");}
+    },3000);
+  },[txs,initBal,budgets,lang,cur,disp,darkMode,loaded]);
 
   const showToast=msg=>{setToast(msg);setTimeout(()=>setToast(""),2500);};
   const getExportJSON=()=>JSON.stringify({txs,initBal,lang,cur,disp,darkMode,budgets},null,2);
@@ -302,7 +323,10 @@ function App(){
           <div style={{paddingBottom:16,borderBottom:"1px solid "+th.border}}><SegCtrl options={[["off",t.darkOff],["auto",t.darkAuto],["on",t.darkOn]]} value={darkMode} onChange={setDarkMode} th={th}/></div>
           <p style={{...lbl,margin:"24px 0 8px"}}>☁️ Sauvegarde GitHub</p>
           <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:16,marginBottom:20}}>
-            <div style={{marginBottom:12}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,paddingBottom:14,borderBottom:"1px solid "+th.border}}>
+              <div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>Sauvegarde automatique</p><p style={{fontSize:11,color:th.muted,margin:"2px 0 0"}}>Sync GitHub 3 sec après chaque modification</p></div>
+              <button onClick={()=>{const v=!ghAutoSave;setGhAutoSave(v);saveGhSettings(ghToken,ghGistId,v);}} style={{width:36,height:20,borderRadius:10,background:ghAutoSave?th.btnBg:th.togOff,border:"none",cursor:"pointer",position:"relative",flexShrink:0,transition:"background 0.2s"}}><div style={{position:"absolute",top:2,left:ghAutoSave?16:2,width:16,height:16,background:"#fff",borderRadius:"50%",transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.3)"}}/></button>
+            </div>
               <label style={lbl}>Personal Access Token</label>
               <input type="password" value={ghToken} onChange={e=>setGhToken(e.target.value)} onBlur={()=>saveGhSettings(ghToken,ghGistId)} placeholder="ghp_xxxxxxxxxxxx" style={{...iSt,fontSize:12,fontFamily:"monospace"}}/>
             </div>
