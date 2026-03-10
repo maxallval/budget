@@ -8,8 +8,6 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="apple-mobile-web-app-title" content="Budget"/>
   <title>Budget</title>
-  <link rel="manifest" href="manifest.json"/>
-  <link rel="apple-touch-icon" href="icon-192.png"/>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:system-ui,sans-serif;-webkit-tap-highlight-color:transparent}
@@ -25,7 +23,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 <script type="text/babel" data-presets="react">
-// ── Storage (localStorage) ──────────────────────────────
 window.storage={
   get:async k=>{const v=localStorage.getItem(k);return v!==null?{value:v}:null;},
   set:async(k,v)=>{localStorage.setItem(k,String(v));return{key:k,value:v};},
@@ -86,7 +83,6 @@ function countOccs(tx,upTo){const s=parseD(tx.startDate);if(s>upTo)return 0;let 
 const balAt=(txs,init,date)=>txs.reduce((b,tx)=>b+(tx.type==="income"?1:-1)*tx.amount*countOccs(tx,date),init);
 function fA(n,cur,full=false){const a=Math.abs(n);const nm=full?a.toLocaleString("fr-CA",{minimumFractionDigits:2,maximumFractionDigits:2}):a>=10000?(a/1000).toFixed(1)+"k":a>=1000?(a/1000).toFixed(2)+"k":a.toFixed(2);return cur==="usd"?"$"+nm:cur==="eur"?nm+" €":nm+" $";}
 
-// ── UI Primitives ───────────────────────────────────────
 const Tog=({label,sub,value,onChange,th})=>(
   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0",borderBottom:"1px solid "+th.border}}>
     <div><span style={{fontSize:13,color:th.text,display:"block"}}>{label}</span>{sub&&<span style={{fontSize:11,color:th.muted}}>{sub}</span>}</div>
@@ -121,7 +117,6 @@ function RecurrencePicker({value,onChange,startDate,t,th}){
   </div>);
 }
 
-// ── App ─────────────────────────────────────────────────
 function App(){
   const[auth,setAuth]=useState(false);
   const[u,setU]=useState(""),[pw,setPw]=useState(""),[aErr,setAErr]=useState("");
@@ -137,6 +132,15 @@ function App(){
   const[disp,setDisp]=useState({curBal:true,endBal:false,revExp:false,net:false});
   const[darkMode,setDarkMode]=useState("off");
   const[sysDark,setSysDark]=useState(()=>window.matchMedia("(prefers-color-scheme: dark)").matches);
+  // Save options
+  const[saveMode,setSaveMode]=useState("local"); // "local" | "github"
+  const[saveAuto,setSaveAuto]=useState(true);
+  // GitHub
+  const[ghToken,setGhToken]=useState("");
+  const[ghGistId,setGhGistId]=useState("");
+  const[ghPullOnStart,setGhPullOnStart]=useState(true);
+  const[ghStatus,setGhStatus]=useState("");
+  // UI
   const[dayMod,setDayMod]=useState(null);
   const[formMod,setFormMod]=useState(null);
   const[delMod,setDelMod]=useState(null);
@@ -149,13 +153,9 @@ function App(){
   const[copied,setCopied]=useState(false);
   const[saveStatus,setSaveStatus]=useState("idle");
   const[toast,setToast]=useState("");
-  // GitHub
-  const[ghToken,setGhToken]=useState("");
-  const[ghGistId,setGhGistId]=useState("");
-  const[ghAutoSave,setGhAutoSave]=useState(false);
-  const[ghStatus,setGhStatus]=useState("");
   const saveTimer=useRef(null);
   const ghTimer=useRef(null);
+  const cfgTimer=useRef(null);
 
   const t=TR[lang]||TR.fr;
   const isDark=darkMode==="on"||(darkMode==="auto"&&sysDark);
@@ -170,14 +170,47 @@ function App(){
     try{const r=await window.storage.get("bgt9-tx");if(r)setTxs(JSON.parse(r.value));}catch(e){}
     try{const r=await window.storage.get("bgt9-bal");if(r)setInitBal(parseFloat(r.value));}catch(e){}
     try{const r=await window.storage.get("bgt9-bud");if(r)setBudgets(JSON.parse(r.value));}catch(e){}
-    try{const r=await window.storage.get("bgt9-cfg");if(r){const c=JSON.parse(r.value);if(c.lang)setLang(c.lang);if(c.cur)setCur(c.cur);if(c.disp)setDisp(c.disp);if(c.darkMode)setDarkMode(c.darkMode);if(c.mode)setMode(c.mode);}}catch(e){}
-    try{const r=await window.storage.get("bgt9-gh");if(r){const g=JSON.parse(r.value);if(g.token)setGhToken(g.token);if(g.gistId)setGhGistId(g.gistId);if(g.autoSave!==undefined)setGhAutoSave(g.autoSave);}}catch(e){}
+    try{const r=await window.storage.get("bgt9-cfg");if(r){const c=JSON.parse(r.value);if(c.lang)setLang(c.lang);if(c.cur)setCur(c.cur);if(c.disp)setDisp(c.disp);if(c.darkMode)setDarkMode(c.darkMode);if(c.mode)setMode(c.mode);if(c.saveMode)setSaveMode(c.saveMode);if(c.saveAuto!==undefined)setSaveAuto(c.saveAuto);}}catch(e){}
+    let ghTok="",ghGid="",ghPull=true,sMode="local";
+    try{const r=await window.storage.get("bgt9-gh");if(r){const g=JSON.parse(r.value);if(g.token){setGhToken(g.token);ghTok=g.token;}if(g.gistId){setGhGistId(g.gistId);ghGid=g.gistId;}if(g.pullOnStart!==undefined){setGhPullOnStart(g.pullOnStart);ghPull=g.pullOnStart;}}}catch(e){}
+    try{const r=await window.storage.get("bgt9-cfg");if(r){const c=JSON.parse(r.value);if(c.saveMode)sMode=c.saveMode;}}catch(e){}
+    // Pull GitHub au démarrage si option activée
+    if(sMode==="github"&&ghPull&&ghTok&&ghGid){
+      setGhStatus("⏳ Chargement depuis GitHub…");
+      try{
+        const res=await fetch(`https://api.github.com/gists/${ghGid}`,{headers:{"Authorization":"token "+ghTok}});
+        const data=await res.json();
+        const content=data.files?.["budget.json"]?.content;
+        if(content){
+          const d=JSON.parse(content);
+          if(Array.isArray(d.txs))setTxs(d.txs);
+          if(typeof d.initBal==="number")setInitBal(d.initBal);
+          if(d.lang)setLang(d.lang);if(d.cur)setCur(d.cur);
+          if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);
+          if(d.budgets)setBudgets(d.budgets);
+          setGhStatus("✓ Données GitHub chargées");
+        }
+      }catch(e){setGhStatus("⚠ Pull GitHub échoué");}
+      setTimeout(()=>setGhStatus(""),3500);
+    }
     setLoaded(true);
   })();},[]);
 
-  // Sauvegarde locale
+  // Sauvegarde config (toujours locale, immédiate)
   useEffect(()=>{
     if(!loaded)return;
+    clearTimeout(cfgTimer.current);
+    cfgTimer.current=setTimeout(async()=>{
+      try{
+        await window.storage.set("bgt9-cfg",JSON.stringify({lang,cur,disp,darkMode,mode,saveMode,saveAuto}));
+        await window.storage.set("bgt9-gh",JSON.stringify({token:ghToken,gistId:ghGistId,pullOnStart:ghPullOnStart}));
+      }catch(e){}
+    },400);
+  },[lang,cur,disp,darkMode,mode,saveMode,saveAuto,ghToken,ghGistId,loaded]);
+
+  // Sauvegarde données automatique — local
+  useEffect(()=>{
+    if(!loaded||!saveAuto||saveMode!=="local")return;
     setSaveStatus("saving");
     clearTimeout(saveTimer.current);
     saveTimer.current=setTimeout(async()=>{
@@ -185,47 +218,39 @@ function App(){
         await window.storage.set("bgt9-tx",JSON.stringify(txs));
         await window.storage.set("bgt9-bal",String(initBal));
         await window.storage.set("bgt9-bud",JSON.stringify(budgets));
-        await window.storage.set("bgt9-cfg",JSON.stringify({lang,cur,disp,darkMode,mode}));
         setSaveStatus("saved");setTimeout(()=>setSaveStatus("idle"),2000);
       }catch(e){setSaveStatus("error");}
     },600);
-  },[txs,initBal,budgets,lang,cur,disp,darkMode,mode,loaded]);
+  },[txs,initBal,budgets,loaded,saveAuto,saveMode]);
 
-  // Sauvegarde GitHub automatique
+  // Sauvegarde données automatique — GitHub
   useEffect(()=>{
-    if(!loaded||!ghAutoSave||!ghToken)return;
+    if(!loaded||!saveAuto||saveMode!=="github"||!ghToken)return;
     clearTimeout(ghTimer.current);
     ghTimer.current=setTimeout(async()=>{
       try{
         const json=JSON.stringify({txs,initBal,lang,cur,disp,darkMode,budgets},null,2);
         const body={files:{"budget.json":{content:json}}};
         let res,data;
-        if(ghGistId){
-          res=await fetch(`https://api.github.com/gists/${ghGistId}`,{method:"PATCH",headers:{"Authorization":"token "+ghToken,"Content-Type":"application/json"},body:JSON.stringify(body)});
-        }else{
-          res=await fetch("https://api.github.com/gists",{method:"POST",headers:{"Authorization":"token "+ghToken,"Content-Type":"application/json"},body:JSON.stringify({...body,description:"Budget App Data",public:false})});
-        }
+        if(ghGistId){res=await fetch(`https://api.github.com/gists/${ghGistId}`,{method:"PATCH",headers:{"Authorization":"token "+ghToken,"Content-Type":"application/json"},body:JSON.stringify(body)});}
+        else{res=await fetch("https://api.github.com/gists",{method:"POST",headers:{"Authorization":"token "+ghToken,"Content-Type":"application/json"},body:JSON.stringify({...body,description:"Budget App Data",public:false})});}
         data=await res.json();
         if(data.id){
           if(data.id!==ghGistId)setGhGistId(data.id);
-          await window.storage.set("bgt9-gh",JSON.stringify({token:ghToken,gistId:data.id,autoSave:true}));
           setGhStatus("✓ GitHub sync");setTimeout(()=>setGhStatus(""),3000);
         }
-      }catch(e){setGhStatus("⚠ Sync GitHub échoué");setTimeout(()=>setGhStatus(""),3000);}
+      }catch(e){setGhStatus("⚠ Sync échoué");setTimeout(()=>setGhStatus(""),3000);}
     },3000);
-  },[txs,initBal,budgets,lang,cur,disp,darkMode,loaded,ghAutoSave,ghToken]);
+  },[txs,initBal,budgets,loaded,saveAuto,saveMode,ghToken,ghGistId]);
 
-  const saveGhSettings=async(tok,gid,auto)=>{
-    try{await window.storage.set("bgt9-gh",JSON.stringify({token:tok,gistId:gid,autoSave:auto}));}catch(e){}
-  };
-
-  const getExportJSON=()=>JSON.stringify({txs,initBal,lang,cur,disp,darkMode,budgets},null,2);
-  const showToast=msg=>{setToast(msg);setTimeout(()=>setToast(""),2500);};
-  const handleCopy=()=>{const json=getExportJSON();if(navigator.clipboard?.writeText){navigator.clipboard.writeText(json).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2500);});}};
-
-  const handleImport=()=>{
-    try{const d=JSON.parse(importText);if(Array.isArray(d.txs))setTxs(d.txs);if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.lang)setLang(d.lang);if(d.cur)setCur(d.cur);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.budgets)setBudgets(d.budgets);setImportMod(false);setImportText("");showToast(t.importOk);}
-    catch(e){showToast(t.importErr);}
+  const saveLocalNow=async()=>{
+    setSaveStatus("saving");
+    try{
+      await window.storage.set("bgt9-tx",JSON.stringify(txs));
+      await window.storage.set("bgt9-bal",String(initBal));
+      await window.storage.set("bgt9-bud",JSON.stringify(budgets));
+      setSaveStatus("saved");setTimeout(()=>setSaveStatus("idle"),2000);
+    }catch(e){setSaveStatus("error");}
   };
 
   const ghPush=async()=>{
@@ -237,7 +262,7 @@ function App(){
       if(ghGistId){res=await fetch(`https://api.github.com/gists/${ghGistId}`,{method:"PATCH",headers:{"Authorization":"token "+ghToken,"Content-Type":"application/json"},body:JSON.stringify(body)});}
       else{res=await fetch("https://api.github.com/gists",{method:"POST",headers:{"Authorization":"token "+ghToken,"Content-Type":"application/json"},body:JSON.stringify({...body,description:"Budget App Data",public:false})});}
       data=await res.json();
-      if(data.id){setGhGistId(data.id);await saveGhSettings(ghToken,data.id,ghAutoSave);setGhStatus("✓ Sauvegardé sur GitHub");}
+      if(data.id){setGhGistId(data.id);setGhStatus("✓ Sauvegardé sur GitHub");}
       else setGhStatus("❌ "+(data.message||"Erreur inconnue"));
     }catch(e){setGhStatus("❌ "+e.message);}
     setTimeout(()=>setGhStatus(""),4000);
@@ -254,14 +279,28 @@ function App(){
       const d=JSON.parse(content);
       if(Array.isArray(d.txs))setTxs(d.txs);if(typeof d.initBal==="number")setInitBal(d.initBal);
       if(d.lang)setLang(d.lang);if(d.cur)setCur(d.cur);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.budgets)setBudgets(d.budgets);
-      setGhStatus("✓ Données restaurées depuis GitHub");
+      setGhStatus("✓ Données restaurées");
     }catch(e){setGhStatus("❌ "+e.message);}
     setTimeout(()=>setGhStatus(""),4000);
   };
 
+  const handleManualSave=()=>{
+    if(saveMode==="local")saveLocalNow();
+    else ghPush();
+  };
+
+  const getExportJSON=()=>JSON.stringify({txs,initBal,lang,cur,disp,darkMode,budgets},null,2);
+  const showToast=msg=>{setToast(msg);setTimeout(()=>setToast(""),2500);};
+  const handleCopy=()=>{const json=getExportJSON();if(navigator.clipboard?.writeText){navigator.clipboard.writeText(json).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2500);});}};
+
+  const handleImport=()=>{
+    try{const d=JSON.parse(importText);if(Array.isArray(d.txs))setTxs(d.txs);if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.lang)setLang(d.lang);if(d.cur)setCur(d.cur);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.budgets)setBudgets(d.budgets);setImportMod(false);setImportText("");showToast(t.importOk);}
+    catch(e){showToast(t.importErr);}
+  };
+
   const deleteAccount=async()=>{
     for(const k of["bgt9-tx","bgt9-bal","bgt9-bud","bgt9-cfg","bgt9-gh"])try{await window.storage.delete(k);}catch(e){}
-    setTxs([]);setInitBal(1000);setBudgets({});setDisp({curBal:true,endBal:false,revExp:false,net:false});setDarkMode("off");setGhToken("");setGhGistId("");setGhAutoSave(false);setAuth(false);
+    setTxs([]);setInitBal(1000);setBudgets({});setDisp({curBal:true,endBal:false,revExp:false,net:false});setDarkMode("off");setGhToken("");setGhGistId("");setAuth(false);
   };
 
   const dim=new Date(yr,mo+1,0).getDate();
@@ -289,6 +328,7 @@ function App(){
   const dayModalList=dayMod?txs.filter(tx=>occsInMonth(tx,yr,mo).includes(dayMod.day)):[];
   const dayModalDateStr=dayMod?`${yr}-${String(mo+1).padStart(2,"0")}-${String(dayMod.day).padStart(2,"0")}`:"";
   const expenseCats=CATS.filter(c=>c.id!=="income");
+  const hasSummary=disp.curBal||disp.endBal||disp.revExp||disp.net;
 
   if(!auth)return(
     <div style={{minHeight:"100vh",background:th.bgSub,display:"flex",alignItems:"center",justifyContent:"center"}}>
@@ -305,8 +345,10 @@ function App(){
   return(
     <div style={{minHeight:"100vh",background:th.bg,fontFamily:"system-ui,sans-serif"}}>
       {toast&&<div style={{position:"fixed",top:20,left:"50%",transform:"translateX(-50%)",background:th.btnBg,color:th.btnText,padding:"10px 20px",borderRadius:20,fontSize:13,fontWeight:500,zIndex:100,boxShadow:"0 4px 16px rgba(0,0,0,0.2)",pointerEvents:"none"}}>{toast}</div>}
-      {/* Indicateur de sauvegarde */}
+
+      {/* Indicateur sauvegarde + bouton manuel */}
       <div style={{position:"fixed",bottom:16,right:16,zIndex:99,display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}}>
+        {!saveAuto&&<button onClick={handleManualSave} style={{display:"flex",alignItems:"center",gap:6,padding:"9px 16px",borderRadius:20,fontSize:12,fontWeight:600,background:th.btnBg,color:th.btnText,border:"none",cursor:"pointer",boxShadow:"0 2px 12px rgba(0,0,0,0.18)"}}>↑ Sauvegarder</button>}
         {ghStatus&&<div style={{display:"flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:20,fontSize:12,fontWeight:500,background:ghStatus.startsWith("✓")?"#f0fdf4":ghStatus.startsWith("⏳")?th.surface:th.bg,border:ghStatus.startsWith("✓")?"1px solid #86efac":"1px solid "+th.border,color:ghStatus.startsWith("✓")?"#059669":ghStatus.startsWith("⏳")?th.sub:th.danger,boxShadow:"0 2px 12px rgba(0,0,0,0.1)",pointerEvents:"none"}}>{ghStatus}</div>}
         {saveStatus!=="idle"&&<div style={{display:"flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:20,fontSize:12,fontWeight:500,background:saveStatus==="error"?th.bg:saveStatus==="saved"?"#f0fdf4":th.surface,border:saveStatus==="error"?"1px solid "+th.danger:saveStatus==="saved"?"1px solid #86efac":"1px solid "+th.border,color:saveStatus==="error"?th.danger:saveStatus==="saved"?"#059669":th.sub,boxShadow:"0 2px 12px rgba(0,0,0,0.1)",pointerEvents:"none"}}>{saveStatus==="saving"&&<span style={{display:"inline-block",width:7,height:7,borderRadius:"50%",background:th.sub,animation:"pulse 1s infinite"}}/>}{saveStatus==="saving"?t.saving:saveStatus==="saved"?"✓ "+t.saved:"⚠ "+t.saveErr}</div>}
       </div>
@@ -322,9 +364,11 @@ function App(){
       </div>
 
       <div style={{padding:"24px",maxWidth:640}}>
+
         {/* ── CALENDRIER ── */}
         {tab==="calendar"&&<div>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
+          {/* Nav mois + toggle mode */}
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:hasSummary?16:20}}>
             <div style={{display:"flex",alignItems:"center",gap:4}}>
               <button onClick={prevMo} style={{width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:"none",border:"none",cursor:"pointer",fontSize:20,color:th.muted,borderRadius:8}}>‹</button>
               <span onDoubleClick={goToday} style={{fontSize:15,color:th.text,fontWeight:500,minWidth:164,textAlign:"center",cursor:"default",userSelect:"none"}}>{t.months[mo]} {yr}</span>
@@ -332,7 +376,18 @@ function App(){
             </div>
             <SegCtrl options={[["daily",t.modDay],["balance",t.modBal]]} value={mode} onChange={setMode} th={th}/>
           </div>
+
+          {/* ── RÉSUMÉ (au-dessus de l'agenda) ── */}
+          {hasSummary&&<div style={{marginBottom:20,paddingBottom:20,borderBottom:"1px solid "+th.border,display:"flex",flexWrap:"wrap",gap:"16px 28px"}}>
+            {disp.curBal&&<div><p style={{...lbl,margin:"0 0 4px"}}>{t.curBalLbl}</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:curBalVal>=0?"#059669":"#ef4444"}}>{fA(curBalVal,cur,true)}</p></div>}
+            {disp.endBal&&endBalVal!==null&&<div><p style={{...lbl,margin:"0 0 4px"}}>{t.endBalLbl}</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:endBalVal>=0?"#059669":"#ef4444"}}>{fA(endBalVal,cur,true)}</p></div>}
+            {disp.revExp&&<><div><p style={{...lbl,margin:"0 0 4px"}}>{t.revLbl}</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:"#059669"}}>+{fA(monthStats.inc,cur,true)}</p></div><div><p style={{...lbl,margin:"0 0 4px"}}>{t.expLbl}</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:"#ef4444"}}>−{fA(monthStats.exp,cur,true)}</p></div></>}
+            {disp.net&&<div><p style={{...lbl,margin:"0 0 4px"}}>{t.netLbl}</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:monthStats.net>=0?"#059669":"#ef4444"}}>{monthStats.net>=0?"+":"−"}{fA(monthStats.net,cur,true)}</p></div>}
+          </div>}
+
+          {/* Jours de la semaine */}
           <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",marginBottom:4}}>{t.days.map((d,i)=><div key={i} style={{textAlign:"center",fontSize:11,color:th.muted,padding:"4px 0"}}>{d.slice(0,3)}</div>)}</div>
+          {/* Grille */}
           <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2}}>
             {cells.map((day,i)=>{
               if(!day)return<div key={"e"+i} style={{paddingBottom:"100%"}}/>;
@@ -346,12 +401,6 @@ function App(){
               </div>);
             })}
           </div>
-          {(disp.curBal||disp.endBal||disp.revExp||disp.net)&&<div style={{marginTop:24,paddingTop:20,borderTop:"1px solid "+th.border,display:"flex",flexWrap:"wrap",gap:"16px 28px"}}>
-            {disp.curBal&&<div><p style={{...lbl,margin:"0 0 4px"}}>{t.curBalLbl}</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:curBalVal>=0?"#059669":"#ef4444"}}>{fA(curBalVal,cur,true)}</p></div>}
-            {disp.endBal&&endBalVal!==null&&<div><p style={{...lbl,margin:"0 0 4px"}}>{t.endBalLbl}</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:endBalVal>=0?"#059669":"#ef4444"}}>{fA(endBalVal,cur,true)}</p></div>}
-            {disp.revExp&&<><div><p style={{...lbl,margin:"0 0 4px"}}>{t.revLbl}</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:"#059669"}}>+{fA(monthStats.inc,cur,true)}</p></div><div><p style={{...lbl,margin:"0 0 4px"}}>{t.expLbl}</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:"#ef4444"}}>−{fA(monthStats.exp,cur,true)}</p></div></>}
-            {disp.net&&<div><p style={{...lbl,margin:"0 0 4px"}}>{t.netLbl}</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:monthStats.net>=0?"#059669":"#ef4444"}}>{monthStats.net>=0?"+":"−"}{fA(monthStats.net,cur,true)}</p></div>}
-          </div>}
         </div>}
 
         {/* ── TRANSACTIONS ── */}
@@ -394,26 +443,46 @@ function App(){
           <p style={{...lbl,margin:"24px 0 4px"}}>{t.darkLbl}</p>
           <div style={{paddingBottom:16,borderBottom:"1px solid "+th.border}}><SegCtrl options={[["off",t.darkOff],["auto",t.darkAuto],["on",t.darkOn]]} value={darkMode} onChange={setDarkMode} th={th}/></div>
 
-          {/* ── GitHub Gist ── */}
-          <p style={{...lbl,margin:"24px 0 8px"}}>☁️ Sauvegarde GitHub</p>
-          <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:16,marginBottom:20}}>
-            <Tog label="Sauvegarde automatique" sub="Sync GitHub 3 sec après chaque modification" value={ghAutoSave} onChange={v=>{setGhAutoSave(v);saveGhSettings(ghToken,ghGistId,v);}} th={th}/>
-            <div style={{marginTop:14}}>
-              <label style={lbl}>Personal Access Token</label>
-              <input type="password" value={ghToken} onChange={e=>setGhToken(e.target.value)} onBlur={()=>saveGhSettings(ghToken,ghGistId,ghAutoSave)} placeholder="ghp_xxxxxxxxxxxx" style={{...iSt,fontSize:12,fontFamily:"monospace"}}/>
+          {/* ── SAUVEGARDE ── */}
+          <p style={{...lbl,margin:"24px 0 8px"}}>Sauvegarde</p>
+          <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:16,marginBottom:20,display:"flex",flexDirection:"column",gap:16}}>
+
+            {/* Destination */}
+            <div>
+              <p style={{fontSize:11,color:th.muted,margin:"0 0 8px",letterSpacing:"0.08em",textTransform:"uppercase"}}>Destination</p>
+              <SegCtrl options={[["local","💾 Local"],["github","☁️ GitHub"]]} value={saveMode} onChange={setSaveMode} th={th}/>
             </div>
-            <div style={{marginTop:14,marginBottom:14}}>
-              <label style={lbl}>Gist ID <span style={{color:th.muted,textTransform:"none",fontSize:10,letterSpacing:0}}>(auto après 1ère sauvegarde)</span></label>
-              <input type="text" value={ghGistId} onChange={e=>setGhGistId(e.target.value)} onBlur={()=>saveGhSettings(ghToken,ghGistId,ghAutoSave)} placeholder="Laisser vide pour créer un nouveau Gist" style={{...iSt,fontSize:12,fontFamily:"monospace"}}/>
+
+            {/* Champs GitHub */}
+            {saveMode==="github"&&<div style={{display:"flex",flexDirection:"column",gap:12,paddingTop:4,borderTop:"1px solid "+th.border}}>
+              <div>
+                <label style={lbl}>Personal Access Token</label>
+                <input type="password" value={ghToken} onChange={e=>setGhToken(e.target.value)} placeholder="ghp_xxxxxxxxxxxx" style={{...iSt,fontSize:12,fontFamily:"monospace"}}/>
+              </div>
+              <div>
+                <label style={lbl}>Gist ID <span style={{color:th.muted,textTransform:"none",fontSize:10,letterSpacing:0}}>(auto après 1ère sauvegarde)</span></label>
+                <input type="text" value={ghGistId} onChange={e=>setGhGistId(e.target.value)} placeholder="Laisser vide pour créer un nouveau Gist" style={{...iSt,fontSize:12,fontFamily:"monospace"}}/>
+              </div>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={ghPush} style={{flex:1,padding:"10px 0",fontSize:13,border:"none",borderRadius:10,background:"#24292f",color:"#fff",cursor:"pointer",fontWeight:500}}>↑ Sauvegarder</button>
+                <button onClick={ghPull} style={{flex:1,padding:"10px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:10,background:"none",color:th.text,cursor:"pointer"}}>↓ Restaurer</button>
+              </div>
+              <Tog label="Charger au démarrage" sub="Pull automatique depuis GitHub à l'ouverture" value={ghPullOnStart} onChange={v=>setGhPullOnStart(v)} th={th}/>
+              {ghStatus&&<p style={{fontSize:12,margin:0,color:ghStatus.startsWith("✓")?"#059669":ghStatus.startsWith("⏳")?th.sub:"#ef4444"}}>{ghStatus}</p>}
+              <p style={{fontSize:11,color:th.muted,margin:0,lineHeight:1.5}}>Gist <strong>privé</strong>. Token requis : permission <code>gist</code> seulement.</p>
+            </div>}
+
+            {/* Déclenchement */}
+            <div style={{borderTop:"1px solid "+th.border,paddingTop:14}}>
+              <p style={{fontSize:11,color:th.muted,margin:"0 0 8px",letterSpacing:"0.08em",textTransform:"uppercase"}}>Déclenchement</p>
+              <SegCtrl options={[["auto","⚡ Auto (3s)"],["manual","✋ Manuel"]]} value={saveAuto?"auto":"manual"} onChange={v=>setSaveAuto(v==="auto")} th={th}/>
             </div>
-            <div style={{display:"flex",gap:8}}>
-              <button onClick={ghPush} style={{flex:1,padding:"10px 0",fontSize:13,border:"none",borderRadius:10,background:"#24292f",color:"#fff",cursor:"pointer",fontWeight:500}}>↑ Sauvegarder</button>
-              <button onClick={ghPull} style={{flex:1,padding:"10px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:10,background:"none",color:th.text,cursor:"pointer"}}>↓ Restaurer</button>
-            </div>
-            {ghStatus&&<p style={{fontSize:12,margin:"10px 0 0",color:ghStatus.startsWith("✓")?"#059669":ghStatus.startsWith("⏳")?th.sub:"#ef4444"}}>{ghStatus}</p>}
-            <p style={{fontSize:11,color:th.muted,margin:"12px 0 0",lineHeight:1.5}}>Le Gist est <strong>privé</strong>. Token requis : permission <code>gist</code> seulement.</p>
+
+            {/* Bouton sauvegarde manuelle */}
+            {!saveAuto&&<button onClick={handleManualSave} style={{padding:"11px 0",fontSize:13,fontWeight:600,border:"none",borderRadius:10,background:th.btnBg,color:th.btnText,cursor:"pointer"}}>↑ Sauvegarder maintenant</button>}
           </div>
 
+          {/* Données */}
           <p style={{...lbl,margin:"0 0 8px"}}>{t.exportLbl}</p>
           <div style={{display:"flex",gap:8,paddingBottom:20,borderBottom:"1px solid "+th.border}}>
             <button onClick={()=>setExportMod(true)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:10,background:"none",color:th.text,cursor:"pointer"}}>↑ {t.exportBtn}</button>
@@ -443,11 +512,6 @@ function App(){
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
-</script>
-<script>
-if('serviceWorker' in navigator){
-  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
-}
 </script>
 </body>
 </html>
