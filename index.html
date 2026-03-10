@@ -128,7 +128,9 @@ function RecurrencePicker({value,onChange,startDate,t,th}){
 function App(){
   const[auth,setAuth]=useState(false);
   const[u,setU]=useState(""),[pw,setPw]=useState(""),[aErr,setAErr]=useState("");
-  const[tab,setTab]=useState("calendar");
+  const[tab,setTab]=useState("home");
+  const[menuOpen,setMenuOpen]=useState(false);
+  const lastTapRef=useRef(0);
   const[yr,setYr]=useState(TODAY.getFullYear()),[mo,setMo]=useState(TODAY.getMonth());
   const[mode,setMode]=useState("daily");
   const[txs,setTxs]=useState([]);
@@ -140,14 +142,12 @@ function App(){
   const[disp,setDisp]=useState({endBal:false,revExp:false,net:false});
   const[darkMode,setDarkMode]=useState("off");
   const[sysDark,setSysDark]=useState(()=>window.matchMedia("(prefers-color-scheme: dark)").matches);
-  // Save
   const[saveMode,setSaveMode]=useState("local");
   const[saveAuto,setSaveAuto]=useState(true);
   const[ghToken,setGhToken]=useState("");
   const[ghGistId,setGhGistId]=useState("");
   const[ghPullOnStart,setGhPullOnStart]=useState(true);
   const[ghStatus,setGhStatus]=useState("");
-  // UI
   const[editingBal,setEditingBal]=useState(false);
   const[balInput,setBalInput]=useState("");
   const balInputRef=useRef(null);
@@ -172,6 +172,8 @@ function App(){
   const th=useMemo(()=>mkTh(isDark),[isDark]);
   const iSt={display:"block",width:"100%",marginTop:6,padding:"8px 0",fontSize:14,color:th.text,background:"transparent",border:"none",borderBottom:"1px solid "+th.inputBorder,outline:"none",boxSizing:"border-box"};
   const lbl={fontSize:10,color:th.muted,letterSpacing:"0.12em",textTransform:"uppercase"};
+
+  const handleTitleClick=e=>{e.stopPropagation();const now=Date.now();if(now-lastTapRef.current<350){setMenuOpen(false);setTab("home");}else{setMenuOpen(m=>!m);}lastTapRef.current=now;};
 
   useEffect(()=>{const mq=window.matchMedia("(prefers-color-scheme: dark)");const h=e=>setSysDark(e.matches);mq.addEventListener("change",h);return()=>mq.removeEventListener("change",h);},[]);
 
@@ -232,50 +234,14 @@ function App(){
   },[txs,initBal,budgets,loaded,saveAuto,saveMode,ghToken,ghGistId]);
 
   const saveLocalNow=async()=>{setSaveStatus("saving");try{await window.storage.set("bgt9-tx",JSON.stringify(txs));await window.storage.set("bgt9-bal",String(initBal));await window.storage.set("bgt9-bud",JSON.stringify(budgets));setSaveStatus("saved");setTimeout(()=>setSaveStatus("idle"),2000);}catch(e){setSaveStatus("error");}};
-
-  const ghPush=async()=>{
-    if(!ghToken){setGhStatus("❌ Token manquant");return;}
-    setGhStatus("⏳ Envoi…");
-    try{
-      const body={files:{"budget.json":{content:getExportJSON()}}};
-      let res,data;
-      if(ghGistId){res=await fetch(`https://api.github.com/gists/${ghGistId}`,{method:"PATCH",headers:{"Authorization":"token "+ghToken,"Content-Type":"application/json"},body:JSON.stringify(body)});}
-      else{res=await fetch("https://api.github.com/gists",{method:"POST",headers:{"Authorization":"token "+ghToken,"Content-Type":"application/json"},body:JSON.stringify({...body,description:"Budget App Data",public:false})});}
-      data=await res.json();
-      if(data.id){setGhGistId(data.id);setGhStatus("✓ Sauvegardé sur GitHub");}
-      else setGhStatus("❌ "+(data.message||"Erreur inconnue"));
-    }catch(e){setGhStatus("❌ "+e.message);}
-    setTimeout(()=>setGhStatus(""),4000);
-  };
-
-  const ghPull=async()=>{
-    if(!ghToken||!ghGistId){setGhStatus("❌ Token ou Gist ID manquant");return;}
-    setGhStatus("⏳ Chargement…");
-    try{
-      const res=await fetch(`https://api.github.com/gists/${ghGistId}`,{headers:{"Authorization":"token "+ghToken}});
-      const data=await res.json();const content=data.files?.["budget.json"]?.content;
-      if(!content){setGhStatus("❌ Fichier introuvable");return;}
-      const d=JSON.parse(content);
-      if(Array.isArray(d.txs))setTxs(d.txs);if(typeof d.initBal==="number")setInitBal(d.initBal);
-      if(d.lang)setLang(d.lang);if(d.cur)setCur(d.cur);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.budgets)setBudgets(d.budgets);
-      setGhStatus("✓ Données restaurées");
-    }catch(e){setGhStatus("❌ "+e.message);}
-    setTimeout(()=>setGhStatus(""),4000);
-  };
-
+  const ghPush=async()=>{if(!ghToken){setGhStatus("❌ Token manquant");return;}setGhStatus("⏳ Envoi…");try{const body={files:{"budget.json":{content:getExportJSON()}}};let res,data;if(ghGistId){res=await fetch(`https://api.github.com/gists/${ghGistId}`,{method:"PATCH",headers:{"Authorization":"token "+ghToken,"Content-Type":"application/json"},body:JSON.stringify(body)});}else{res=await fetch("https://api.github.com/gists",{method:"POST",headers:{"Authorization":"token "+ghToken,"Content-Type":"application/json"},body:JSON.stringify({...body,description:"Budget App Data",public:false})});}data=await res.json();if(data.id){setGhGistId(data.id);setGhStatus("✓ Sauvegardé sur GitHub");}else setGhStatus("❌ "+(data.message||"Erreur inconnue"));}catch(e){setGhStatus("❌ "+e.message);}setTimeout(()=>setGhStatus(""),4000);};
+  const ghPull=async()=>{if(!ghToken||!ghGistId){setGhStatus("❌ Token ou Gist ID manquant");return;}setGhStatus("⏳ Chargement…");try{const res=await fetch(`https://api.github.com/gists/${ghGistId}`,{headers:{"Authorization":"token "+ghToken}});const data=await res.json();const content=data.files?.["budget.json"]?.content;if(!content){setGhStatus("❌ Fichier introuvable");return;}const d=JSON.parse(content);if(Array.isArray(d.txs))setTxs(d.txs);if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.lang)setLang(d.lang);if(d.cur)setCur(d.cur);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.budgets)setBudgets(d.budgets);setGhStatus("✓ Données restaurées");}catch(e){setGhStatus("❌ "+e.message);}setTimeout(()=>setGhStatus(""),4000);};
   const handleManualSave=()=>{if(saveMode==="local")saveLocalNow();else ghPush();};
-
   const getExportJSON=()=>JSON.stringify({txs,initBal,lang,cur,disp,darkMode,budgets},null,2);
   const showToast=msg=>{setToast(msg);setTimeout(()=>setToast(""),2500);};
   const handleCopy=()=>{const json=getExportJSON();if(navigator.clipboard?.writeText){navigator.clipboard.writeText(json).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2500);});}};
-  const handleImport=()=>{
-    try{const d=JSON.parse(importText);if(Array.isArray(d.txs))setTxs(d.txs);if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.lang)setLang(d.lang);if(d.cur)setCur(d.cur);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.budgets)setBudgets(d.budgets);setImportMod(false);setImportText("");showToast(t.importOk);}
-    catch(e){showToast(t.importErr);}
-  };
-  const deleteAccount=async()=>{
-    for(const k of["bgt9-tx","bgt9-bal","bgt9-bud","bgt9-cfg","bgt9-gh"])try{await window.storage.delete(k);}catch(e){}
-    setTxs([]);setInitBal(1000);setBudgets({});setDisp({endBal:false,revExp:false,net:false});setDarkMode("off");setGhToken("");setGhGistId("");setAuth(false);
-  };
+  const handleImport=()=>{try{const d=JSON.parse(importText);if(Array.isArray(d.txs))setTxs(d.txs);if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.lang)setLang(d.lang);if(d.cur)setCur(d.cur);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.budgets)setBudgets(d.budgets);setImportMod(false);setImportText("");showToast(t.importOk);}catch(e){showToast(t.importErr);}};
+  const deleteAccount=async()=>{for(const k of["bgt9-tx","bgt9-bal","bgt9-bud","bgt9-cfg","bgt9-gh"])try{await window.storage.delete(k);}catch(e){}setTxs([]);setInitBal(1000);setBudgets({});setDisp({endBal:false,revExp:false,net:false});setDarkMode("off");setGhToken("");setGhGistId("");setAuth(false);};
 
   const dim=new Date(yr,mo+1,0).getDate();
   const cells=useMemo(()=>{const fd=new Date(yr,mo,1).getDay();return[...Array(fd).fill(null),...Array.from({length:dim},(_,i)=>i+1)];},[yr,mo,dim]);
@@ -303,17 +269,12 @@ function App(){
   const dayModalDateStr=dayMod?`${yr}-${String(mo+1).padStart(2,"0")}-${String(dayMod.day).padStart(2,"0")}`:"";
   const expenseCats=CATS.filter(c=>c.id!=="income");
   const hasSummary=disp.endBal||disp.revExp||disp.net;
-
-  // Transactions filtrées par mois
   const monthTxs=useMemo(()=>txs.filter(tx=>occsInMonth(tx,yr,mo).length>0).sort((a,b)=>new Date(b.startDate)-new Date(a.startDate)),[txs,yr,mo]);
 
-  // Solde actuel éditable
   const startEditBal=()=>{setBalInput(String(curBalVal.toFixed(2)));setEditingBal(true);setTimeout(()=>{balInputRef.current?.focus();balInputRef.current?.select();},50)};
-  const commitEditBal=()=>{
-    const desired=parseFloat(balInput);
-    if(!isNaN(desired)){const diff=desired-curBalVal;setInitBal(prev=>parseFloat((prev+diff).toFixed(2)));}
-    setEditingBal(false);
-  };
+  const commitEditBal=()=>{const desired=parseFloat(balInput);if(!isNaN(desired)){const diff=desired-curBalVal;setInitBal(prev=>parseFloat((prev+diff).toFixed(2)));}setEditingBal(false);};
+
+  const NAV_ITEMS=[["home","Accueil"],["transactions","Transactions"],["analyse","Analyse"],["objectifs","Objectifs"],["settings","Paramètres"]];
 
   if(!auth)return(
     <div style={{minHeight:"100vh",background:th.bgSub,display:"flex",alignItems:"center",justifyContent:"center"}}>
@@ -323,15 +284,16 @@ function App(){
         {[[t.userLbl,u,setU,"text"],[t.passLbl,pw,setPw,"password"]].map(([lb,val,set,type])=>(<div key={lb} style={{marginBottom:20}}><label style={lbl}>{lb}</label><input type={type} value={val} onChange={e=>set(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")(u==="test"&&pw==="test"?setAuth(true):setAErr(t.badLogin));}} style={iSt} placeholder={type==="password"?"••••••••":lb}/></div>))}
         {aErr&&<p style={{fontSize:12,color:th.danger,marginBottom:12}}>{aErr}</p>}
         <button onClick={()=>(u==="test"&&pw==="test"?setAuth(true):setAErr(t.badLogin))} style={{width:"100%",marginTop:8,background:th.btnBg,color:th.btnText,border:"none",borderRadius:12,padding:"11px 0",fontSize:14,cursor:"pointer"}}>{t.loginBtn}</button>
+        <p style={{marginTop:20,fontSize:11,color:th.muted,textAlign:"center",letterSpacing:"0.08em"}}>v0.016</p>
       </div>
     </div>
   );
 
   return(
-    <div style={{minHeight:"100vh",background:th.bg,fontFamily:"system-ui,sans-serif"}}>
+    <div style={{minHeight:"100vh",background:th.bg,fontFamily:"system-ui,sans-serif"}} onClick={()=>{if(menuOpen)setMenuOpen(false);}}>
       {toast&&<div style={{position:"fixed",top:20,left:"50%",transform:"translateX(-50%)",background:th.btnBg,color:th.btnText,padding:"10px 20px",borderRadius:20,fontSize:13,fontWeight:500,zIndex:100,boxShadow:"0 4px 16px rgba(0,0,0,0.2)",pointerEvents:"none"}}>{toast}</div>}
 
-      {/* FAB bas droite */}
+      {/* FAB */}
       <div style={{position:"fixed",bottom:16,right:16,zIndex:99,display:"flex",flexDirection:"column",alignItems:"flex-end",gap:8}}>
         <button onClick={()=>openForm()} style={{width:48,height:48,borderRadius:"50%",background:th.btnBg,color:th.btnText,border:"none",cursor:"pointer",fontSize:26,fontWeight:300,boxShadow:"0 4px 16px rgba(0,0,0,0.2)",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>+</button>
         {!saveAuto&&<button onClick={handleManualSave} style={{padding:"9px 16px",borderRadius:20,fontSize:12,fontWeight:600,background:th.btnBg,color:th.btnText,border:"none",cursor:"pointer",boxShadow:"0 2px 12px rgba(0,0,0,0.18)"}}>↑ Sauvegarder</button>}
@@ -342,8 +304,16 @@ function App(){
       {/* Header */}
       <div style={{padding:"32px 24px 20px",borderBottom:"1px solid "+th.border}}>
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
-          <div><p style={{...lbl,marginBottom:4}}>{t.sub}</p><h1 style={{fontSize:20,color:th.text,fontWeight:600,margin:0}}>{t.title}</h1></div>
-          {/* Solde actuel cliquable */}
+          <div>
+            <p style={{...lbl,marginBottom:4}}>{t.sub}</p>
+            {/* Titre cliquable → sidebar */}
+            <h1
+              onClick={handleTitleClick}
+              style={{fontSize:20,color:th.text,fontWeight:600,margin:0,cursor:"pointer",userSelect:"none"}}
+            >
+              {t.title}
+            </h1>
+          </div>
           <div style={{textAlign:"right",cursor:"pointer"}} onClick={!editingBal?startEditBal:undefined} title="Cliquer pour modifier">
             <p style={{...lbl,margin:"0 0 3px"}}>{t.curBalLbl}</p>
             {editingBal
@@ -354,15 +324,25 @@ function App(){
         </div>
       </div>
 
-      {/* Tabs */}
-      <div style={{padding:"0 24px",borderBottom:"1px solid "+th.border,display:"flex",gap:20,overflowX:"auto"}}>
-        {[["calendar",t.tabs[0]],["transactions",t.tabs[1]],["budget",t.tabs[2]],["settings",t.tabs[3]]].map(([k,l])=>(<button key={k} onClick={()=>setTab(k)} style={{fontSize:13,paddingBottom:12,paddingTop:16,border:"none",background:"none",cursor:"pointer",borderBottom:tab===k?"2px solid "+th.text:"2px solid transparent",color:tab===k?th.text:th.muted,fontWeight:tab===k?500:400,transition:"color 0.15s",whiteSpace:"nowrap"}}>{l}</button>))}
-      </div>
+      {/* Sidebar */}
+      {menuOpen&&<div style={{position:"fixed",inset:0,zIndex:200}} onClick={()=>setMenuOpen(false)}>
+        <div style={{position:"absolute",top:0,left:0,bottom:0,width:220,background:th.sheetBg,borderRight:"1px solid "+th.border,boxShadow:"4px 0 24px rgba(0,0,0,0.13)",display:"flex",flexDirection:"column",paddingTop:52}} onClick={e=>e.stopPropagation()}>
+          <p style={{fontSize:10,color:th.muted,letterSpacing:"0.12em",textTransform:"uppercase",padding:"0 20px 12px"}}>Navigation</p>
+          {NAV_ITEMS.map(([k,l])=>(
+            <button key={k} onClick={()=>{setTab(k);setMenuOpen(false);}} style={{display:"flex",alignItems:"center",gap:12,padding:"13px 20px",border:"none",background:tab===k?th.surface:"transparent",color:tab===k?th.text:th.sub,fontSize:14,fontWeight:tab===k?600:400,cursor:"pointer",textAlign:"left",borderLeft:tab===k?"3px solid "+th.text:"3px solid transparent",transition:"all 0.15s"}}>
+              <span style={{fontSize:18,lineHeight:1}}>{{home:"🏠",transactions:"💳",analyse:"📊",objectifs:"🎯",settings:"⚙️"}[k]}</span>
+              {l}
+            </button>
+          ))}
+          <div style={{flex:1}}/>
+          <p style={{fontSize:11,color:th.muted,padding:"16px 20px",letterSpacing:"0.06em"}}>v0.016</p>
+        </div>
+      </div>}
 
       <div style={{padding:"24px",maxWidth:640}}>
 
-        {/* ── CALENDRIER ── */}
-        {tab==="calendar"&&<div>
+        {/* ── ACCUEIL (calendrier) ── */}
+        {tab==="home"&&<div>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:hasSummary?16:20}}>
             <MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} t={t} th={th}/>
             <SegCtrl options={[["daily",t.modDay],["balance",t.modBal]]} value={mode} onChange={setMode} th={th}/>
@@ -403,15 +383,16 @@ function App(){
           }
         </div>}
 
-        {/* ── BUDGET ── */}
-        {tab==="budget"&&<div>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
-            <MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} t={t} th={th}/>
-          </div>
-          {totalBudget>0&&<div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:"16px 18px",marginBottom:20}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}><span style={{fontSize:13,color:th.text,fontWeight:500}}>{t.budgetTotal}</span><span style={{fontSize:13,fontWeight:600,fontVariantNumeric:"tabular-nums",color:totalSpent>totalBudget?"#ef4444":"#059669"}}>{fA(totalSpent,cur,true)} <span style={{color:th.muted,fontWeight:400}}>{t.budgetOf} {fA(totalBudget,cur,true)}</span></span></div><div style={{height:6,background:th.surface,borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",width:Math.min(totalSpent/totalBudget*100,100)+"%",borderRadius:3,background:totalSpent>totalBudget?"#ef4444":totalSpent/totalBudget>0.8?"#f59e0b":"#10b981",transition:"width 0.4s"}}/></div></div>}
-          <p style={{...lbl,marginBottom:16}}>{t.budgetLbl}</p>
-          {expenseCats.map(cat=>{const stats=catStats[cat.id]||{spent:0};const budget=budgets[cat.id]||0;const pct=budget>0?Math.min(stats.spent/budget*100,100):0;const over=budget>0&&stats.spent>budget;return(<div key={cat.id} style={{marginBottom:14,background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:"14px 16px"}}><div style={{display:"flex",alignItems:"center",gap:12}}><div style={{width:38,height:38,borderRadius:10,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{cat.emoji}</div><div style={{flex:1,minWidth:0}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:6}}><span style={{fontSize:13,color:th.text,fontWeight:500}}>{t.catNames[cat.id]}</span><div style={{display:"flex",alignItems:"center",gap:4,flexShrink:0}}><span style={{fontSize:13,fontVariantNumeric:"tabular-nums",color:over?"#ef4444":stats.spent>0?th.text:th.muted}}>{fA(stats.spent,cur,true)}</span>{budget>0&&<span style={{fontSize:12,color:th.muted}}>{t.budgetOf}</span>}<input type="number" min={0} step={10} value={budget||""} onChange={e=>setBudgets(b=>({...b,[cat.id]:parseFloat(e.target.value)||0}))} placeholder={t.budgetUnset} style={{width:72,fontSize:12,textAlign:"right",color:"#2563eb",background:"transparent",border:"none",borderBottom:"1px dashed "+th.inputBorder,outline:"none",fontVariantNumeric:"tabular-nums"}}/></div></div><div style={{height:5,background:th.surface,borderRadius:2.5,overflow:"hidden"}}>{budget>0&&<div style={{height:"100%",width:pct+"%",background:over?"#ef4444":pct>80?"#f59e0b":"#10b981",borderRadius:2.5,transition:"width 0.4s"}}/>}</div></div></div></div>);})}
-          {monthStats.inc>0&&<div style={{marginTop:8,background:"#05966915",border:"1px solid #05966930",borderRadius:14,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}><div style={{width:38,height:38,borderRadius:10,background:"#05966922",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>💰</div><div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{t.revenuSummary}</p><p style={{fontSize:12,color:"#059669",margin:"2px 0 0",fontWeight:600,fontVariantNumeric:"tabular-nums"}}>+{fA(monthStats.inc,cur,true)}</p></div></div>}
+        {/* ── ANALYSE (placeholder) ── */}
+        {tab==="analyse"&&<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"100px 0",gap:12}}>
+          <p style={{fontSize:36,color:th.border}}>📊</p>
+          <p style={{fontSize:22,color:th.muted,fontWeight:300,letterSpacing:"0.02em"}}>Analyse</p>
+        </div>}
+
+        {/* ── OBJECTIFS (placeholder) ── */}
+        {tab==="objectifs"&&<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"100px 0",gap:12}}>
+          <p style={{fontSize:36,color:th.border}}>🎯</p>
+          <p style={{fontSize:22,color:th.muted,fontWeight:300,letterSpacing:"0.02em"}}>Objectifs</p>
         </div>}
 
         {/* ── PARAMÈTRES ── */}
@@ -426,46 +407,20 @@ function App(){
           <Tog label={t.showNet} value={disp.net} onChange={v=>setDisp(d=>({...d,net:v}))} th={th}/>
           <p style={{...lbl,margin:"24px 0 4px"}}>{t.darkLbl}</p>
           <div style={{paddingBottom:16,borderBottom:"1px solid "+th.border}}><SegCtrl options={[["off",t.darkOff],["auto",t.darkAuto],["on",t.darkOn]]} value={darkMode} onChange={setDarkMode} th={th}/></div>
-
-          {/* ── SAUVEGARDE ── */}
           <p style={{...lbl,margin:"24px 0 8px"}}>Sauvegarde</p>
           <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:16,marginBottom:20,display:"flex",flexDirection:"column",gap:16}}>
-
-            {/* 1. Destination */}
-            <div>
-              <p style={{fontSize:11,color:th.muted,margin:"0 0 8px",letterSpacing:"0.08em",textTransform:"uppercase"}}>Destination</p>
-              <SegCtrl options={[["local","💾 Local"],["github","☁️ GitHub"]]} value={saveMode} onChange={setSaveMode} th={th}/>
-            </div>
-
-            {/* 2. Config GitHub */}
+            <div><p style={{fontSize:11,color:th.muted,margin:"0 0 8px",letterSpacing:"0.08em",textTransform:"uppercase"}}>Destination</p><SegCtrl options={[["local","💾 Local"],["github","☁️ GitHub"]]} value={saveMode} onChange={setSaveMode} th={th}/></div>
             {saveMode==="github"&&<div style={{display:"flex",flexDirection:"column",gap:12,paddingTop:4,borderTop:"1px solid "+th.border}}>
-              <div>
-                <label style={lbl}>Personal Access Token</label>
-                <input type="password" value={ghToken} onChange={e=>setGhToken(e.target.value)} placeholder="ghp_xxxxxxxxxxxx" style={{...iSt,fontSize:12,fontFamily:"monospace"}}/>
-              </div>
-              <div>
-                <label style={lbl}>Gist ID <span style={{color:th.muted,textTransform:"none",fontSize:10,letterSpacing:0}}>(auto après 1ère sauvegarde)</span></label>
-                <input type="text" value={ghGistId} onChange={e=>setGhGistId(e.target.value)} placeholder="Laisser vide pour créer un nouveau Gist" style={{...iSt,fontSize:12,fontFamily:"monospace"}}/>
-              </div>
+              <div><label style={lbl}>Personal Access Token</label><input type="password" value={ghToken} onChange={e=>setGhToken(e.target.value)} placeholder="ghp_xxxxxxxxxxxx" style={{...iSt,fontSize:12,fontFamily:"monospace"}}/></div>
+              <div><label style={lbl}>Gist ID <span style={{color:th.muted,textTransform:"none",fontSize:10,letterSpacing:0}}>(auto après 1ère sauvegarde)</span></label><input type="text" value={ghGistId} onChange={e=>setGhGistId(e.target.value)} placeholder="Laisser vide pour créer un nouveau Gist" style={{...iSt,fontSize:12,fontFamily:"monospace"}}/></div>
               <Tog label="Charger au démarrage" sub="Pull automatique depuis GitHub à l'ouverture" value={ghPullOnStart} onChange={setGhPullOnStart} th={th}/>
-              {/* Restaurer manuellement seulement si pull auto désactivé */}
               {!ghPullOnStart&&<button onClick={ghPull} style={{padding:"10px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:10,background:"none",color:th.text,cursor:"pointer"}}>↓ Restaurer depuis GitHub</button>}
               <p style={{fontSize:11,color:th.muted,margin:0,lineHeight:1.5}}>Gist <strong>privé</strong>. Token requis : permission <code>gist</code> seulement.</p>
             </div>}
-
-            {/* 3. Déclenchement */}
-            <div style={{borderTop:"1px solid "+th.border,paddingTop:14}}>
-              <p style={{fontSize:11,color:th.muted,margin:"0 0 8px",letterSpacing:"0.08em",textTransform:"uppercase"}}>Déclenchement</p>
-              <SegCtrl options={[["auto","⚡ Auto (3s)"],["manual","✋ Manuel"]]} value={saveAuto?"auto":"manual"} onChange={v=>setSaveAuto(v==="auto")} th={th}/>
-            </div>
-
-            {/* 4. Bouton manuel */}
+            <div style={{borderTop:"1px solid "+th.border,paddingTop:14}}><p style={{fontSize:11,color:th.muted,margin:"0 0 8px",letterSpacing:"0.08em",textTransform:"uppercase"}}>Déclenchement</p><SegCtrl options={[["auto","⚡ Auto (3s)"],["manual","✋ Manuel"]]} value={saveAuto?"auto":"manual"} onChange={v=>setSaveAuto(v==="auto")} th={th}/></div>
             {!saveAuto&&<button onClick={handleManualSave} style={{padding:"11px 0",fontSize:13,fontWeight:600,border:"none",borderRadius:10,background:th.btnBg,color:th.btnText,cursor:"pointer"}}>↑ Sauvegarder maintenant</button>}
-
             {ghStatus&&<p style={{fontSize:12,margin:0,color:ghStatus.startsWith("✓")?"#059669":ghStatus.startsWith("⏳")?th.sub:"#ef4444"}}>{ghStatus}</p>}
           </div>
-
-          {/* Données */}
           <p style={{...lbl,margin:"0 0 8px"}}>{t.exportLbl}</p>
           <div style={{display:"flex",gap:8,paddingBottom:20,borderBottom:"1px solid "+th.border}}>
             <button onClick={()=>setExportMod(true)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:10,background:"none",color:th.text,cursor:"pointer"}}>↑ {t.exportBtn}</button>
