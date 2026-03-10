@@ -125,11 +125,41 @@ function RecurrencePicker({value,onChange,startDate,t,th}){
   </div>);
 }
 
+// ── Navigation structure ──────────────────────────────────────
+const NAV_ITEMS=[
+  ["home","Accueil"],
+  ["transactions","Transactions"],
+  ["budget","Budget"],
+  ["analyse","Analyse"],
+  ["settings","Paramètres"],
+];
+const SUB_NAV={
+  transactions:[
+    {id:"historique",label:"Historique"},
+    {id:"recurrent",label:"Récurrent"},
+  ],
+  budget:[
+    {id:"categories",label:"Budget par catégorie"},
+    {id:"objectifs",label:"Objectifs"},
+  ],
+  analyse:[
+    {id:"statistiques",label:"Statistiques"},
+    {id:"graphiques",label:"Graphiques"},
+  ],
+};
+const DEFAULT_SUB={transactions:"historique",budget:"categories",analyse:"statistiques"};
+
+const Placeholder=({label,th})=>(
+  <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"100px 0",gap:8}}>
+    <p style={{fontSize:22,color:th.muted,fontWeight:300,letterSpacing:"0.02em"}}>{label}</p>
+  </div>
+);
+
 function App(){
   const[auth,setAuth]=useState(false);
   const[u,setU]=useState(""),[pw,setPw]=useState(""),[aErr,setAErr]=useState("");
   const[tab,setTab]=useState("home");
-  const[menuOpen,setMenuOpen]=useState(false);
+  const[subTab,setSubTab]=useState({});
   const lastTapRef=useRef(0);
   const[yr,setYr]=useState(TODAY.getFullYear()),[mo,setMo]=useState(TODAY.getMonth());
   const[mode,setMode]=useState("daily");
@@ -173,7 +203,16 @@ function App(){
   const iSt={display:"block",width:"100%",marginTop:6,padding:"8px 0",fontSize:14,color:th.text,background:"transparent",border:"none",borderBottom:"1px solid "+th.inputBorder,outline:"none",boxSizing:"border-box"};
   const lbl={fontSize:10,color:th.muted,letterSpacing:"0.12em",textTransform:"uppercase"};
 
-  const handleTitleClick=e=>{e.stopPropagation();const now=Date.now();if(now-lastTapRef.current<350){setMenuOpen(false);setTab("home");}else{setMenuOpen(m=>!m);}lastTapRef.current=now;};
+  const curSub=subTab[tab]||(DEFAULT_SUB[tab]||null);
+  const navTo=(newTab)=>{setTab(newTab);};
+  const subNavTo=(s)=>setSubTab(prev=>({...prev,[tab]:s}));
+
+  const handleTitleClick=e=>{
+    e.stopPropagation();
+    const now=Date.now();
+    if(now-lastTapRef.current<350){setTab("home");}
+    lastTapRef.current=now;
+  };
 
   useEffect(()=>{const mq=window.matchMedia("(prefers-color-scheme: dark)");const h=e=>setSysDark(e.matches);mq.addEventListener("change",h);return()=>mq.removeEventListener("change",h);},[]);
 
@@ -186,52 +225,15 @@ function App(){
     try{const r=await window.storage.get("bgt9-gh");if(r){const g=JSON.parse(r.value);if(g.token){setGhToken(g.token);ghTok=g.token;}if(g.gistId){setGhGistId(g.gistId);ghGid=g.gistId;}if(g.pullOnStart!==undefined){setGhPullOnStart(g.pullOnStart);ghPull=g.pullOnStart;}}}catch(e){}
     if(sMode==="github"&&ghPull&&ghTok&&ghGid){
       setGhStatus("⏳ Chargement depuis GitHub…");
-      try{
-        const res=await fetch(`https://api.github.com/gists/${ghGid}`,{headers:{"Authorization":"token "+ghTok}});
-        const data=await res.json();
-        const content=data.files?.["budget.json"]?.content;
-        if(content){const d=JSON.parse(content);if(Array.isArray(d.txs))setTxs(d.txs);if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.lang)setLang(d.lang);if(d.cur)setCur(d.cur);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.budgets)setBudgets(d.budgets);setGhStatus("✓ Données GitHub chargées");}
-      }catch(e){setGhStatus("⚠ Pull GitHub échoué");}
+      try{const res=await fetch(`https://api.github.com/gists/${ghGid}`,{headers:{"Authorization":"token "+ghTok}});const data=await res.json();const content=data.files?.["budget.json"]?.content;if(content){const d=JSON.parse(content);if(Array.isArray(d.txs))setTxs(d.txs);if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.lang)setLang(d.lang);if(d.cur)setCur(d.cur);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.budgets)setBudgets(d.budgets);setGhStatus("✓ Données GitHub chargées");}}catch(e){setGhStatus("⚠ Pull GitHub échoué");}
       setTimeout(()=>setGhStatus(""),3500);
     }
     setLoaded(true);
   })();},[]);
 
-  useEffect(()=>{
-    if(!loaded)return;
-    clearTimeout(cfgTimer.current);
-    cfgTimer.current=setTimeout(async()=>{
-      try{
-        await window.storage.set("bgt9-cfg",JSON.stringify({lang,cur,disp,darkMode,mode,saveMode,saveAuto}));
-        await window.storage.set("bgt9-gh",JSON.stringify({token:ghToken,gistId:ghGistId,pullOnStart:ghPullOnStart}));
-      }catch(e){}
-    },400);
-  },[lang,cur,disp,darkMode,mode,saveMode,saveAuto,ghToken,ghGistId,ghPullOnStart,loaded]);
-
-  useEffect(()=>{
-    if(!loaded||!saveAuto||saveMode!=="local")return;
-    setSaveStatus("saving");
-    clearTimeout(saveTimer.current);
-    saveTimer.current=setTimeout(async()=>{
-      try{await window.storage.set("bgt9-tx",JSON.stringify(txs));await window.storage.set("bgt9-bal",String(initBal));await window.storage.set("bgt9-bud",JSON.stringify(budgets));setSaveStatus("saved");setTimeout(()=>setSaveStatus("idle"),2000);}catch(e){setSaveStatus("error");}
-    },600);
-  },[txs,initBal,budgets,loaded,saveAuto,saveMode]);
-
-  useEffect(()=>{
-    if(!loaded||!saveAuto||saveMode!=="github"||!ghToken)return;
-    clearTimeout(ghTimer.current);
-    ghTimer.current=setTimeout(async()=>{
-      try{
-        const json=JSON.stringify({txs,initBal,lang,cur,disp,darkMode,budgets},null,2);
-        const body={files:{"budget.json":{content:json}}};
-        let res,data;
-        if(ghGistId){res=await fetch(`https://api.github.com/gists/${ghGistId}`,{method:"PATCH",headers:{"Authorization":"token "+ghToken,"Content-Type":"application/json"},body:JSON.stringify(body)});}
-        else{res=await fetch("https://api.github.com/gists",{method:"POST",headers:{"Authorization":"token "+ghToken,"Content-Type":"application/json"},body:JSON.stringify({...body,description:"Budget App Data",public:false})});}
-        data=await res.json();
-        if(data.id){if(data.id!==ghGistId)setGhGistId(data.id);setGhStatus("✓ GitHub sync");setTimeout(()=>setGhStatus(""),3000);}
-      }catch(e){setGhStatus("⚠ Sync échoué");setTimeout(()=>setGhStatus(""),3000);}
-    },3000);
-  },[txs,initBal,budgets,loaded,saveAuto,saveMode,ghToken,ghGistId]);
+  useEffect(()=>{if(!loaded)return;clearTimeout(cfgTimer.current);cfgTimer.current=setTimeout(async()=>{try{await window.storage.set("bgt9-cfg",JSON.stringify({lang,cur,disp,darkMode,mode,saveMode,saveAuto}));await window.storage.set("bgt9-gh",JSON.stringify({token:ghToken,gistId:ghGistId,pullOnStart:ghPullOnStart}));}catch(e){}},400);},[lang,cur,disp,darkMode,mode,saveMode,saveAuto,ghToken,ghGistId,ghPullOnStart,loaded]);
+  useEffect(()=>{if(!loaded||!saveAuto||saveMode!=="local")return;setSaveStatus("saving");clearTimeout(saveTimer.current);saveTimer.current=setTimeout(async()=>{try{await window.storage.set("bgt9-tx",JSON.stringify(txs));await window.storage.set("bgt9-bal",String(initBal));await window.storage.set("bgt9-bud",JSON.stringify(budgets));setSaveStatus("saved");setTimeout(()=>setSaveStatus("idle"),2000);}catch(e){setSaveStatus("error");}},600);},[txs,initBal,budgets,loaded,saveAuto,saveMode]);
+  useEffect(()=>{if(!loaded||!saveAuto||saveMode!=="github"||!ghToken)return;clearTimeout(ghTimer.current);ghTimer.current=setTimeout(async()=>{try{const json=JSON.stringify({txs,initBal,lang,cur,disp,darkMode,budgets},null,2);const body={files:{"budget.json":{content:json}}};let res,data;if(ghGistId){res=await fetch(`https://api.github.com/gists/${ghGistId}`,{method:"PATCH",headers:{"Authorization":"token "+ghToken,"Content-Type":"application/json"},body:JSON.stringify(body)});}else{res=await fetch("https://api.github.com/gists",{method:"POST",headers:{"Authorization":"token "+ghToken,"Content-Type":"application/json"},body:JSON.stringify({...body,description:"Budget App Data",public:false})});}data=await res.json();if(data.id){if(data.id!==ghGistId)setGhGistId(data.id);setGhStatus("✓ GitHub sync");setTimeout(()=>setGhStatus(""),3000);}}catch(e){setGhStatus("⚠ Sync échoué");setTimeout(()=>setGhStatus(""),3000);}},3000);},[txs,initBal,budgets,loaded,saveAuto,saveMode,ghToken,ghGistId]);
 
   const saveLocalNow=async()=>{setSaveStatus("saving");try{await window.storage.set("bgt9-tx",JSON.stringify(txs));await window.storage.set("bgt9-bal",String(initBal));await window.storage.set("bgt9-bud",JSON.stringify(budgets));setSaveStatus("saved");setTimeout(()=>setSaveStatus("idle"),2000);}catch(e){setSaveStatus("error");}};
   const ghPush=async()=>{if(!ghToken){setGhStatus("❌ Token manquant");return;}setGhStatus("⏳ Envoi…");try{const body={files:{"budget.json":{content:getExportJSON()}}};let res,data;if(ghGistId){res=await fetch(`https://api.github.com/gists/${ghGistId}`,{method:"PATCH",headers:{"Authorization":"token "+ghToken,"Content-Type":"application/json"},body:JSON.stringify(body)});}else{res=await fetch("https://api.github.com/gists",{method:"POST",headers:{"Authorization":"token "+ghToken,"Content-Type":"application/json"},body:JSON.stringify({...body,description:"Budget App Data",public:false})});}data=await res.json();if(data.id){setGhGistId(data.id);setGhStatus("✓ Sauvegardé sur GitHub");}else setGhStatus("❌ "+(data.message||"Erreur inconnue"));}catch(e){setGhStatus("❌ "+e.message);}setTimeout(()=>setGhStatus(""),4000);};
@@ -270,11 +272,10 @@ function App(){
   const expenseCats=CATS.filter(c=>c.id!=="income");
   const hasSummary=disp.endBal||disp.revExp||disp.net;
   const monthTxs=useMemo(()=>txs.filter(tx=>occsInMonth(tx,yr,mo).length>0).sort((a,b)=>new Date(b.startDate)-new Date(a.startDate)),[txs,yr,mo]);
+  const recurTxs=useMemo(()=>txs.filter(tx=>normRec(tx.recurrence,parseD(tx.startDate)).type!=="once").sort((a,b)=>new Date(b.startDate)-new Date(a.startDate)),[txs]);
 
   const startEditBal=()=>{setBalInput(String(curBalVal.toFixed(2)));setEditingBal(true);setTimeout(()=>{balInputRef.current?.focus();balInputRef.current?.select();},50)};
   const commitEditBal=()=>{const desired=parseFloat(balInput);if(!isNaN(desired)){const diff=desired-curBalVal;setInitBal(prev=>parseFloat((prev+diff).toFixed(2)));}setEditingBal(false);};
-
-  const NAV_ITEMS=[["home","Accueil"],["transactions","Transactions"],["analyse","Analyse"],["objectifs","Objectifs"],["settings","Paramètres"]];
 
   if(!auth)return(
     <div style={{minHeight:"100vh",background:th.bgSub,display:"flex",alignItems:"center",justifyContent:"center"}}>
@@ -284,13 +285,13 @@ function App(){
         {[[t.userLbl,u,setU,"text"],[t.passLbl,pw,setPw,"password"]].map(([lb,val,set,type])=>(<div key={lb} style={{marginBottom:20}}><label style={lbl}>{lb}</label><input type={type} value={val} onChange={e=>set(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")(u==="test"&&pw==="test"?setAuth(true):setAErr(t.badLogin));}} style={iSt} placeholder={type==="password"?"••••••••":lb}/></div>))}
         {aErr&&<p style={{fontSize:12,color:th.danger,marginBottom:12}}>{aErr}</p>}
         <button onClick={()=>(u==="test"&&pw==="test"?setAuth(true):setAErr(t.badLogin))} style={{width:"100%",marginTop:8,background:th.btnBg,color:th.btnText,border:"none",borderRadius:12,padding:"11px 0",fontSize:14,cursor:"pointer"}}>{t.loginBtn}</button>
-        <p style={{marginTop:20,fontSize:11,color:th.muted,textAlign:"center",letterSpacing:"0.08em"}}>v0.016</p>
+        <p style={{marginTop:20,fontSize:11,color:th.muted,textAlign:"center",letterSpacing:"0.08em"}}>v0.018</p>
       </div>
     </div>
   );
 
   return(
-    <div style={{minHeight:"100vh",background:th.bg,fontFamily:"system-ui,sans-serif"}} onClick={()=>{if(menuOpen)setMenuOpen(false);}}>
+    <div style={{minHeight:"100vh",background:th.bg,fontFamily:"system-ui,sans-serif"}}>
       {toast&&<div style={{position:"fixed",top:20,left:"50%",transform:"translateX(-50%)",background:th.btnBg,color:th.btnText,padding:"10px 20px",borderRadius:20,fontSize:13,fontWeight:500,zIndex:100,boxShadow:"0 4px 16px rgba(0,0,0,0.2)",pointerEvents:"none"}}>{toast}</div>}
 
       {/* FAB */}
@@ -306,15 +307,9 @@ function App(){
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
           <div>
             <p style={{...lbl,marginBottom:4}}>{t.sub}</p>
-            {/* Titre cliquable → sidebar */}
-            <h1
-              onClick={handleTitleClick}
-              style={{fontSize:20,color:th.text,fontWeight:600,margin:0,cursor:"pointer",userSelect:"none"}}
-            >
-              {t.title}
-            </h1>
+            <h1 onClick={handleTitleClick} style={{fontSize:20,color:th.text,fontWeight:600,margin:0,cursor:"pointer",userSelect:"none"}}>{t.title}</h1>
           </div>
-          <div style={{textAlign:"right",cursor:"pointer"}} onClick={!editingBal?startEditBal:undefined} title="Cliquer pour modifier">
+          <div style={{textAlign:"right",cursor:"pointer"}} onClick={!editingBal?startEditBal:undefined}>
             <p style={{...lbl,margin:"0 0 3px"}}>{t.curBalLbl}</p>
             {editingBal
               ?<input ref={balInputRef} type="number" inputMode="decimal" step="0.01" value={balInput} onChange={e=>setBalInput(e.target.value)} onBlur={commitEditBal} onKeyDown={e=>{if(e.key==="Enter")commitEditBal();if(e.key==="Escape")setEditingBal(false);}} style={{width:130,textAlign:"right",fontSize:20,fontWeight:600,color:th.text,background:"transparent",border:"none",borderBottom:"2px solid "+th.text,outline:"none",fontVariantNumeric:"tabular-nums"}}/>
@@ -324,24 +319,35 @@ function App(){
         </div>
       </div>
 
-      {/* Sidebar */}
-      {menuOpen&&<div style={{position:"fixed",inset:0,zIndex:200}} onClick={()=>setMenuOpen(false)}>
-        <div style={{position:"absolute",top:0,left:0,bottom:0,width:220,background:th.sheetBg,borderRight:"1px solid "+th.border,boxShadow:"4px 0 24px rgba(0,0,0,0.13)",display:"flex",flexDirection:"column",paddingTop:52}} onClick={e=>e.stopPropagation()}>
-          <p style={{fontSize:10,color:th.muted,letterSpacing:"0.12em",textTransform:"uppercase",padding:"0 20px 12px"}}>Navigation</p>
-          {NAV_ITEMS.map(([k,l])=>(
-            <button key={k} onClick={()=>{setTab(k);setMenuOpen(false);}} style={{display:"flex",alignItems:"center",gap:12,padding:"13px 20px",border:"none",background:tab===k?th.surface:"transparent",color:tab===k?th.text:th.sub,fontSize:14,fontWeight:tab===k?600:400,cursor:"pointer",textAlign:"left",borderLeft:tab===k?"3px solid "+th.text:"3px solid transparent",transition:"all 0.15s"}}>
-              <span style={{fontSize:18,lineHeight:1}}>{{home:"🏠",transactions:"💳",analyse:"📊",objectifs:"🎯",settings:"⚙️"}[k]}</span>
-              {l}
+      {/* ── Navigation principale (toujours visible) ── */}
+      <div style={{padding:"0 24px",borderBottom:"1px solid "+th.border,display:"flex",gap:0,overflowX:"auto"}}>
+        {NAV_ITEMS.map(([k,l])=>(
+          <button key={k} onClick={()=>navTo(k)} style={{fontSize:13,paddingBottom:12,paddingTop:16,paddingLeft:12,paddingRight:12,border:"none",background:"none",cursor:"pointer",borderBottom:tab===k?"2px solid "+th.text:"2px solid transparent",color:tab===k?th.text:th.muted,fontWeight:tab===k?500:400,transition:"color 0.15s",whiteSpace:"nowrap",flexShrink:0}}>
+            {l}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Sous-navigation (si disponible pour l'onglet actif) ── */}
+      {SUB_NAV[tab]&&(
+        <div style={{padding:"0 24px",borderBottom:"1px solid "+th.border,display:"flex",gap:0,overflowX:"auto",background:th.bgSub}}>
+          {/* Ajouter transaction en tête pour Transactions */}
+          {tab==="transactions"&&(
+            <button onClick={()=>openForm()} style={{fontSize:12,paddingBottom:10,paddingTop:12,paddingLeft:12,paddingRight:16,border:"none",background:"none",cursor:"pointer",borderBottom:"2px solid transparent",color:th.sub,whiteSpace:"nowrap",flexShrink:0,display:"flex",alignItems:"center",gap:4}}>
+              <span style={{fontSize:14,lineHeight:1}}>+</span> Ajouter transaction
+            </button>
+          )}
+          {SUB_NAV[tab].map(s=>(
+            <button key={s.id} onClick={()=>subNavTo(s.id)} style={{fontSize:12,paddingBottom:10,paddingTop:12,paddingLeft:12,paddingRight:12,border:"none",background:"none",cursor:"pointer",borderBottom:curSub===s.id?"2px solid "+th.sub:"2px solid transparent",color:curSub===s.id?th.text:th.sub,fontWeight:curSub===s.id?500:400,whiteSpace:"nowrap",flexShrink:0}}>
+              {s.label}
             </button>
           ))}
-          <div style={{flex:1}}/>
-          <p style={{fontSize:11,color:th.muted,padding:"16px 20px",letterSpacing:"0.06em"}}>v0.016</p>
         </div>
-      </div>}
+      )}
 
       <div style={{padding:"24px",maxWidth:640}}>
 
-        {/* ── ACCUEIL (calendrier) ── */}
+        {/* ── ACCUEIL ── */}
         {tab==="home"&&<div>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:hasSummary?16:20}}>
             <MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} t={t} th={th}/>
@@ -368,8 +374,8 @@ function App(){
           </div>
         </div>}
 
-        {/* ── TRANSACTIONS ── */}
-        {tab==="transactions"&&<div>
+        {/* ── TRANSACTIONS / HISTORIQUE ── */}
+        {tab==="transactions"&&curSub==="historique"&&<div>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
             <MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} t={t} th={th}/>
             <p style={{...lbl,margin:0}}>{t.txCount(monthTxs.length)}</p>
@@ -383,17 +389,36 @@ function App(){
           }
         </div>}
 
-        {/* ── ANALYSE (placeholder) ── */}
-        {tab==="analyse"&&<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"100px 0",gap:12}}>
-          <p style={{fontSize:36,color:th.border}}>📊</p>
-          <p style={{fontSize:22,color:th.muted,fontWeight:300,letterSpacing:"0.02em"}}>Analyse</p>
+        {/* ── TRANSACTIONS / RÉCURRENT ── */}
+        {tab==="transactions"&&curSub==="recurrent"&&<div>
+          {recurTxs.length===0
+            ?<div style={{textAlign:"center",padding:"60px 0"}}><p style={{fontSize:32,color:th.border,margin:"0 0 8px"}}>◎</p><p style={{fontSize:13,color:th.muted}}>Aucune transaction récurrente</p></div>
+            :recurTxs.map(tx=>{const cat=catById(tx.category||"other");return(<div key={tx.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderBottom:"1px solid "+th.border}}>
+              <div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:34,height:34,borderRadius:9,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{cat.emoji}</div><div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p><p style={{fontSize:11,color:th.muted,margin:"3px 0 0"}}>{t.catNames[cat.id]} · {recLabel(tx,t)}</p></div></div>
+              <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}><span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:tx.type==="income"?"#059669":"#ef4444"}}>{tx.type==="income"?"+":"−"}{fA(tx.amount,cur,true)}</span><button onClick={()=>openForm(tx)} style={{fontSize:13,color:th.muted,background:"none",border:"none",cursor:"pointer",padding:4}}>✎</button></div>
+            </div>);})
+          }
         </div>}
 
-        {/* ── OBJECTIFS (placeholder) ── */}
-        {tab==="objectifs"&&<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"100px 0",gap:12}}>
-          <p style={{fontSize:36,color:th.border}}>🎯</p>
-          <p style={{fontSize:22,color:th.muted,fontWeight:300,letterSpacing:"0.02em"}}>Objectifs</p>
+        {/* ── BUDGET / CATÉGORIES ── */}
+        {tab==="budget"&&curSub==="categories"&&<div>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
+            <MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} t={t} th={th}/>
+          </div>
+          {totalBudget>0&&<div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:"16px 18px",marginBottom:20}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}><span style={{fontSize:13,color:th.text,fontWeight:500}}>{t.budgetTotal}</span><span style={{fontSize:13,fontWeight:600,fontVariantNumeric:"tabular-nums",color:totalSpent>totalBudget?"#ef4444":"#059669"}}>{fA(totalSpent,cur,true)} <span style={{color:th.muted,fontWeight:400}}>{t.budgetOf} {fA(totalBudget,cur,true)}</span></span></div><div style={{height:6,background:th.surface,borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",width:Math.min(totalSpent/totalBudget*100,100)+"%",borderRadius:3,background:totalSpent>totalBudget?"#ef4444":totalSpent/totalBudget>0.8?"#f59e0b":"#10b981",transition:"width 0.4s"}}/></div></div>}
+          <p style={{...lbl,marginBottom:16}}>{t.budgetLbl}</p>
+          {expenseCats.map(cat=>{const stats=catStats[cat.id]||{spent:0};const budget=budgets[cat.id]||0;const pct=budget>0?Math.min(stats.spent/budget*100,100):0;const over=budget>0&&stats.spent>budget;return(<div key={cat.id} style={{marginBottom:14,background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:"14px 16px"}}><div style={{display:"flex",alignItems:"center",gap:12}}><div style={{width:38,height:38,borderRadius:10,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{cat.emoji}</div><div style={{flex:1,minWidth:0}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:6}}><span style={{fontSize:13,color:th.text,fontWeight:500}}>{t.catNames[cat.id]}</span><div style={{display:"flex",alignItems:"center",gap:4,flexShrink:0}}><span style={{fontSize:13,fontVariantNumeric:"tabular-nums",color:over?"#ef4444":stats.spent>0?th.text:th.muted}}>{fA(stats.spent,cur,true)}</span>{budget>0&&<span style={{fontSize:12,color:th.muted}}>{t.budgetOf}</span>}<input type="number" min={0} step={10} value={budget||""} onChange={e=>setBudgets(b=>({...b,[cat.id]:parseFloat(e.target.value)||0}))} placeholder={t.budgetUnset} style={{width:72,fontSize:12,textAlign:"right",color:"#2563eb",background:"transparent",border:"none",borderBottom:"1px dashed "+th.inputBorder,outline:"none",fontVariantNumeric:"tabular-nums"}}/></div></div><div style={{height:5,background:th.surface,borderRadius:2.5,overflow:"hidden"}}>{budget>0&&<div style={{height:"100%",width:pct+"%",background:over?"#ef4444":pct>80?"#f59e0b":"#10b981",borderRadius:2.5,transition:"width 0.4s"}}/>}</div></div></div></div>);})}
+          {monthStats.inc>0&&<div style={{marginTop:8,background:"#05966915",border:"1px solid #05966930",borderRadius:14,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}><div style={{width:38,height:38,borderRadius:10,background:"#05966922",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>💰</div><div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{t.revenuSummary}</p><p style={{fontSize:12,color:"#059669",margin:"2px 0 0",fontWeight:600,fontVariantNumeric:"tabular-nums"}}>+{fA(monthStats.inc,cur,true)}</p></div></div>}
         </div>}
+
+        {/* ── BUDGET / OBJECTIFS (placeholder) ── */}
+        {tab==="budget"&&curSub==="objectifs"&&<Placeholder label="Objectifs" th={th}/>}
+
+        {/* ── ANALYSE / STATISTIQUES (placeholder) ── */}
+        {tab==="analyse"&&curSub==="statistiques"&&<Placeholder label="Statistiques" th={th}/>}
+
+        {/* ── ANALYSE / GRAPHIQUES (placeholder) ── */}
+        {tab==="analyse"&&curSub==="graphiques"&&<Placeholder label="Graphiques" th={th}/>}
 
         {/* ── PARAMÈTRES ── */}
         {tab==="settings"&&<div>
@@ -431,7 +456,10 @@ function App(){
             <p style={{fontSize:11,color:th.muted,margin:"0 0 12px"}}>{t.delAccSub}</p>
             <button onClick={()=>{setDelAccMod(true);setDelAccInput("");}} style={{fontSize:13,color:th.danger,background:"none",border:"1px solid "+th.danger,borderRadius:10,padding:"8px 16px",cursor:"pointer"}}>{t.delAccLbl} →</button>
           </div>
-          <div style={{marginTop:28}}><button onClick={()=>{setAuth(false);setU("");setPw("");}} style={{fontSize:13,color:th.muted,background:"none",border:"none",cursor:"pointer"}}>{t.logout}</button></div>
+          <div style={{marginTop:28,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <button onClick={()=>{setAuth(false);setU("");setPw("");}} style={{fontSize:13,color:th.muted,background:"none",border:"none",cursor:"pointer"}}>{t.logout}</button>
+            <span style={{fontSize:11,color:th.muted,letterSpacing:"0.06em"}}>v0.018</span>
+          </div>
         </div>}
       </div>
 
