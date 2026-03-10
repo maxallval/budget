@@ -308,7 +308,7 @@ function App(){
   const monthTxs=useMemo(()=>txs.filter(tx=>occsInMonth(tx,yr,mo).length>0).sort((a,b)=>new Date(b.startDate)-new Date(a.startDate)),[txs,yr,mo]);
 
   // Solde actuel éditable
-  const startEditBal=()=>{setBalInput(String(curBalVal.toFixed(2)));setEditingBal(true);setTimeout(()=>balInputRef.current?.select(),50);};
+  const startEditBal=()=>{setBalInput(String(curBalVal.toFixed(2)));setEditingBal(true);setTimeout(()=>{balInputRef.current?.focus();balInputRef.current?.select();},50)};
   const commitEditBal=()=>{
     const desired=parseFloat(balInput);
     if(!isNaN(desired)){const diff=desired-curBalVal;setInitBal(prev=>parseFloat((prev+diff).toFixed(2)));}
@@ -347,8 +347,8 @@ function App(){
           <div style={{textAlign:"right",cursor:"pointer"}} onClick={!editingBal?startEditBal:undefined} title="Cliquer pour modifier">
             <p style={{...lbl,margin:"0 0 3px"}}>{t.curBalLbl}</p>
             {editingBal
-              ?<input ref={balInputRef} type="number" step="0.01" value={balInput} onChange={e=>setBalInput(e.target.value)} onBlur={commitEditBal} onKeyDown={e=>{if(e.key==="Enter")commitEditBal();if(e.key==="Escape")setEditingBal(false);}} style={{width:110,textAlign:"right",fontSize:16,fontWeight:700,color:th.text,background:"transparent",border:"none",borderBottom:"2px solid "+th.text,outline:"none",fontVariantNumeric:"tabular-nums"}}/>
-              :<p style={{fontSize:16,fontWeight:700,fontVariantNumeric:"tabular-nums",margin:0,color:curBalVal>=0?"#059669":"#ef4444"}}>{fA(curBalVal,cur,true)} ✎</p>
+              ?<input ref={balInputRef} type="number" inputMode="decimal" step="0.01" value={balInput} onChange={e=>setBalInput(e.target.value)} onBlur={commitEditBal} onKeyDown={e=>{if(e.key==="Enter")commitEditBal();if(e.key==="Escape")setEditingBal(false);}} style={{width:130,textAlign:"right",fontSize:20,fontWeight:600,color:th.text,background:"transparent",border:"none",borderBottom:"2px solid "+th.text,outline:"none",fontVariantNumeric:"tabular-nums"}}/>
+              :<p style={{fontSize:20,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:curBalVal>=0?"#059669":"#ef4444"}}>{fA(curBalVal,cur,true)}</p>
             }
           </div>
         </div>
