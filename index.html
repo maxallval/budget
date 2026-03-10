@@ -3,6 +3,10 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+  <meta name="theme-color" content="#111111"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Budget"/>
   <title>Budget</title>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -11,8 +15,6 @@
     input[type=number]{-moz-appearance:textfield}
     button:focus,input:focus,select:focus,textarea:focus{outline:none}
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-    @keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
-    .fade{animation:fadeIn 0.16s ease}
   </style>
 </head>
 <body>
@@ -21,18 +23,16 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 <script type="text/babel" data-presets="react">
-// localStorage shim (utilise window.storage si dispo, sinon localStorage)
-if(!window.storage){
-  window.storage={
-    get:async k=>{const v=localStorage.getItem(k);return v!==null?{value:v}:null;},
-    set:async(k,v)=>{localStorage.setItem(k,String(v));return{key:k,value:v};},
-    delete:async k=>{localStorage.removeItem(k);return{key:k,deleted:true};}
-  };
-}
+window.storage={
+  get:async k=>{const v=localStorage.getItem(k);return v!==null?{value:v}:null;},
+  set:async(k,v)=>{localStorage.setItem(k,String(v));return{key:k,value:v};},
+  delete:async k=>{localStorage.removeItem(k);return{key:k,deleted:true};}
+};
 
 const{useState,useEffect,useMemo,useRef}=React;
 const TODAY=new Date();TODAY.setHours(0,0,0,0);
-const detectLang=()=>{const n=(navigator.language||"fr").slice(0,2).toLowerCase();return["fr","en"].includes(n)?n:"fr";};
+const AVAIL_LANGS=["fr","en"];
+const detectLang=()=>{const n=(navigator.language||"fr").slice(0,2).toLowerCase();return AVAIL_LANGS.includes(n)?n:"fr";};
 
 const CATS=[
   {id:"housing",emoji:"🏠",color:"#3b82f6"},{id:"food",emoji:"🍽️",color:"#f97316"},
@@ -43,36 +43,20 @@ const CATS=[
   {id:"income",emoji:"💰",color:"#22c55e"},{id:"other",emoji:"📦",color:"#9ca3af"},
 ];
 const catById=id=>CATS.find(c=>c.id===id)||CATS[CATS.length-1];
-const CAT_NAMES_FR={housing:"Logement",food:"Alimentation",transport:"Transport",savings:"Épargne",entertain:"Loisirs",health:"Santé",subscript:"Abonnements",shopping:"Magasinage",education:"Éducation",utilities:"Services",income:"Revenus",other:"Autre"};
-const CAT_NAMES_EN={housing:"Housing",food:"Food",transport:"Transport",savings:"Savings",entertain:"Entertainment",health:"Health",subscript:"Subscriptions",shopping:"Shopping",education:"Education",utilities:"Utilities",income:"Income",other:"Other"};
 
-// ── Theme ──────────────────────────────────────────────
-const mkTh=d=>d
-  ?{bg:"#0d0d0d",bgSub:"#161616",surface:"#1c1c1c",border:"#252525",inputBorder:"#333",text:"#f0f0f0",sub:"#888",muted:"#444",btnBg:"#efefef",btnText:"#111",togOff:"#3a3a3a",sheetBg:"#161616",danger:"#f87171",cardBg:"#181818",pos:"#4ade80",neg:"#f87171"}
-  :{bg:"#fff",bgSub:"#f9fafb",surface:"#f3f4f6",border:"#e5e7eb",inputBorder:"#e5e7eb",text:"#111",sub:"#6b7280",muted:"#9ca3af",btnBg:"#111",btnText:"#fff",togOff:"#d1d5db",sheetBg:"#fff",danger:"#ef4444",cardBg:"#fafafa",pos:"#059669",neg:"#ef4444"};
+const TR={
+fr:{sub:"Gestion financière",title:"Budget",welcome:"Bienvenue",userLbl:"Identifiant",passLbl:"Mot de passe",loginBtn:"Se connecter",badLogin:"Identifiants invalides",tabs:["Agenda","Transactions","Catégories","Paramètres"],add:"Ajouter",addTx:"Ajouter une transaction",noTx:"Aucune transaction",newTx:"Nouvelle transaction",editTx:"Modifier la transaction",descLbl:"Description",amtLbl:"Montant",startLbl:"Date de début",recurLbl:"Récurrence",catLbl:"Catégorie",cancel:"Annuler",save:"Enregistrer",delBtn:"Supprimer",incomeLbl:"Revenu",expenseLbl:"Dépense",thisEvt:"Cet événement",thisFollow:"Cet événement et ceux qui suivront",allEvts:"Tous les événements",delTitle:"Supprimer la transaction",modDay:"Journée",modBal:"Solde",months:["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"],days:["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"],daysS:["D","L","M","M","J","V","S"],nth:["","1er","2e","3e","4e","5e"],recOnce:"Une fois",recDaily:"Tous les jours",recWeeklyPre:"Toutes les semaines le",recMonthlyDay:"Tous les mois",recMonthlyPre:"Tous les mois, le",recAnnuallyPre:"Annuellement le",recWeekdays:"Jours de semaine (lun.–ven.)",recCustom:"Personnaliser",recEvery:"Se répète tous les",recUnits:[{v:"day",l:"jours"},{v:"week",l:"semaines"},{v:"month",l:"mois"},{v:"year",l:"années"}],initBalLbl:"Solde initial",initBalSub:"Montant de départ avant toutes les transactions",langLbl:"Langue",curLbl:"Devise",dispLbl:"Affichage du résumé",showEndBal:"Solde fin du mois",showRevExp:"Revenus & dépenses",showNet:"Net mensuel",logout:"Se déconnecter",revLbl:"Revenus",expLbl:"Dépenses",netLbl:"Net",curBalLbl:"Solde actuel",endBalLbl:"Fin du mois",emptyDay:"Aucune transaction ce jour",txCount:n=>`${n} transaction${n!==1?"s":""}`,exportLbl:"Données",exportBtn:"Exporter",importBtn:"Importer",importOk:"Données restaurées",importErr:"JSON invalide",exportModalTitle:"Exporter les données",exportCopy:"Copier",exportCopied:"Copié ✓",exportClose:"Fermer",exportInstr:"Copiez ce JSON et conservez-le en lieu sûr.",importModalTitle:"Importer les données",importPaste:"Collez votre JSON ici…",importRestore:"Restaurer",importInstr:"Collez un JSON exporté précédemment.",darkLbl:"Mode nuit",darkOff:"Désactivé",darkOn:"Activé",darkAuto:"Automatique",delAccLbl:"Supprimer le compte",delAccSub:"Cette action est irréversible",delAccConfirm:"Supprimer définitivement",delAccModalTitle:"Confirmer la suppression",delAccModalBody:"Toutes vos données seront effacées. Tapez le mot ci-dessous :",delAccWord:"SUPPRIMER",budgetLbl:"Budget mensuel par catégorie",budgetTotal:"Total dépenses",budgetOf:"sur",budgetUnset:"Illimité",quickCatLbl:"Changer la catégorie",revenuSummary:"Revenus ce mois",saving:"Sauvegarde…",saved:"Sauvegardé",saveErr:"Erreur de sauvegarde",langOpts:[{v:"fr",l:"Français"},{v:"en",l:"English"}],curOpts:[{v:"cad",l:"CAD $"},{v:"usd",l:"USD $"},{v:"eur",l:"EUR €"}],catNames:{housing:"Logement",food:"Alimentation",transport:"Transport",savings:"Épargne",entertain:"Loisirs",health:"Santé",subscript:"Abonnements",shopping:"Magasinage",education:"Éducation",utilities:"Services",income:"Revenus",other:"Autre"}},
+en:{sub:"Financial management",title:"Budget",welcome:"Welcome",userLbl:"Username",passLbl:"Password",loginBtn:"Sign in",badLogin:"Invalid credentials",tabs:["Calendar","Transactions","Categories","Settings"],add:"Add",addTx:"Add a transaction",noTx:"No transactions",newTx:"New transaction",editTx:"Edit transaction",descLbl:"Description",amtLbl:"Amount",startLbl:"Start date",recurLbl:"Recurrence",catLbl:"Category",cancel:"Cancel",save:"Save",delBtn:"Delete",incomeLbl:"Income",expenseLbl:"Expense",thisEvt:"This event",thisFollow:"This and following events",allEvts:"All events",delTitle:"Delete transaction",modDay:"Daily",modBal:"Balance",months:["January","February","March","April","May","June","July","August","September","October","November","December"],days:["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],daysS:["S","M","T","W","T","F","S"],nth:["","1st","2nd","3rd","4th","5th"],recOnce:"Once",recDaily:"Every day",recWeeklyPre:"Every week on",recMonthlyDay:"Every month",recMonthlyPre:"Every month on the",recAnnuallyPre:"Annually on",recWeekdays:"Weekdays (Mon–Fri)",recCustom:"Custom",recEvery:"Repeat every",recUnits:[{v:"day",l:"days"},{v:"week",l:"weeks"},{v:"month",l:"months"},{v:"year",l:"years"}],initBalLbl:"Initial balance",initBalSub:"Starting amount before all transactions",langLbl:"Language",curLbl:"Currency",dispLbl:"Summary display",showEndBal:"End-of-month balance",showRevExp:"Revenues & expenses",showNet:"Monthly net",logout:"Sign out",revLbl:"Revenues",expLbl:"Expenses",netLbl:"Net",curBalLbl:"Current balance",endBalLbl:"End of month",emptyDay:"No transactions on this day",txCount:n=>`${n} transaction${n!==1?"s":""}`,exportLbl:"Data",exportBtn:"Export",importBtn:"Import",importOk:"Data restored",importErr:"Invalid JSON",exportModalTitle:"Export data",exportCopy:"Copy",exportCopied:"Copied ✓",exportClose:"Close",exportInstr:"Copy this JSON and keep it somewhere safe.",importModalTitle:"Import data",importPaste:"Paste your JSON here…",importRestore:"Restore",importInstr:"Paste a previously exported JSON.",darkLbl:"Dark mode",darkOff:"Off",darkOn:"On",darkAuto:"Automatic",delAccLbl:"Delete account",delAccSub:"This action is irreversible",delAccConfirm:"Delete permanently",delAccModalTitle:"Confirm deletion",delAccModalBody:"All your data will be permanently erased. Type the word below:",delAccWord:"DELETE",budgetLbl:"Monthly budget by category",budgetTotal:"Total expenses",budgetOf:"of",budgetUnset:"No limit",quickCatLbl:"Change category",revenuSummary:"Income this month",saving:"Saving…",saved:"Saved",saveErr:"Save error",langOpts:[{v:"fr",l:"Français"},{v:"en",l:"English"}],curOpts:[{v:"cad",l:"CAD $"},{v:"usd",l:"USD $"},{v:"eur",l:"EUR €"}],catNames:{housing:"Housing",food:"Food",transport:"Transport",savings:"Savings",entertain:"Entertainment",health:"Health",subscript:"Subscriptions",shopping:"Shopping",education:"Education",utilities:"Utilities",income:"Income",other:"Other"}},
+};
 
-// ── Date helpers ───────────────────────────────────────
+const mkTh=d=>d?{bg:"#0d0d0d",bgSub:"#161616",surface:"#1c1c1c",border:"#252525",inputBorder:"#333",text:"#f0f0f0",sub:"#888",muted:"#444",btnBg:"#efefef",btnText:"#111",togOff:"#3a3a3a",sheetBg:"#161616",danger:"#f87171",cardBg:"#181818"}:{bg:"#fff",bgSub:"#f9fafb",surface:"#f3f4f6",border:"#f0f0f0",inputBorder:"#e5e7eb",text:"#111",sub:"#6b7280",muted:"#9ca3af",btnBg:"#111",btnText:"#fff",togOff:"#d1d5db",sheetBg:"#fff",danger:"#ef4444",cardBg:"#fafafa"};
+
 const parseD=s=>{const[y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d);};
 const dStr=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const dayBef=s=>{const d=parseD(s);d.setDate(d.getDate()-1);return dStr(d);};
 function getNthWD(date){let c=0;const d=new Date(date.getFullYear(),date.getMonth(),1);while(d<=date){if(d.getDay()===date.getDay())c++;d.setDate(d.getDate()+1);}return c;}
 function normRec(rec,s){if(rec&&typeof rec==="object")return rec;const wd=s instanceof Date?s.getDay():parseD(String(s||"2024-01-01")).getDay();return({once:{type:"once"},daily:{type:"daily"},weekly:{type:"weekly",weekday:wd},monthly:{type:"monthly_day"},annual:{type:"annually"}})[rec]||{type:"once"};}
-
-function recLabel(tx,t){
-  const s=parseD(tx.startDate);const r=normRec(tx.recurrence,s);
-  const wd=r.weekday!==undefined?r.weekday:s.getDay();
-  switch(r.type){
-    case"once":return t.recOnce;case"daily":return t.recDaily;
-    case"weekly":return`${t.recWeeklyPre} ${t.days[wd]}`;
-    case"monthly_day":return t.recMonthlyDay;
-    case"monthly_nth_weekday":return`${t.recMonthlyPre} ${t.nth[r.nth]||r.nth} ${t.days[r.weekday]}`;
-    case"annually":return`${t.recAnnuallyPre} ${s.getDate()} ${t.months[s.getMonth()]}`;
-    case"weekdays":return t.recWeekdays;
-    case"custom":{const{interval:iv=1,unit:u="week",weekdays:wds=[]}=r;const ul=t.recUnits.find(x=>x.v===u)?.l||u;let lb=`${t.recEvery} ${iv} ${ul}`;if(u==="week"&&wds.length>0)lb+=" · "+wds.map(w=>t.daysS[w]).join(" ");return lb;}
-    default:return t.recOnce;
-  }
-}
-
+function recLabel(tx,t){const s=parseD(tx.startDate);const r=normRec(tx.recurrence,s);const wd=r.weekday!==undefined?r.weekday:s.getDay();switch(r.type){case"once":return t.recOnce;case"daily":return t.recDaily;case"weekly":return`${t.recWeeklyPre} ${t.days[wd]}`;case"monthly_day":return t.recMonthlyDay;case"monthly_nth_weekday":return`${t.recMonthlyPre} ${t.nth[r.nth]||r.nth} ${t.days[r.weekday]}`;case"annually":return`${t.recAnnuallyPre} ${s.getDate()} ${t.months[s.getMonth()]}`;case"weekdays":return t.recWeekdays;case"custom":{const{interval:iv=1,unit:u="week",weekdays:wds=[]}=r;const ul=t.recUnits.find(x=>x.v===u)?.l||u;let lb=`${t.recEvery} ${iv} ${ul}`;if(u==="week"&&wds.length>0)lb+=" · "+wds.map(w=>t.daysS[w]).join(" ");return lb;}default:return t.recOnce;}}
 function occsInMonth(tx,yr,mo){
   const ms=new Date(yr,mo,1),me=new Date(yr,mo+1,0);
   const s=parseD(tx.startDate),e=tx.endDate?parseD(tx.endDate):null;
@@ -95,102 +79,78 @@ function occsInMonth(tx,yr,mo){
     return res;}
   return[];
 }
-
 function countOccs(tx,upTo){const s=parseD(tx.startDate);if(s>upTo)return 0;let count=0,y=s.getFullYear(),m=s.getMonth();const ey=upTo.getFullYear(),em=upTo.getMonth();let its=0;while((y<ey||(y===ey&&m<=em))&&its++<1200){const ocs=occsInMonth(tx,y,m);for(const d of ocs)if(new Date(y,m,d)<=upTo)count++;m++;if(m>11){m=0;y++;}}return count;}
 const balAt=(txs,init,date)=>txs.reduce((b,tx)=>b+(tx.type==="income"?1:-1)*tx.amount*countOccs(tx,date),init);
 function fA(n,cur,full=false){const a=Math.abs(n);const nm=full?a.toLocaleString("fr-CA",{minimumFractionDigits:2,maximumFractionDigits:2}):a>=10000?(a/1000).toFixed(1)+"k":a>=1000?(a/1000).toFixed(2)+"k":a.toFixed(2);return cur==="usd"?"$"+nm:cur==="eur"?nm+" €":nm+" $";}
 
-// ── Atoms ──────────────────────────────────────────────
-const Tog=({label,sub:s2,value,onChange,th})=>(
+const Tog=({label,sub,value,onChange,th})=>(
   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0",borderBottom:"1px solid "+th.border}}>
-    <div><span style={{fontSize:13,color:th.text,display:"block"}}>{label}</span>{s2&&<span style={{fontSize:11,color:th.muted}}>{s2}</span>}</div>
+    <div><span style={{fontSize:13,color:th.text,display:"block"}}>{label}</span>{sub&&<span style={{fontSize:11,color:th.muted}}>{sub}</span>}</div>
     <button onClick={()=>onChange(!value)} style={{width:36,height:20,borderRadius:10,background:value?th.btnBg:th.togOff,border:"none",cursor:"pointer",position:"relative",flexShrink:0,transition:"background 0.2s"}}>
       <div style={{position:"absolute",top:2,left:value?16:2,width:16,height:16,background:"#fff",borderRadius:"50%",transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.3)"}}/>
     </button>
   </div>
 );
-const Seg=({opts,value,onChange,th})=>(<div style={{display:"flex",background:th.surface,borderRadius:10,padding:3,gap:2}}>{opts.map(([v,l])=>(<button key={v} onClick={()=>onChange(v)} style={{flex:1,fontSize:12,padding:"6px 8px",borderRadius:8,border:"none",cursor:"pointer",background:value===v?th.bg:"transparent",color:value===v?th.text:th.muted,boxShadow:value===v?"0 1px 4px rgba(0,0,0,0.12)":"none",fontWeight:value===v?500:400,transition:"all 0.15s",whiteSpace:"nowrap"}}>{l}</button>))}</div>);
-const Sheet=({onClose,children,th})=>(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:50,padding:16}} onClick={onClose}><div style={{background:th.sheetBg,width:"100%",maxWidth:480,borderRadius:20,padding:24,boxShadow:"0 -4px 40px rgba(0,0,0,0.2)",maxHeight:"90vh",overflowY:"auto"}} onClick={e=>e.stopPropagation()}>{children}</div></div>);
-const SHd=({title,onClose,right,th})=>(<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}><h3 style={{fontSize:15,color:th.text,fontWeight:600,margin:0}}>{title}</h3><div style={{display:"flex",gap:8,alignItems:"center"}}>{right}<button onClick={onClose} style={{fontSize:18,color:th.muted,background:"none",border:"none",cursor:"pointer",lineHeight:1}}>✕</button></div></div>);
-const Card=({th,children,style={}})=>(<div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,...style}}>{children}</div>);
-const MNav=({yr,mo,onPrev,onNext,onDbl,months,th})=>(
+const Sel=({label,value,opts,onChange,th})=>(<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0",borderBottom:"1px solid "+th.border}}><span style={{fontSize:13,color:th.text}}>{label}</span><select value={value} onChange={e=>onChange(e.target.value)} style={{fontSize:13,color:th.text,background:th.bg,border:"none",cursor:"pointer",outline:"none"}}>{opts.map(o=><option key={o.v} value={o.v}>{o.l}</option>)}</select></div>);
+const SegCtrl=({options,value,onChange,th})=>(<div style={{display:"flex",background:th.surface,borderRadius:10,padding:3,gap:2}}>{options.map(([v,l])=>(<button key={v} onClick={()=>onChange(v)} style={{flex:1,fontSize:12,padding:"6px 10px",borderRadius:8,border:"none",cursor:"pointer",background:value===v?th.bg:"transparent",color:value===v?th.text:th.muted,boxShadow:value===v?"0 1px 4px rgba(0,0,0,0.12)":"none",fontWeight:value===v?500:400,transition:"all 0.15s",whiteSpace:"nowrap"}}>{l}</button>))}</div>);
+const Sheet=({onClose,children,th})=>(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.35)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:50,padding:16}} onClick={onClose}><div style={{background:th.sheetBg,width:"100%",maxWidth:480,borderRadius:20,padding:24,boxShadow:"0 -4px 40px rgba(0,0,0,0.2)",maxHeight:"90vh",overflow:"auto"}} onClick={e=>e.stopPropagation()}>{children}</div></div>);
+const SheetHead=({title,onClose,right,th})=>(<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}><h3 style={{fontSize:15,color:th.text,fontWeight:600,margin:0}}>{title}</h3><div style={{display:"flex",gap:8,alignItems:"center"}}>{right}<button onClick={onClose} style={{fontSize:18,color:th.muted,background:"none",border:"none",cursor:"pointer",lineHeight:1}}>✕</button></div></div>);
+
+const MonthNav=({yr,mo,onPrev,onNext,onDbl,t,th})=>(
   <div style={{display:"flex",alignItems:"center",gap:4}}>
     <button onClick={onPrev} style={{width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:"none",border:"none",cursor:"pointer",fontSize:20,color:th.muted,borderRadius:8}}>‹</button>
-    <span onDoubleClick={onDbl} style={{fontSize:15,color:th.text,fontWeight:500,minWidth:158,textAlign:"center",cursor:"default",userSelect:"none"}}>{months[mo]} {yr}</span>
+    <span onDoubleClick={onDbl} style={{fontSize:15,color:th.text,fontWeight:500,minWidth:164,textAlign:"center",cursor:"default",userSelect:"none"}}>{t.months[mo]} {yr}</span>
     <button onClick={onNext} style={{width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:"none",border:"none",cursor:"pointer",fontSize:20,color:th.muted,borderRadius:8}}>›</button>
   </div>
 );
 
-function CatPicker({value,onChange,th,cn}){return(<div><div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:6,marginTop:10}}>{CATS.map(c=>{const sel=value===c.id;return(<button key={c.id} onClick={()=>onChange(c.id)} title={cn[c.id]} style={{padding:"10px 4px",borderRadius:10,border:"2px solid "+(sel?c.color:"transparent"),background:sel?c.color+"25":th.surface,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3}}><span style={{fontSize:18,lineHeight:1}}>{c.emoji}</span><span style={{fontSize:9,color:sel?c.color:th.muted,fontWeight:sel?600:400}}>{cn[c.id].split(" ")[0]}</span></button>);})}</div></div>);}
+function CategoryPicker({value,onChange,th,t}){return(<div><label style={{fontSize:10,color:th.muted,letterSpacing:"0.1em",textTransform:"uppercase"}}>{t.catLbl}</label><div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:6,marginTop:10}}>{CATS.map(c=>{const sel=value===c.id;return(<button key={c.id} onClick={()=>onChange(c.id)} title={t.catNames[c.id]} style={{padding:"10px 4px",borderRadius:10,border:"2px solid "+(sel?c.color:"transparent"),background:sel?c.color+"25":th.surface,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3}}><span style={{fontSize:18,lineHeight:1}}>{c.emoji}</span><span style={{fontSize:9,color:sel?c.color:th.muted,fontWeight:sel?600:400,lineHeight:1.2,textAlign:"center"}}>{t.catNames[c.id].split(" ")[0]}</span></button>);})}</div></div>);}
 
-function RecPicker({value,onChange,startDate,t,th}){
+function RecurrencePicker({value,onChange,startDate,t,th}){
   const s=useMemo(()=>parseD(startDate),[startDate]);
   const wd=s.getDay(),nth=getNthWD(s);
   const nr=useMemo(()=>normRec(value,s),[value,s]);
   const isCust=nr.type==="custom";
   const opts=useMemo(()=>[{rec:{type:"once"},label:t.recOnce},{rec:{type:"daily"},label:t.recDaily},{rec:{type:"weekly",weekday:wd},label:`${t.recWeeklyPre} ${t.days[wd]}`},{rec:{type:"monthly_nth_weekday",nth,weekday:wd},label:`${t.recMonthlyPre} ${t.nth[nth]||nth} ${t.days[wd]}`},{rec:{type:"annually"},label:`${t.recAnnuallyPre} ${s.getDate()} ${t.months[s.getMonth()]}`},{rec:{type:"weekdays"},label:t.recWeekdays},{rec:null,isCustom:true,label:t.recCustom}],[s,wd,nth,t]);
   const selIdx=useMemo(()=>{if(isCust)return 6;return opts.findIndex(o=>{if(!o.rec)return false;if(o.rec.type!==nr.type)return false;if(o.rec.type==="weekly")return o.rec.weekday===nr.weekday;if(o.rec.type==="monthly_nth_weekday")return o.rec.nth===nr.nth&&o.rec.weekday===nr.weekday;return true;});},[nr,opts,isCust]);
-  const lbl={fontSize:10,color:th.muted,letterSpacing:"0.1em",textTransform:"uppercase"};
-  return(<div><label style={lbl}>{t.recurLbl}</label>
+  return(<div><label style={{fontSize:10,color:th.muted,letterSpacing:"0.1em",textTransform:"uppercase"}}>{t.recurLbl}</label>
     <div style={{marginTop:10,border:"1px solid "+th.border,borderRadius:14,overflow:"hidden"}}>
       {opts.map((opt,i)=>(<div key={i}><button onClick={()=>{if(opt.isCustom){if(!isCust)onChange({type:"custom",interval:2,unit:"week",weekdays:[wd]});}else onChange(opt.rec);}} style={{width:"100%",display:"flex",alignItems:"center",gap:12,padding:"12px 14px",background:selIdx===i?th.surface:"none",border:"none",borderBottom:i<opts.length-1?"1px solid "+th.border:"none",cursor:"pointer",textAlign:"left"}}><div style={{width:18,height:18,borderRadius:"50%",flexShrink:0,border:selIdx===i?"5px solid "+th.text:"2px solid "+th.muted,background:th.bg,transition:"all 0.15s"}}/><span style={{fontSize:13,color:th.text}}>{opt.label}</span></button>
         {opt.isCustom&&isCust&&(<div style={{padding:"14px 14px 16px 44px",background:th.surface,borderTop:"1px solid "+th.border}}>
-          <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}><span style={{fontSize:12,color:th.sub}}>{t.recEvery}</span><input type="number" min={1} max={99} value={nr.interval||1} onChange={e=>onChange({...nr,interval:Math.max(1,parseInt(e.target.value)||1)})} style={{width:44,textAlign:"center",fontSize:13,color:th.text,background:th.bg,border:"1px solid "+th.border,borderRadius:7,padding:"5px 4px"}}/><select value={nr.unit||"week"} onChange={e=>onChange({...nr,unit:e.target.value})} style={{fontSize:13,color:th.text,background:th.bg,border:"1px solid "+th.border,borderRadius:7,padding:"5px 8px",cursor:"pointer"}}>{t.recUnits.map(u=><option key={u.v} value={u.v}>{u.l}</option>)}</select></div>
-          {(nr.unit||"week")==="week"&&(<div style={{display:"flex",gap:5,marginTop:12}}>{t.daysS.map((d,di)=>{const wds=nr.weekdays||[wd],on=wds.includes(di);return(<button key={di} onClick={()=>{let nw=on?wds.filter(x=>x!==di):[...wds,di];if(nw.length===0)nw=[di];onChange({...nr,weekdays:nw});}} style={{width:33,height:33,borderRadius:"50%",fontSize:12,fontWeight:500,background:on?th.btnBg:th.bg,color:on?th.btnText:th.sub,border:"1.5px solid "+(on?th.btnBg:th.border),cursor:"pointer"}}>{d}</button>);})}</div>)}
+          <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}><span style={{fontSize:12,color:th.sub}}>{t.recEvery}</span><input type="number" min={1} max={99} value={nr.interval||1} onChange={e=>onChange({...nr,interval:Math.max(1,parseInt(e.target.value)||1)})} style={{width:44,textAlign:"center",fontSize:13,color:th.text,background:th.bg,border:"1px solid "+th.border,borderRadius:7,padding:"5px 4px",outline:"none"}}/><select value={nr.unit||"week"} onChange={e=>onChange({...nr,unit:e.target.value})} style={{fontSize:13,color:th.text,background:th.bg,border:"1px solid "+th.border,borderRadius:7,padding:"5px 8px",outline:"none",cursor:"pointer"}}>{t.recUnits.map(u=><option key={u.v} value={u.v}>{u.l}</option>)}</select></div>
+          {(nr.unit||"week")==="week"&&(<div style={{display:"flex",gap:5,marginTop:12}}>{t.daysS.map((d,di)=>{const wds=nr.weekdays||[wd],on=wds.includes(di);return(<button key={di} onClick={()=>{let nw=on?wds.filter(x=>x!==di):[...wds,di];if(nw.length===0)nw=[di];onChange({...nr,weekdays:nw});}} style={{width:33,height:33,borderRadius:"50%",fontSize:12,fontWeight:500,background:on?th.btnBg:th.bg,color:on?th.btnText:th.sub,border:"1.5px solid "+(on?th.btnBg:th.border),cursor:"pointer",transition:"all 0.15s"}}>{d}</button>);})}</div>)}
         </div>)}
       </div>))}
     </div>
   </div>);
 }
 
-// ── Sub-tab bar ────────────────────────────────────────
-function SubBar({tabs,value,onChange,th,action}){
-  return(
-    <div style={{padding:"0 24px",borderBottom:"1px solid "+th.border,display:"flex",alignItems:"center",background:th.bgSub,gap:0}}>
-      <div style={{display:"flex",gap:16,flex:1,overflowX:"auto"}}>
-        {tabs.map((l,i)=>(<button key={i} onClick={()=>onChange(i)} style={{fontSize:12,paddingBottom:10,paddingTop:12,border:"none",background:"none",cursor:"pointer",borderBottom:value===i?"2px solid "+th.sub:"2px solid transparent",color:value===i?th.text:th.muted,fontWeight:value===i?500:400,whiteSpace:"nowrap",flexShrink:0}}>{l}</button>))}
-      </div>
-      {action&&<button onClick={action.fn} style={{fontSize:12,color:th.sub,background:"none",border:"1px solid "+th.border,borderRadius:8,padding:"5px 12px",cursor:"pointer",flexShrink:0,marginLeft:8}}>{action.label}</button>}
-    </div>
-  );
-}
-
-// ── App ────────────────────────────────────────────────
 function App(){
   const[auth,setAuth]=useState(false);
   const[u,setU]=useState(""),[pw,setPw]=useState(""),[aErr,setAErr]=useState("");
-  const[tab,setTab]=useState("accueil");
-  const[subs,setSubs]=useState({transactions:0,budget:0,analyse:0,simulation:0,settings:0});
-  const setSub=(k,v)=>setSubs(s=>({...s,[k]:v}));
+  const[tab,setTab]=useState("calendar");
   const[yr,setYr]=useState(TODAY.getFullYear()),[mo,setMo]=useState(TODAY.getMonth());
-  const[calMode,setCalMode]=useState("daily");
+  const[mode,setMode]=useState("daily");
   const[txs,setTxs]=useState([]);
   const[initBal,setInitBal]=useState(1000);
   const[budgets,setBudgets]=useState({});
-  const[goals,setGoals]=useState([]);
-  const[customCatNames,setCustomCatNames]=useState({});
   const[loaded,setLoaded]=useState(false);
   const[lang,setLang]=useState(detectLang);
   const[cur,setCur]=useState("cad");
-  const[disp,setDisp]=useState({endBal:false,revExp:true,net:false});
+  const[disp,setDisp]=useState({endBal:false,revExp:false,net:false});
   const[darkMode,setDarkMode]=useState("off");
   const[sysDark,setSysDark]=useState(()=>window.matchMedia("(prefers-color-scheme: dark)").matches);
-  const[simMonths,setSimMonths]=useState(12);
-  const[simExpAmt,setSimExpAmt]=useState("");
-  const[simExpFreq,setSimExpFreq]=useState("monthly");
-  const[scenDeltaInc,setScenDeltaInc]=useState(0);
-  const[scenDeltaExp,setScenDeltaExp]=useState(0);
-  const[saveAuto,setSaveAuto]=useState(true);
+  // Save
   const[saveMode,setSaveMode]=useState("local");
+  const[saveAuto,setSaveAuto]=useState(true);
   const[ghToken,setGhToken]=useState("");
   const[ghGistId,setGhGistId]=useState("");
   const[ghPullOnStart,setGhPullOnStart]=useState(true);
   const[ghStatus,setGhStatus]=useState("");
-  const[saveStatus,setSaveStatus]=useState("idle");
-  const ghTimer=useRef(null);
+  // UI
   const[editingBal,setEditingBal]=useState(false);
   const[balInput,setBalInput]=useState("");
-  const balRef=useRef(null);
+  const balInputRef=useRef(null);
   const[dayMod,setDayMod]=useState(null);
   const[formMod,setFormMod]=useState(null);
   const[delMod,setDelMod]=useState(null);
@@ -201,95 +161,13 @@ function App(){
   const[importMod,setImportMod]=useState(false);
   const[importText,setImportText]=useState("");
   const[copied,setCopied]=useState(false);
+  const[saveStatus,setSaveStatus]=useState("idle");
   const[toast,setToast]=useState("");
-  const[goalForm,setGoalForm]=useState(null);
-  const saveTimer=useRef(null),cfgTimer=useRef(null);
+  const saveTimer=useRef(null);
+  const ghTimer=useRef(null);
+  const cfgTimer=useRef(null);
 
-  const isFr=lang==="fr";
-  const MONTHS=isFr?["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"]:["January","February","March","April","May","June","July","August","September","October","November","December"];
-  const DAYS=isFr?["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"]:["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-  const DAYS_S=isFr?["D","L","M","M","J","V","S"]:["S","M","T","W","T","F","S"];
-  const NTH=isFr?["","1er","2e","3e","4e","5e"]:["","1st","2nd","3rd","4th","5th"];
-  const RU=isFr?[{v:"day",l:"jours"},{v:"week",l:"semaines"},{v:"month",l:"mois"},{v:"year",l:"années"}]:[{v:"day",l:"days"},{v:"week",l:"weeks"},{v:"month",l:"months"},{v:"year",l:"years"}];
-  const cn=useMemo(()=>({...(isFr?CAT_NAMES_FR:CAT_NAMES_EN),...customCatNames}),[lang,customCatNames]);
-  const t={
-    months:MONTHS,days:DAYS,daysS:DAYS_S,nth:NTH,recUnits:RU,
-    recOnce:isFr?"Une fois":"Once",recDaily:isFr?"Tous les jours":"Every day",
-    recWeeklyPre:isFr?"Toutes les semaines le":"Every week on",
-    recMonthlyDay:isFr?"Tous les mois":"Every month",
-    recMonthlyPre:isFr?"Tous les mois, le":"Every month on the",
-    recAnnuallyPre:isFr?"Annuellement le":"Annually on",
-    recWeekdays:isFr?"Jours de semaine (lun.–ven.)":"Weekdays (Mon–Fri)",
-    recCustom:isFr?"Personnaliser":"Custom",
-    recEvery:isFr?"Se répète tous les":"Repeat every",
-    recurLbl:isFr?"Récurrence":"Recurrence",
-    descLbl:isFr?"Description":"Description",amtLbl:isFr?"Montant":"Amount",
-    startLbl:isFr?"Date de début":"Start date",catLbl:isFr?"Catégorie":"Category",
-    cancel:isFr?"Annuler":"Cancel",save:isFr?"Enregistrer":"Save",
-    add:isFr?"Ajouter":"Add",delBtn:isFr?"Supprimer":"Delete",
-    incomeLbl:isFr?"Revenu":"Income",expenseLbl:isFr?"Dépense":"Expense",
-    newTx:isFr?"Nouvelle transaction":"New transaction",editTx:isFr?"Modifier":"Edit",
-    noTx:isFr?"Aucune transaction":"No transactions",
-    thisEvt:isFr?"Cet événement":"This event",
-    thisFollow:isFr?"Cet événement et ceux qui suivront":"This and following",
-    allEvts:isFr?"Tous les événements":"All events",
-    delTitle:isFr?"Supprimer":"Delete",
-    modDay:isFr?"Journée":"Daily",modBal:isFr?"Solde":"Balance",
-    emptyDay:isFr?"Aucune transaction ce jour":"No transactions",
-    curBalLbl:isFr?"Solde actuel":"Current balance",
-    endBalLbl:isFr?"Fin du mois":"End of month",
-    revLbl:isFr?"Revenus":"Revenue",expLbl:isFr?"Dépenses":"Expenses",netLbl:"Net",
-    initBalLbl:isFr?"Solde initial":"Initial balance",
-    saving:isFr?"Sauvegarde…":"Saving…",saved:isFr?"Sauvegardé":"Saved",
-    quickCatLbl:isFr?"Changer la catégorie":"Change category",
-    budgetOf:isFr?"sur":"of",budgetUnset:isFr?"Illimité":"No limit",
-    addGoal:isFr?"Nouvel objectif":"New goal",
-    goalName:isFr?"Nom":"Name",goalTarget:isFr?"Cible":"Target",goalSaved:isFr?"Épargné":"Saved",
-    noData:isFr?"Pas encore de données":"No data yet",
-    simExpTitle:isFr?"Simuler une dépense":"Simulate an expense",
-    simExpFreqLbl:isFr?"Fréquence":"Frequency",
-    simExpImpact:isFr?"Impact mensuel estimé":"Est. monthly impact",
-    simExpNewBal:isFr?"Solde fin du mois estimé":"Est. end-of-month balance",
-    simMonthsLbl:isFr?"Mois à projeter":"Months to project",
-    scenTitle:isFr?"Comparer des scénarios":"Compare scenarios",
-    scenBase:isFr?"Scénario de base":"Base scenario",
-    scenMod:isFr?"Scénario modifié":"Modified scenario",
-    scenDeltaInc:isFr?"Δ Revenus / mois":"Δ Revenue / month",
-    scenDeltaExp:isFr?"Δ Dépenses / mois":"Δ Expenses / month",
-    habAvg:isFr?"Moyenne 3 mois":"3-month avg",
-    statsTitle:isFr?"6 derniers mois":"Last 6 months",
-    chartsTitle:isFr?"Dépenses ce mois":"Spending this month",
-    habTitle:isFr?"Habitudes":"Habits",
-    catSettingsTitle:isFr?"Noms des catégories":"Category names",
-    exportInstr:isFr?"Copiez ce JSON et conservez-le.":"Copy this JSON and keep it safe.",
-    importInstr:isFr?"Collez un JSON exporté.":"Paste a previously exported JSON.",
-    importPaste:isFr?"Collez votre JSON ici…":"Paste your JSON here…",
-    importOk:isFr?"Données restaurées":"Data restored",importErr:isFr?"JSON invalide":"Invalid JSON",
-    exportCopy:isFr?"Copier":"Copy",exportCopied:isFr?"Copié ✓":"Copied ✓",
-    exportClose:isFr?"Fermer":"Close",importRestore:isFr?"Restaurer":"Restore",
-    darkOff:isFr?"Désactivé":"Off",darkOn:isFr?"Activé":"On",darkAuto:isFr?"Automatique":"Automatic",
-    darkLbl:isFr?"Mode nuit":"Dark mode",langLbl:isFr?"Langue":"Language",curLbl:isFr?"Devise":"Currency",
-    showEndBal:isFr?"Solde fin du mois":"End-of-month balance",
-    showRevExp:isFr?"Revenus & dépenses":"Revenue & expenses",showNet:isFr?"Net mensuel":"Monthly net",
-    logout:isFr?"Se déconnecter":"Sign out",
-    delAccLbl:isFr?"Supprimer le compte":"Delete account",
-    delAccSub:isFr?"Action irréversible":"Irreversible action",
-    delAccWord:isFr?"SUPPRIMER":"DELETE",
-    delAccModalBody:isFr?"Toutes vos données seront effacées. Tapez :":"All data will be erased. Type:",
-    autoSave:isFr?"Sauvegarde auto":"Auto save",
-    savingData:isFr?"Données":"Data",
-    exportBtn:isFr?"Exporter":"Export",importBtn:isFr?"Importer":"Import",
-    MAIN_TABS:isFr?["Accueil","Transactions","Budget","Analyse","Simulation","Paramètres"]:["Home","Transactions","Budget","Analysis","Simulation","Settings"],
-    SUB_TX:isFr?["Historique","Récurrentes"]:["History","Recurring"],
-    SUB_BUD:isFr?["Par catégorie","Objectifs d'épargne"]:["By category","Savings goals"],
-    SUB_ANA:isFr?["Statistiques","Graphiques","Habitudes"]:["Statistics","Charts","Habits"],
-    SUB_SIM:isFr?["Simuler dépense","Projeter","Scénarios"]:["Simulate","Project","Scenarios"],
-    SUB_SET:isFr?["Catégories","Sauvegarde","Langue","Apparence"]:["Categories","Backup","Language","Appearance"],
-    FREQ_OPTS:isFr?[{v:"once",l:"Une fois"},{v:"weekly",l:"Hebdo"},{v:"monthly",l:"Mensuel"},{v:"daily",l:"Quotidien"}]:[{v:"once",l:"Once"},{v:"weekly",l:"Weekly"},{v:"monthly",l:"Monthly"},{v:"daily",l:"Daily"}],
-    LANG_OPTS:[{v:"fr",l:"Français"},{v:"en",l:"English"}],
-    CUR_OPTS:[{v:"cad",l:"CAD $"},{v:"usd",l:"USD $"},{v:"eur",l:"EUR €"}],
-  };
-
+  const t=TR[lang]||TR.fr;
   const isDark=darkMode==="on"||(darkMode==="auto"&&sysDark);
   const th=useMemo(()=>mkTh(isDark),[isDark]);
   const iSt={display:"block",width:"100%",marginTop:6,padding:"8px 0",fontSize:14,color:th.text,background:"transparent",border:"none",borderBottom:"1px solid "+th.inputBorder,outline:"none",boxSizing:"border-box"};
@@ -297,71 +175,119 @@ function App(){
 
   useEffect(()=>{const mq=window.matchMedia("(prefers-color-scheme: dark)");const h=e=>setSysDark(e.matches);mq.addEventListener("change",h);return()=>mq.removeEventListener("change",h);},[]);
 
-  // Load
   useEffect(()=>{(async()=>{
-    try{const r=await window.storage.get("bgt-tx");if(r)setTxs(JSON.parse(r.value));}catch(e){}
-    try{const r=await window.storage.get("bgt-bal");if(r)setInitBal(parseFloat(r.value));}catch(e){}
-    try{const r=await window.storage.get("bgt-bud");if(r)setBudgets(JSON.parse(r.value));}catch(e){}
-    try{const r=await window.storage.get("bgt-goals");if(r)setGoals(JSON.parse(r.value));}catch(e){}
+    try{const r=await window.storage.get("bgt9-tx");if(r)setTxs(JSON.parse(r.value));}catch(e){}
+    try{const r=await window.storage.get("bgt9-bal");if(r)setInitBal(parseFloat(r.value));}catch(e){}
+    try{const r=await window.storage.get("bgt9-bud");if(r)setBudgets(JSON.parse(r.value));}catch(e){}
     let sMode="local",ghPull=true,ghTok="",ghGid="";
-    try{const r=await window.storage.get("bgt-cfg");if(r){const c=JSON.parse(r.value);if(c.lang)setLang(c.lang);if(c.cur)setCur(c.cur);if(c.disp)setDisp(c.disp);if(c.darkMode)setDarkMode(c.darkMode);if(c.calMode)setCalMode(c.calMode);if(c.saveAuto!==undefined)setSaveAuto(c.saveAuto);if(c.saveMode){setSaveMode(c.saveMode);sMode=c.saveMode;}if(c.simMonths)setSimMonths(c.simMonths);if(c.customCatNames)setCustomCatNames(c.customCatNames);}}catch(e){}
-    try{const r=await window.storage.get("bgt-gh");if(r){const g=JSON.parse(r.value);if(g.token){setGhToken(g.token);ghTok=g.token;}if(g.gistId){setGhGistId(g.gistId);ghGid=g.gistId;}if(g.pullOnStart!==undefined){setGhPullOnStart(g.pullOnStart);ghPull=g.pullOnStart;}}}catch(e){}
+    try{const r=await window.storage.get("bgt9-cfg");if(r){const c=JSON.parse(r.value);if(c.lang)setLang(c.lang);if(c.cur)setCur(c.cur);if(c.disp)setDisp(c.disp);if(c.darkMode)setDarkMode(c.darkMode);if(c.mode)setMode(c.mode);if(c.saveMode){setSaveMode(c.saveMode);sMode=c.saveMode;}if(c.saveAuto!==undefined)setSaveAuto(c.saveAuto);}}catch(e){}
+    try{const r=await window.storage.get("bgt9-gh");if(r){const g=JSON.parse(r.value);if(g.token){setGhToken(g.token);ghTok=g.token;}if(g.gistId){setGhGistId(g.gistId);ghGid=g.gistId;}if(g.pullOnStart!==undefined){setGhPullOnStart(g.pullOnStart);ghPull=g.pullOnStart;}}}catch(e){}
     if(sMode==="github"&&ghPull&&ghTok&&ghGid){
       setGhStatus("⏳ Chargement depuis GitHub…");
-      try{const res=await fetch(`https://api.github.com/gists/${ghGid}`,{headers:{"Authorization":"token "+ghTok}});const data=await res.json();const content=data.files?.["budget.json"]?.content;if(content){const d=JSON.parse(content);if(Array.isArray(d.txs))setTxs(d.txs);if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.lang)setLang(d.lang);if(d.cur)setCur(d.cur);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.budgets)setBudgets(d.budgets);if(d.goals)setGoals(d.goals);if(d.customCatNames)setCustomCatNames(d.customCatNames);setGhStatus("✓ GitHub chargé");}
+      try{
+        const res=await fetch(`https://api.github.com/gists/${ghGid}`,{headers:{"Authorization":"token "+ghTok}});
+        const data=await res.json();
+        const content=data.files?.["budget.json"]?.content;
+        if(content){const d=JSON.parse(content);if(Array.isArray(d.txs))setTxs(d.txs);if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.lang)setLang(d.lang);if(d.cur)setCur(d.cur);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.budgets)setBudgets(d.budgets);setGhStatus("✓ Données GitHub chargées");}
       }catch(e){setGhStatus("⚠ Pull GitHub échoué");}
       setTimeout(()=>setGhStatus(""),3500);
     }
     setLoaded(true);
   })();},[]);
 
-  // Save cfg
-  useEffect(()=>{if(!loaded)return;clearTimeout(cfgTimer.current);cfgTimer.current=setTimeout(async()=>{try{await window.storage.set("bgt-cfg",JSON.stringify({lang,cur,disp,darkMode,calMode,saveAuto,simMonths,customCatNames}));}catch(e){}},400);},[lang,cur,disp,darkMode,calMode,saveAuto,simMonths,customCatNames,loaded]);
+  useEffect(()=>{
+    if(!loaded)return;
+    clearTimeout(cfgTimer.current);
+    cfgTimer.current=setTimeout(async()=>{
+      try{
+        await window.storage.set("bgt9-cfg",JSON.stringify({lang,cur,disp,darkMode,mode,saveMode,saveAuto}));
+        await window.storage.set("bgt9-gh",JSON.stringify({token:ghToken,gistId:ghGistId,pullOnStart:ghPullOnStart}));
+      }catch(e){}
+    },400);
+  },[lang,cur,disp,darkMode,mode,saveMode,saveAuto,ghToken,ghGistId,ghPullOnStart,loaded]);
 
-  // Auto-save data
-  useEffect(()=>{if(!loaded||!saveAuto)return;setSaveStatus("saving");clearTimeout(saveTimer.current);saveTimer.current=setTimeout(async()=>{try{await window.storage.set("bgt-tx",JSON.stringify(txs));await window.storage.set("bgt-bal",String(initBal));await window.storage.set("bgt-bud",JSON.stringify(budgets));await window.storage.set("bgt-goals",JSON.stringify(goals));setSaveStatus("saved");setTimeout(()=>setSaveStatus("idle"),2000);}catch(e){setSaveStatus("error");}},600);},[txs,initBal,budgets,goals,loaded,saveAuto]);
+  useEffect(()=>{
+    if(!loaded||!saveAuto||saveMode!=="local")return;
+    setSaveStatus("saving");
+    clearTimeout(saveTimer.current);
+    saveTimer.current=setTimeout(async()=>{
+      try{await window.storage.set("bgt9-tx",JSON.stringify(txs));await window.storage.set("bgt9-bal",String(initBal));await window.storage.set("bgt9-bud",JSON.stringify(budgets));setSaveStatus("saved");setTimeout(()=>setSaveStatus("idle"),2000);}catch(e){setSaveStatus("error");}
+    },600);
+  },[txs,initBal,budgets,loaded,saveAuto,saveMode]);
 
-  const saveNow=async()=>{setSaveStatus("saving");try{await window.storage.set("bgt-tx",JSON.stringify(txs));await window.storage.set("bgt-bal",String(initBal));await window.storage.set("bgt-bud",JSON.stringify(budgets));await window.storage.set("bgt-goals",JSON.stringify(goals));setSaveStatus("saved");setTimeout(()=>setSaveStatus("idle"),2000);}catch(e){setSaveStatus("error");}};
+  useEffect(()=>{
+    if(!loaded||!saveAuto||saveMode!=="github"||!ghToken)return;
+    clearTimeout(ghTimer.current);
+    ghTimer.current=setTimeout(async()=>{
+      try{
+        const json=JSON.stringify({txs,initBal,lang,cur,disp,darkMode,budgets},null,2);
+        const body={files:{"budget.json":{content:json}}};
+        let res,data;
+        if(ghGistId){res=await fetch(`https://api.github.com/gists/${ghGistId}`,{method:"PATCH",headers:{"Authorization":"token "+ghToken,"Content-Type":"application/json"},body:JSON.stringify(body)});}
+        else{res=await fetch("https://api.github.com/gists",{method:"POST",headers:{"Authorization":"token "+ghToken,"Content-Type":"application/json"},body:JSON.stringify({...body,description:"Budget App Data",public:false})});}
+        data=await res.json();
+        if(data.id){if(data.id!==ghGistId)setGhGistId(data.id);setGhStatus("✓ GitHub sync");setTimeout(()=>setGhStatus(""),3000);}
+      }catch(e){setGhStatus("⚠ Sync échoué");setTimeout(()=>setGhStatus(""),3000);}
+    },3000);
+  },[txs,initBal,budgets,loaded,saveAuto,saveMode,ghToken,ghGistId]);
 
-  const getJSON=()=>JSON.stringify({txs,initBal,budgets,goals,lang,cur,disp,darkMode,customCatNames},null,2);
+  const saveLocalNow=async()=>{setSaveStatus("saving");try{await window.storage.set("bgt9-tx",JSON.stringify(txs));await window.storage.set("bgt9-bal",String(initBal));await window.storage.set("bgt9-bud",JSON.stringify(budgets));setSaveStatus("saved");setTimeout(()=>setSaveStatus("idle"),2000);}catch(e){setSaveStatus("error");}};
+
+  const ghPush=async()=>{
+    if(!ghToken){setGhStatus("❌ Token manquant");return;}
+    setGhStatus("⏳ Envoi…");
+    try{
+      const body={files:{"budget.json":{content:getExportJSON()}}};
+      let res,data;
+      if(ghGistId){res=await fetch(`https://api.github.com/gists/${ghGistId}`,{method:"PATCH",headers:{"Authorization":"token "+ghToken,"Content-Type":"application/json"},body:JSON.stringify(body)});}
+      else{res=await fetch("https://api.github.com/gists",{method:"POST",headers:{"Authorization":"token "+ghToken,"Content-Type":"application/json"},body:JSON.stringify({...body,description:"Budget App Data",public:false})});}
+      data=await res.json();
+      if(data.id){setGhGistId(data.id);setGhStatus("✓ Sauvegardé sur GitHub");}
+      else setGhStatus("❌ "+(data.message||"Erreur inconnue"));
+    }catch(e){setGhStatus("❌ "+e.message);}
+    setTimeout(()=>setGhStatus(""),4000);
+  };
+
+  const ghPull=async()=>{
+    if(!ghToken||!ghGistId){setGhStatus("❌ Token ou Gist ID manquant");return;}
+    setGhStatus("⏳ Chargement…");
+    try{
+      const res=await fetch(`https://api.github.com/gists/${ghGistId}`,{headers:{"Authorization":"token "+ghToken}});
+      const data=await res.json();const content=data.files?.["budget.json"]?.content;
+      if(!content){setGhStatus("❌ Fichier introuvable");return;}
+      const d=JSON.parse(content);
+      if(Array.isArray(d.txs))setTxs(d.txs);if(typeof d.initBal==="number")setInitBal(d.initBal);
+      if(d.lang)setLang(d.lang);if(d.cur)setCur(d.cur);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.budgets)setBudgets(d.budgets);
+      setGhStatus("✓ Données restaurées");
+    }catch(e){setGhStatus("❌ "+e.message);}
+    setTimeout(()=>setGhStatus(""),4000);
+  };
+
+  const handleManualSave=()=>{if(saveMode==="local")saveLocalNow();else ghPush();};
+
+  const getExportJSON=()=>JSON.stringify({txs,initBal,lang,cur,disp,darkMode,budgets},null,2);
   const showToast=msg=>{setToast(msg);setTimeout(()=>setToast(""),2500);};
-  const handleCopy=()=>{navigator.clipboard?.writeText(getJSON()).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2500);});};
-  const handleImport=()=>{try{const d=JSON.parse(importText);if(Array.isArray(d.txs))setTxs(d.txs);if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.budgets)setBudgets(d.budgets);if(d.goals)setGoals(d.goals);if(d.lang)setLang(d.lang);if(d.cur)setCur(d.cur);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.customCatNames)setCustomCatNames(d.customCatNames);setImportMod(false);setImportText("");showToast(t.importOk);}catch(e){showToast(t.importErr);}};
-  const deleteAccount=async()=>{for(const k of["bgt-tx","bgt-bal","bgt-bud","bgt-goals","bgt-cfg"])try{await window.storage.delete(k);}catch(e){}setTxs([]);setInitBal(1000);setBudgets({});setGoals({});setAuth(false);};
+  const handleCopy=()=>{const json=getExportJSON();if(navigator.clipboard?.writeText){navigator.clipboard.writeText(json).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2500);});}};
+  const handleImport=()=>{
+    try{const d=JSON.parse(importText);if(Array.isArray(d.txs))setTxs(d.txs);if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.lang)setLang(d.lang);if(d.cur)setCur(d.cur);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.budgets)setBudgets(d.budgets);setImportMod(false);setImportText("");showToast(t.importOk);}
+    catch(e){showToast(t.importErr);}
+  };
+  const deleteAccount=async()=>{
+    for(const k of["bgt9-tx","bgt9-bal","bgt9-bud","bgt9-cfg","bgt9-gh"])try{await window.storage.delete(k);}catch(e){}
+    setTxs([]);setInitBal(1000);setBudgets({});setDisp({endBal:false,revExp:false,net:false});setDarkMode("off");setGhToken("");setGhGistId("");setAuth(false);
+  };
 
-  // Computed
   const dim=new Date(yr,mo+1,0).getDate();
   const cells=useMemo(()=>{const fd=new Date(yr,mo,1).getDay();return[...Array(fd).fill(null),...Array.from({length:dim},(_,i)=>i+1)];},[yr,mo,dim]);
   const dayData=useMemo(()=>{const d={};for(let day=1;day<=dim;day++){const dt=txs.filter(tx=>occsInMonth(tx,yr,mo).includes(day));d[day]={net:dt.reduce((s,tx)=>s+(tx.type==="income"?tx.amount:-tx.amount),0),bal:balAt(txs,initBal,new Date(yr,mo,day)),count:dt.length,cats:dt.map(tx=>catById(tx.category||"other"))};}return d;},[txs,yr,mo,dim,initBal]);
   const monthStats=useMemo(()=>{let inc=0,exp=0;txs.forEach(tx=>{const n=occsInMonth(tx,yr,mo).length;if(tx.type==="income")inc+=tx.amount*n;else exp+=tx.amount*n;});return{inc,exp,net:inc-exp};},[txs,yr,mo]);
-  const catStats=useMemo(()=>{const s={};CATS.forEach(c=>s[c.id]={spent:0});txs.forEach(tx=>{const cat=tx.category||"other";const n=occsInMonth(tx,yr,mo).length;if(n>0&&tx.type!=="income")s[cat].spent+=tx.amount*n;});return s;},[txs,yr,mo]);
+  const catStats=useMemo(()=>{const s={};CATS.forEach(c=>s[c.id]={spent:0,income:0});txs.forEach(tx=>{const cat=tx.category||"other";const n=occsInMonth(tx,yr,mo).length;if(n===0)return;if(tx.type==="income")s[cat].income+=tx.amount*n;else s[cat].spent+=tx.amount*n;});return s;},[txs,yr,mo]);
   const totalBudget=useMemo(()=>CATS.filter(c=>c.id!=="income").reduce((s,c)=>s+(budgets[c.id]||0),0),[budgets]);
   const totalSpent=useMemo(()=>CATS.filter(c=>c.id!=="income").reduce((s,c)=>s+(catStats[c.id]?.spent||0),0),[catStats]);
-  const curBal=balAt(txs,initBal,TODAY);
-  const endBal=dayData[dim]?.bal??null;
-  const monthTxs=useMemo(()=>txs.filter(tx=>occsInMonth(tx,yr,mo).length>0).sort((a,b)=>new Date(b.startDate)-new Date(a.startDate)),[txs,yr,mo]);
-  const recurTxs=useMemo(()=>txs.filter(tx=>normRec(tx.recurrence,parseD(tx.startDate)).type!=="once").sort((a,b)=>a.description.localeCompare(b.description)),[txs]);
   const isTod=d=>d===TODAY.getDate()&&mo===TODAY.getMonth()&&yr===TODAY.getFullYear();
   const prevMo=()=>mo===0?(setMo(11),setYr(y=>y-1)):setMo(m=>m-1);
   const nextMo=()=>mo===11?(setMo(0),setYr(y=>y+1)):setMo(m=>m+1);
   const goToday=()=>{setMo(TODAY.getMonth());setYr(TODAY.getFullYear());};
-
-  // Stats: 6 months
-  const statsData=useMemo(()=>{const rows=[];let cy=yr,cm=mo;for(let i=0;i<6;i++){let inc=0,exp=0;txs.forEach(tx=>{const n=occsInMonth(tx,cy,cm).length;if(tx.type==="income")inc+=tx.amount*n;else exp+=tx.amount*n;});const bal=balAt(txs,initBal,new Date(cy,cm+1,0));rows.unshift({yr:cy,mo:cm,inc,exp,net:inc-exp,bal});cm--;if(cm<0){cm=11;cy--;}}return rows;},[txs,initBal,yr,mo]);
-
-  // Habitudes: 3-month avg
-  const habData=useMemo(()=>{const totals={};CATS.forEach(c=>totals[c.id]=0);let cy=yr,cm=mo;for(let i=0;i<3;i++){txs.forEach(tx=>{if(tx.type==="income")return;const cat=tx.category||"other";totals[cat]+=tx.amount*occsInMonth(tx,cy,cm).length;});cm--;if(cm<0){cm=11;cy--;}}return CATS.filter(c=>c.id!=="income").map(c=>({...c,avg:totals[c.id]/3})).filter(c=>c.avg>0).sort((a,b)=>b.avg-a.avg);},[txs,yr,mo]);
-
-  // Projection
-  const simProj=useMemo(()=>{const rows=[];let cy=TODAY.getFullYear(),cm=TODAY.getMonth();for(let i=0;i<simMonths;i++){let inc=0,exp=0;txs.forEach(tx=>{const n=occsInMonth(tx,cy,cm).length;if(tx.type==="income")inc+=tx.amount*n;else exp+=tx.amount*n;});const bal=balAt(txs,initBal,new Date(cy,cm+1,0));rows.push({yr:cy,mo:cm,inc,exp,net:inc-exp,bal});cm++;if(cm>11){cm=0;cy++;}}return rows;},[txs,initBal,simMonths]);
-
-  // Sim expense
-  const simExpImpact=useMemo(()=>{const amt=parseFloat(simExpAmt)||0;if(!amt)return null;const monthly={once:amt,weekly:amt*4.33,monthly:amt,daily:amt*30}[simExpFreq]||amt;return{monthly,newEndBal:(endBal??curBal)-monthly};},[simExpAmt,simExpFreq,endBal,curBal]);
-
-  // Scenarios
-  const scenData=useMemo(()=>{const rows=[];let cy=TODAY.getFullYear(),cm=TODAY.getMonth();for(let i=0;i<6;i++){let inc=0,exp=0;txs.forEach(tx=>{const n=occsInMonth(tx,cy,cm).length;if(tx.type==="income")inc+=tx.amount*n;else exp+=tx.amount*n;});const balA=balAt(txs,initBal,new Date(cy,cm+1,0));const balB=balA+(scenDeltaInc-scenDeltaExp)*(i+1);rows.push({yr:cy,mo:cm,netA:inc-exp,netB:inc-exp+scenDeltaInc-scenDeltaExp,balA,balB});cm++;if(cm>11){cm=0;cy++;}}return rows;},[txs,initBal,scenDeltaInc,scenDeltaExp]);
-
-  // Form
   const openForm=(tx=null,prefill=null)=>{const dt=prefill||dStr(TODAY);setFormMod({tx,form:tx?{desc:tx.description,amt:String(tx.amount),type:tx.type,rec:normRec(tx.recurrence,parseD(tx.startDate)),date:tx.startDate,cat:tx.category||"other"}:{desc:"",amt:"",type:"expense",rec:{type:"once"},date:dt,cat:"other"}});};
   const setFF=k=>v=>setFormMod(m=>({...m,form:{...m.form,[k]:v}}));
   const handleTypeChange=v=>setFormMod(m=>({...m,form:{...m.form,type:v,cat:v==="income"?"income":"other"}}));
@@ -370,479 +296,200 @@ function App(){
   const openDel=(tx,dateStr)=>{setDelMod({tx,dateStr});setDayMod(null);};
   const handleDel=scope=>{const{tx,dateStr}=delMod;if(scope==="all"||normRec(tx.recurrence,parseD(tx.startDate)).type==="once"){setTxs(prev=>prev.filter(t2=>t2.id!==tx.id));}else if(scope==="this"){setTxs(prev=>prev.map(t2=>t2.id!==tx.id?t2:{...t2,exceptions:[...(t2.exceptions||[]),dateStr]}));}else if(scope==="follow"){const ne=dayBef(dateStr);if(parseD(ne)<parseD(tx.startDate))setTxs(prev=>prev.filter(t2=>t2.id!==tx.id));else setTxs(prev=>prev.map(t2=>t2.id!==tx.id?t2:{...t2,endDate:ne}));}setDelMod(null);};
   const changeTxCat=(txId,catId)=>{setTxs(prev=>prev.map(tx=>tx.id===txId?{...tx,category:catId}:tx));setExpandedCatTx(null);};
-  const startEditBal=()=>{setBalInput(String(curBal.toFixed(2)));setEditingBal(true);setTimeout(()=>{balRef.current?.focus();balRef.current?.select();},50);};
-  const commitEditBal=()=>{const d=parseFloat(balInput);if(!isNaN(d)){const diff=d-curBal;setInitBal(prev=>parseFloat((prev+diff).toFixed(2)));}setEditingBal(false);};
 
+  const curBalVal=balAt(txs,initBal,TODAY);
+  const endBalVal=dayData[dim]?.bal??null;
   const dayModalList=dayMod?txs.filter(tx=>occsInMonth(tx,yr,mo).includes(dayMod.day)):[];
-  const dayDateStr=dayMod?`${yr}-${String(mo+1).padStart(2,"0")}-${String(dayMod.day).padStart(2,"0")}`:"";
+  const dayModalDateStr=dayMod?`${yr}-${String(mo+1).padStart(2,"0")}-${String(dayMod.day).padStart(2,"0")}`:"";
+  const expenseCats=CATS.filter(c=>c.id!=="income");
   const hasSummary=disp.endBal||disp.revExp||disp.net;
 
-  // ── TxRow ──────────────────────────────────────────────
-  const TxRow=({tx,showRec})=>{
-    const cat=catById(tx.category||"other");
-    const n=occsInMonth(tx,yr,mo).length;
-    return(
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"11px 0",borderBottom:"1px solid "+th.border}}>
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <div style={{width:34,height:34,borderRadius:9,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{cat.emoji}</div>
-          <div>
-            <p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p>
-            <p style={{fontSize:11,color:th.muted,margin:"2px 0 0"}}>{cn[cat.id]}{showRec&&<span style={{color:th.sub}}> · {recLabel(tx,t)}</span>}{n>1&&<span style={{color:th.sub}}> ×{n}</span>}</p>
-          </div>
-        </div>
-        <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
-          <span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:tx.type==="income"?th.pos:th.neg}}>{tx.type==="income"?"+":"−"}{fA(tx.amount*(n||1),cur,true)}</span>
-          <button onClick={()=>openForm(tx)} style={{fontSize:12,color:th.muted,background:"none",border:"none",cursor:"pointer",padding:4}}>✎</button>
-        </div>
-      </div>
-    );
-  };
+  // Transactions filtrées par mois
+  const monthTxs=useMemo(()=>txs.filter(tx=>occsInMonth(tx,yr,mo).length>0).sort((a,b)=>new Date(b.startDate)-new Date(a.startDate)),[txs,yr,mo]);
 
-  // ── Calendar grid ──────────────────────────────────────
-  const CalGrid=()=>(
-    <div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",marginBottom:4}}>
-        {DAYS.map((d,i)=><div key={i} style={{textAlign:"center",fontSize:11,color:th.muted,padding:"4px 0"}}>{d.slice(0,3)}</div>)}
-      </div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2}}>
-        {cells.map((day,i)=>{
-          if(!day)return<div key={"e"+i} style={{paddingBottom:"100%"}}/>;
-          const data=dayData[day]||{net:0,bal:0,count:0,cats:[]};
-          const tod=isTod(day);const val=calMode==="daily"?data.net:data.bal;
-          const pos=val>0,neg=val<0;
-          return(<div key={day} onClick={()=>setDayMod({day})} style={{paddingBottom:"100%",position:"relative",borderRadius:10,cursor:"pointer",background:tod?th.surface:"transparent",border:tod?"1.5px solid "+th.text:"1.5px solid transparent"}}>
-            <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2}}>
-              <span style={{fontSize:12,fontWeight:tod?600:400,color:tod?th.text:th.sub}}>{day}</span>
-              {data.count>0&&<span style={{fontSize:10,fontWeight:500,lineHeight:1.2,fontVariantNumeric:"tabular-nums",color:pos?th.pos:neg?th.neg:th.muted}}>{(val>=0?"+":"−")+fA(val,cur)}</span>}
-              {data.cats.length>0&&<div style={{display:"flex",gap:2,marginTop:1}}>{[...new Set(data.cats.map(c=>c.color))].slice(0,3).map((c,ci)=><div key={ci} style={{width:4,height:4,borderRadius:"50%",background:c}}/>)}</div>}
-            </div>
-          </div>);
-        })}
-      </div>
-    </div>
-  );
+  // Solde actuel éditable
+  const startEditBal=()=>{setBalInput(String(curBalVal.toFixed(2)));setEditingBal(true);setTimeout(()=>{balInputRef.current?.focus();balInputRef.current?.select();},50)};
+  const commitEditBal=()=>{
+    const desired=parseFloat(balInput);
+    if(!isNaN(desired)){const diff=desired-curBalVal;setInitBal(prev=>parseFloat((prev+diff).toFixed(2)));}
+    setEditingBal(false);
+  };
 
   if(!auth)return(
     <div style={{minHeight:"100vh",background:th.bgSub,display:"flex",alignItems:"center",justifyContent:"center"}}>
       <div style={{background:th.bg,width:320,padding:"40px 32px",borderRadius:20,border:"1px solid "+th.border,boxShadow:"0 4px 24px rgba(0,0,0,0.08)"}}>
-        <p style={{...lbl,marginBottom:4}}>Gestion financière</p>
-        <h1 style={{fontSize:20,color:th.text,fontWeight:600,marginBottom:32}}>Budget</h1>
-        {[[isFr?"Identifiant":"Username",u,setU,"text"],[isFr?"Mot de passe":"Password",pw,setPw,"password"]].map(([lb,val,set,type])=>(<div key={lb} style={{marginBottom:20}}><label style={lbl}>{lb}</label><input type={type} value={val} onChange={e=>set(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")(u==="test"&&pw==="test"?setAuth(true):setAErr(isFr?"Identifiants invalides":"Invalid credentials"));}} style={iSt}/></div>))}
+        <p style={{...lbl,marginBottom:4}}>{t.welcome}</p>
+        <h1 style={{fontSize:20,color:th.text,fontWeight:600,marginBottom:32}}>{t.title}</h1>
+        {[[t.userLbl,u,setU,"text"],[t.passLbl,pw,setPw,"password"]].map(([lb,val,set,type])=>(<div key={lb} style={{marginBottom:20}}><label style={lbl}>{lb}</label><input type={type} value={val} onChange={e=>set(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")(u==="test"&&pw==="test"?setAuth(true):setAErr(t.badLogin));}} style={iSt} placeholder={type==="password"?"••••••••":lb}/></div>))}
         {aErr&&<p style={{fontSize:12,color:th.danger,marginBottom:12}}>{aErr}</p>}
-        <button onClick={()=>(u==="test"&&pw==="test"?setAuth(true):setAErr(isFr?"Identifiants invalides":"Invalid credentials"))} style={{width:"100%",marginTop:8,background:th.btnBg,color:th.btnText,border:"none",borderRadius:12,padding:"11px 0",fontSize:14,cursor:"pointer"}}>{isFr?"Se connecter":"Sign in"}</button>
+        <button onClick={()=>(u==="test"&&pw==="test"?setAuth(true):setAErr(t.badLogin))} style={{width:"100%",marginTop:8,background:th.btnBg,color:th.btnText,border:"none",borderRadius:12,padding:"11px 0",fontSize:14,cursor:"pointer"}}>{t.loginBtn}</button>
       </div>
     </div>
   );
 
   return(
-    <div style={{minHeight:"100vh",background:th.bg,fontFamily:"system-ui,sans-serif",paddingBottom:80}}>
+    <div style={{minHeight:"100vh",background:th.bg,fontFamily:"system-ui,sans-serif"}}>
       {toast&&<div style={{position:"fixed",top:20,left:"50%",transform:"translateX(-50%)",background:th.btnBg,color:th.btnText,padding:"10px 20px",borderRadius:20,fontSize:13,fontWeight:500,zIndex:100,boxShadow:"0 4px 16px rgba(0,0,0,0.2)",pointerEvents:"none"}}>{toast}</div>}
 
-      {/* FAB */}
+      {/* FAB bas droite */}
       <div style={{position:"fixed",bottom:16,right:16,zIndex:99,display:"flex",flexDirection:"column",alignItems:"flex-end",gap:8}}>
-        <button onClick={()=>openForm()} style={{width:52,height:52,borderRadius:"50%",background:th.btnBg,color:th.btnText,border:"none",cursor:"pointer",fontSize:28,fontWeight:300,boxShadow:"0 4px 20px rgba(0,0,0,0.25)",display:"flex",alignItems:"center",justifyContent:"center"}}>+</button>
-        {!saveAuto&&<button onClick={handleManualSave} style={{padding:"9px 14px",borderRadius:20,fontSize:12,fontWeight:600,background:th.btnBg,color:th.btnText,border:"none",cursor:"pointer",boxShadow:"0 2px 12px rgba(0,0,0,0.18)"}}>↑</button>}
-        {ghStatus&&<div style={{padding:"6px 12px",borderRadius:20,fontSize:11,fontWeight:500,background:th.surface,border:"1px solid "+th.border,color:ghStatus.startsWith("✓")?"#059669":ghStatus.startsWith("⏳")?th.sub:th.danger,pointerEvents:"none"}}>{ghStatus}</div>}
-        {saveStatus!=="idle"&&<div style={{display:"flex",alignItems:"center",gap:5,padding:"6px 12px",borderRadius:20,fontSize:11,background:saveStatus==="saved"?"#f0fdf4":th.surface,border:saveStatus==="saved"?"1px solid #86efac":"1px solid "+th.border,color:saveStatus==="saved"?"#059669":th.sub,pointerEvents:"none"}}>{saveStatus==="saving"&&<span style={{width:6,height:6,borderRadius:"50%",background:th.sub,animation:"pulse 1s infinite",display:"inline-block"}}/>}{saveStatus==="saving"?t.saving:"✓ "+t.saved}</div>}
+        <button onClick={()=>openForm()} style={{width:48,height:48,borderRadius:"50%",background:th.btnBg,color:th.btnText,border:"none",cursor:"pointer",fontSize:26,fontWeight:300,boxShadow:"0 4px 16px rgba(0,0,0,0.2)",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>+</button>
+        {!saveAuto&&<button onClick={handleManualSave} style={{padding:"9px 16px",borderRadius:20,fontSize:12,fontWeight:600,background:th.btnBg,color:th.btnText,border:"none",cursor:"pointer",boxShadow:"0 2px 12px rgba(0,0,0,0.18)"}}>↑ Sauvegarder</button>}
+        {ghStatus&&<div style={{padding:"7px 14px",borderRadius:20,fontSize:12,fontWeight:500,background:ghStatus.startsWith("✓")?"#f0fdf4":ghStatus.startsWith("⏳")?th.surface:th.bg,border:ghStatus.startsWith("✓")?"1px solid #86efac":"1px solid "+th.border,color:ghStatus.startsWith("✓")?"#059669":ghStatus.startsWith("⏳")?th.sub:th.danger,boxShadow:"0 2px 12px rgba(0,0,0,0.1)",pointerEvents:"none"}}>{ghStatus}</div>}
+        {saveStatus!=="idle"&&<div style={{display:"flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:20,fontSize:12,fontWeight:500,background:saveStatus==="error"?th.bg:saveStatus==="saved"?"#f0fdf4":th.surface,border:saveStatus==="error"?"1px solid "+th.danger:saveStatus==="saved"?"1px solid #86efac":"1px solid "+th.border,color:saveStatus==="error"?th.danger:saveStatus==="saved"?"#059669":th.sub,boxShadow:"0 2px 12px rgba(0,0,0,0.1)",pointerEvents:"none"}}>{saveStatus==="saving"&&<span style={{display:"inline-block",width:7,height:7,borderRadius:"50%",background:th.sub,animation:"pulse 1s infinite"}}/>}{saveStatus==="saving"?t.saving:saveStatus==="saved"?"✓ "+t.saved:"⚠ "+t.saveErr}</div>}
       </div>
 
       {/* Header */}
-      <div style={{padding:"28px 24px 16px",borderBottom:"1px solid "+th.border}}>
+      <div style={{padding:"32px 24px 20px",borderBottom:"1px solid "+th.border}}>
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
-          <div><p style={{...lbl,marginBottom:3}}>Gestion financière</p><h1 style={{fontSize:20,color:th.text,fontWeight:600,margin:0}}>Budget</h1></div>
-          <div style={{textAlign:"right",cursor:"pointer"}} onClick={!editingBal?startEditBal:undefined}>
-            <p style={{...lbl,margin:"0 0 2px"}}>{t.curBalLbl}</p>
+          <div><p style={{...lbl,marginBottom:4}}>{t.sub}</p><h1 style={{fontSize:20,color:th.text,fontWeight:600,margin:0}}>{t.title}</h1></div>
+          {/* Solde actuel cliquable */}
+          <div style={{textAlign:"right",cursor:"pointer"}} onClick={!editingBal?startEditBal:undefined} title="Cliquer pour modifier">
+            <p style={{...lbl,margin:"0 0 3px"}}>{t.curBalLbl}</p>
             {editingBal
-              ?<input ref={balRef} type="number" inputMode="decimal" step="0.01" value={balInput} onChange={e=>setBalInput(e.target.value)} onBlur={commitEditBal} onKeyDown={e=>{if(e.key==="Enter")commitEditBal();if(e.key==="Escape")setEditingBal(false);}} style={{width:130,textAlign:"right",fontSize:20,fontWeight:600,color:th.text,background:"transparent",border:"none",borderBottom:"2px solid "+th.text,outline:"none",fontVariantNumeric:"tabular-nums"}}/>
-              :<p style={{fontSize:20,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:curBal>=0?th.pos:th.neg}}>{fA(curBal,cur,true)}</p>}
+              ?<input ref={balInputRef} type="number" inputMode="decimal" step="0.01" value={balInput} onChange={e=>setBalInput(e.target.value)} onBlur={commitEditBal} onKeyDown={e=>{if(e.key==="Enter")commitEditBal();if(e.key==="Escape")setEditingBal(false);}} style={{width:130,textAlign:"right",fontSize:20,fontWeight:600,color:th.text,background:"transparent",border:"none",borderBottom:"2px solid "+th.text,outline:"none",fontVariantNumeric:"tabular-nums"}}/>
+              :<p style={{fontSize:20,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:curBalVal>=0?"#059669":"#ef4444"}}>{fA(curBalVal,cur,true)}</p>
+            }
           </div>
         </div>
       </div>
 
-      {/* Main tabs */}
-      <div style={{padding:"0 24px",borderBottom:"1px solid "+th.border,display:"flex",gap:0,overflowX:"auto",background:th.bg}}>
-        {[["accueil",0],["transactions",1],["budget",2],["analyse",3],["simulation",4],["settings",5]].map(([k,i])=>(
-          <button key={k} onClick={()=>setTab(k)} style={{fontSize:13,paddingBottom:12,paddingTop:14,paddingLeft:8,paddingRight:8,border:"none",background:"none",cursor:"pointer",borderBottom:tab===k?"2px solid "+th.text:"2px solid transparent",color:tab===k?th.text:th.muted,fontWeight:tab===k?500:400,whiteSpace:"nowrap",marginRight:8}}>{t.MAIN_TABS[i]}</button>
-        ))}
+      {/* Tabs */}
+      <div style={{padding:"0 24px",borderBottom:"1px solid "+th.border,display:"flex",gap:20,overflowX:"auto"}}>
+        {[["calendar",t.tabs[0]],["transactions",t.tabs[1]],["budget",t.tabs[2]],["settings",t.tabs[3]]].map(([k,l])=>(<button key={k} onClick={()=>setTab(k)} style={{fontSize:13,paddingBottom:12,paddingTop:16,border:"none",background:"none",cursor:"pointer",borderBottom:tab===k?"2px solid "+th.text:"2px solid transparent",color:tab===k?th.text:th.muted,fontWeight:tab===k?500:400,transition:"color 0.15s",whiteSpace:"nowrap"}}>{l}</button>))}
       </div>
-
-      {/* Sub-tabs */}
-      {tab==="transactions"&&<SubBar tabs={t.SUB_TX} value={subs.transactions} onChange={v=>setSub("transactions",v)} th={th} action={{label:"＋ "+t.add,fn:()=>openForm()}}/>}
-      {tab==="budget"&&<SubBar tabs={t.SUB_BUD} value={subs.budget} onChange={v=>setSub("budget",v)} th={th}/>}
-      {tab==="analyse"&&<SubBar tabs={t.SUB_ANA} value={subs.analyse} onChange={v=>setSub("analyse",v)} th={th}/>}
-      {tab==="simulation"&&<SubBar tabs={t.SUB_SIM} value={subs.simulation} onChange={v=>setSub("simulation",v)} th={th}/>}
-      {tab==="settings"&&<SubBar tabs={t.SUB_SET} value={subs.settings} onChange={v=>setSub("settings",v)} th={th}/>}
 
       <div style={{padding:"24px",maxWidth:640}}>
 
-        {/* ══ ACCUEIL – Tableau de bord ══ */}
-        {tab==="accueil"&&<div className="fade">
+        {/* ── CALENDRIER ── */}
+        {tab==="calendar"&&<div>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:hasSummary?16:20}}>
-            <MNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} months={MONTHS} th={th}/>
-            <Seg opts={[["daily",t.modDay],["balance",t.modBal]]} value={calMode} onChange={setCalMode} th={th}/>
+            <MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} t={t} th={th}/>
+            <SegCtrl options={[["daily",t.modDay],["balance",t.modBal]]} value={mode} onChange={setMode} th={th}/>
           </div>
-          {hasSummary&&<div style={{marginBottom:18,paddingBottom:18,borderBottom:"1px solid "+th.border,display:"flex",flexWrap:"wrap",gap:"14px 24px"}}>
-            {disp.endBal&&endBal!==null&&<div><p style={{...lbl,margin:"0 0 3px"}}>{t.endBalLbl}</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:endBal>=0?th.pos:th.neg}}>{fA(endBal,cur,true)}</p></div>}
-            {disp.revExp&&<><div><p style={{...lbl,margin:"0 0 3px"}}>{t.revLbl}</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:th.pos}}>+{fA(monthStats.inc,cur,true)}</p></div><div><p style={{...lbl,margin:"0 0 3px"}}>{t.expLbl}</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:th.neg}}>−{fA(monthStats.exp,cur,true)}</p></div></>}
-            {disp.net&&<div><p style={{...lbl,margin:"0 0 3px"}}>{t.netLbl}</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:monthStats.net>=0?th.pos:th.neg}}>{monthStats.net>=0?"+":"−"}{fA(monthStats.net,cur,true)}</p></div>}
+          {hasSummary&&<div style={{marginBottom:20,paddingBottom:20,borderBottom:"1px solid "+th.border,display:"flex",flexWrap:"wrap",gap:"16px 28px"}}>
+            {disp.endBal&&endBalVal!==null&&<div><p style={{...lbl,margin:"0 0 4px"}}>{t.endBalLbl}</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:endBalVal>=0?"#059669":"#ef4444"}}>{fA(endBalVal,cur,true)}</p></div>}
+            {disp.revExp&&<><div><p style={{...lbl,margin:"0 0 4px"}}>{t.revLbl}</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:"#059669"}}>+{fA(monthStats.inc,cur,true)}</p></div><div><p style={{...lbl,margin:"0 0 4px"}}>{t.expLbl}</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:"#ef4444"}}>−{fA(monthStats.exp,cur,true)}</p></div></>}
+            {disp.net&&<div><p style={{...lbl,margin:"0 0 4px"}}>{t.netLbl}</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:monthStats.net>=0?"#059669":"#ef4444"}}>{monthStats.net>=0?"+":"−"}{fA(monthStats.net,cur,true)}</p></div>}
           </div>}
-          <CalGrid/>
-        </div>}
-
-        {/* ══ TRANSACTIONS ══ */}
-        {tab==="transactions"&&<div className="fade">
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
-            <MNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} months={MONTHS} th={th}/>
-            <p style={{...lbl,margin:0}}>{monthTxs.length} tx</p>
-          </div>
-          {/* Historique */}
-          {subs.transactions===0&&(monthTxs.length===0
-            ?<div style={{textAlign:"center",padding:"48px 0"}}><p style={{fontSize:32,color:th.border,marginBottom:8}}>◎</p><p style={{fontSize:13,color:th.muted}}>{t.noTx}</p></div>
-            :monthTxs.map(tx=><TxRow key={tx.id} tx={tx}/>))}
-          {/* Récurrentes */}
-          {subs.transactions===1&&<div>
-            <p style={{...lbl,marginBottom:16}}>{recurTxs.length} {isFr?"transactions récurrentes":"recurring transactions"}</p>
-            {recurTxs.length===0?<div style={{textAlign:"center",padding:"48px 0"}}><p style={{fontSize:13,color:th.muted}}>{t.noTx}</p></div>
-            :recurTxs.map(tx=><TxRow key={tx.id} tx={tx} showRec/>)}
-          </div>}
-        </div>}
-
-        {/* ══ BUDGET ══ */}
-        {tab==="budget"&&<div className="fade">
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
-            <MNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} months={MONTHS} th={th}/>
-          </div>
-          {/* Par catégorie */}
-          {subs.budget===0&&<div>
-            {totalBudget>0&&<Card th={th} style={{padding:"14px 16px",marginBottom:16}}>
-              <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
-                <span style={{fontSize:13,color:th.text,fontWeight:500}}>{isFr?"Total dépenses":"Total expenses"}</span>
-                <span style={{fontSize:13,fontWeight:600,fontVariantNumeric:"tabular-nums",color:totalSpent>totalBudget?th.neg:th.pos}}>{fA(totalSpent,cur,true)} <span style={{color:th.muted,fontWeight:400}}>{t.budgetOf} {fA(totalBudget,cur,true)}</span></span>
-              </div>
-              <div style={{height:6,background:th.surface,borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",width:Math.min(totalSpent/totalBudget*100,100)+"%",background:totalSpent>totalBudget?"#ef4444":totalSpent/totalBudget>0.8?"#f59e0b":"#10b981",borderRadius:3,transition:"width 0.4s"}}/></div>
-            </Card>}
-            {CATS.filter(c=>c.id!=="income").map(cat=>{
-              const spent=catStats[cat.id]?.spent||0;const budget=budgets[cat.id]||0;
-              const pct=budget>0?Math.min(spent/budget*100,100):0;const over=budget>0&&spent>budget;
-              return(<Card key={cat.id} th={th} style={{padding:"12px 14px",marginBottom:10}}>
-                <div style={{display:"flex",alignItems:"center",gap:10}}>
-                  <div style={{width:36,height:36,borderRadius:10,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{cat.emoji}</div>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:5}}>
-                      <span style={{fontSize:13,color:th.text,fontWeight:500}}>{cn[cat.id]}</span>
-                      <div style={{display:"flex",alignItems:"center",gap:4,flexShrink:0}}>
-                        <span style={{fontSize:12,fontVariantNumeric:"tabular-nums",color:over?th.neg:spent>0?th.text:th.muted}}>{fA(spent,cur,true)}</span>
-                        {budget>0&&<span style={{fontSize:11,color:th.muted}}>{t.budgetOf}</span>}
-                        <input type="number" min={0} step={10} value={budget||""} onChange={e=>setBudgets(b=>({...b,[cat.id]:parseFloat(e.target.value)||0}))} placeholder={t.budgetUnset} style={{width:68,fontSize:12,textAlign:"right",color:"#2563eb",background:"transparent",border:"none",borderBottom:"1px dashed "+th.inputBorder,outline:"none",fontVariantNumeric:"tabular-nums"}}/>
-                      </div>
-                    </div>
-                    <div style={{height:5,background:th.surface,borderRadius:2.5,overflow:"hidden"}}>{budget>0&&<div style={{height:"100%",width:pct+"%",background:over?"#ef4444":pct>80?"#f59e0b":"#10b981",borderRadius:2.5,transition:"width 0.4s"}}/>}</div>
-                  </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",marginBottom:4}}>{t.days.map((d,i)=><div key={i} style={{textAlign:"center",fontSize:11,color:th.muted,padding:"4px 0"}}>{d.slice(0,3)}</div>)}</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2}}>
+            {cells.map((day,i)=>{
+              if(!day)return<div key={"e"+i} style={{paddingBottom:"100%"}}/>;
+              const data=dayData[day]||{net:0,bal:0,count:0,cats:[]};const tod=isTod(day);const val=mode==="daily"?data.net:data.bal;const pos=val>0,neg=val<0;
+              return(<div key={day} onClick={()=>setDayMod({day})} style={{paddingBottom:"100%",position:"relative",borderRadius:10,cursor:"pointer",background:tod?th.surface:"transparent",border:tod?"1.5px solid "+th.text:"1.5px solid transparent"}}>
+                <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2}}>
+                  <span style={{fontSize:12,fontWeight:tod?600:400,color:tod?th.text:th.sub}}>{day}</span>
+                  {data.count>0&&<span style={{fontSize:10,fontWeight:500,fontVariantNumeric:"tabular-nums",lineHeight:1.2,color:pos?"#059669":neg?"#ef4444":th.muted}}>{mode==="daily"?(val>=0?"+":"−")+fA(val,cur):(val>=0?"":"-")+fA(val,cur)}</span>}
+                  {data.cats.length>0&&<div style={{display:"flex",gap:2,marginTop:1}}>{[...new Set(data.cats.map(c=>c.color))].slice(0,3).map((c,ci)=><div key={ci} style={{width:4,height:4,borderRadius:"50%",background:c}}/>)}</div>}
                 </div>
-              </Card>);
+              </div>);
             })}
-          </div>}
-          {/* Objectifs d'épargne */}
-          {subs.budget===1&&<div>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
-              <p style={{...lbl,margin:0}}>{t.SUB_BUD[1]}</p>
-              <button onClick={()=>setGoalForm({id:null,name:"",target:"",saved:""})} style={{fontSize:12,color:th.sub,background:"none",border:"1px solid "+th.border,borderRadius:8,padding:"5px 12px",cursor:"pointer"}}>＋ {t.addGoal}</button>
-            </div>
-            {goals.length===0&&<div style={{textAlign:"center",padding:"48px 0"}}><p style={{fontSize:32,color:th.border,marginBottom:8}}>🎯</p><p style={{fontSize:13,color:th.muted}}>{t.noData}</p></div>}
-            {goals.map(g=>{const pct=g.target>0?Math.min(g.saved/g.target*100,100):0;return(
-              <Card key={g.id} th={th} style={{padding:"14px 16px",marginBottom:10}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
-                  <div><p style={{fontSize:13,color:th.text,fontWeight:500,margin:0}}>{g.name}</p><p style={{fontSize:11,color:th.muted,margin:"2px 0 0",fontVariantNumeric:"tabular-nums"}}>{fA(g.saved,cur,true)} {t.budgetOf} {fA(g.target,cur,true)}</p></div>
-                  <div style={{display:"flex",gap:6}}><button onClick={()=>setGoalForm({...g,target:String(g.target),saved:String(g.saved)})} style={{fontSize:12,color:th.muted,background:"none",border:"none",cursor:"pointer"}}>✎</button><button onClick={()=>setGoals(prev=>prev.filter(x=>x.id!==g.id))} style={{fontSize:12,color:th.danger,background:"none",border:"none",cursor:"pointer"}}>✕</button></div>
-                </div>
-                <div style={{height:8,background:th.surface,borderRadius:4,overflow:"hidden"}}><div style={{height:"100%",width:pct+"%",background:pct>=100?th.pos:"#3b82f6",borderRadius:4,transition:"width 0.4s"}}/></div>
-                <p style={{fontSize:11,color:th.muted,margin:"5px 0 0",textAlign:"right"}}>{pct.toFixed(0)}%</p>
-              </Card>
-            );})}
-          </div>}
+          </div>
         </div>}
 
-        {/* ══ ANALYSE ══ */}
-        {tab==="analyse"&&<div className="fade">
-          {/* Statistiques */}
-          {subs.analyse===0&&<div>
-            <p style={{...lbl,marginBottom:12}}>{t.statsTitle}</p>
-            <div style={{overflowX:"auto"}}>
-              <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
-                <thead><tr>{[isFr?"Mois":"Month","Revenus","Dépenses","Net","Solde"].map(h=><th key={h} style={{textAlign:"right",padding:"8px 6px",color:th.muted,fontWeight:500,borderBottom:"1px solid "+th.border,whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
-                <tbody>{statsData.map((row,i)=>{const isNow=row.yr===TODAY.getFullYear()&&row.mo===TODAY.getMonth();return(
-                  <tr key={i} style={{background:isNow?th.surface:"transparent"}}>
-                    <td style={{padding:"9px 6px",color:isNow?th.text:th.sub,fontWeight:isNow?600:400,whiteSpace:"nowrap",borderBottom:"1px solid "+th.border}}>{MONTHS[row.mo].slice(0,3)} {row.yr}</td>
-                    <td style={{textAlign:"right",padding:"9px 6px",color:th.pos,fontWeight:500,fontVariantNumeric:"tabular-nums",borderBottom:"1px solid "+th.border}}>{fA(row.inc,cur)}</td>
-                    <td style={{textAlign:"right",padding:"9px 6px",color:th.neg,fontWeight:500,fontVariantNumeric:"tabular-nums",borderBottom:"1px solid "+th.border}}>{fA(row.exp,cur)}</td>
-                    <td style={{textAlign:"right",padding:"9px 6px",color:row.net>=0?th.pos:th.neg,fontWeight:600,fontVariantNumeric:"tabular-nums",borderBottom:"1px solid "+th.border}}>{row.net>=0?"+":"−"}{fA(row.net,cur)}</td>
-                    <td style={{textAlign:"right",padding:"9px 6px",color:row.bal>=0?th.pos:th.neg,fontWeight:600,fontVariantNumeric:"tabular-nums",borderBottom:"1px solid "+th.border}}>{fA(row.bal,cur)}</td>
-                  </tr>
-                );})}</tbody>
-              </table>
-            </div>
-          </div>}
-          {/* Graphiques */}
-          {subs.analyse===1&&<div>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
-              <MNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} months={MONTHS} th={th}/>
-            </div>
-            {totalSpent===0?<div style={{textAlign:"center",padding:"48px 0"}}><p style={{fontSize:13,color:th.muted}}>{t.noData}</p></div>
-            :<div>
-              <p style={{...lbl,marginBottom:12}}>{t.chartsTitle}</p>
-              {CATS.filter(c=>c.id!=="income"&&(catStats[c.id]?.spent||0)>0).sort((a,b)=>(catStats[b.id]?.spent||0)-(catStats[a.id]?.spent||0)).map(cat=>{
-                const spent=catStats[cat.id]?.spent||0;
-                const pct=totalSpent>0?spent/totalSpent*100:0;
-                return(<div key={cat.id} style={{marginBottom:12}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
-                    <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:16}}>{cat.emoji}</span><span style={{fontSize:13,color:th.text}}>{cn[cat.id]}</span></div>
-                    <div style={{display:"flex",gap:10,alignItems:"center"}}><span style={{fontSize:11,color:th.muted}}>{pct.toFixed(0)}%</span><span style={{fontSize:13,fontWeight:600,color:th.text,fontVariantNumeric:"tabular-nums"}}>{fA(spent,cur,true)}</span></div>
-                  </div>
-                  <div style={{height:8,background:th.surface,borderRadius:4,overflow:"hidden"}}><div style={{height:"100%",width:pct+"%",background:cat.color,borderRadius:4,transition:"width 0.4s"}}/></div>
-                </div>);
-              })}
-            </div>}
-          </div>}
-          {/* Habitudes */}
-          {subs.analyse===2&&<div>
-            <p style={{...lbl,marginBottom:4}}>{t.habTitle}</p>
-            <p style={{fontSize:11,color:th.muted,marginBottom:16}}>{t.habAvg}</p>
-            {habData.length===0?<div style={{textAlign:"center",padding:"48px 0"}}><p style={{fontSize:13,color:th.muted}}>{t.noData}</p></div>
-            :habData.map(cat=>{
-              const maxAvg=habData[0].avg;const pct=maxAvg>0?cat.avg/maxAvg*100:0;
-              return(<Card key={cat.id} th={th} style={{padding:"12px 14px",marginBottom:10,display:"flex",alignItems:"center",gap:10}}>
-                <div style={{width:36,height:36,borderRadius:10,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{cat.emoji}</div>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
-                    <span style={{fontSize:13,color:th.text,fontWeight:500}}>{cn[cat.id]}</span>
-                    <span style={{fontSize:13,fontWeight:600,color:th.neg,fontVariantNumeric:"tabular-nums"}}>−{fA(cat.avg,cur,true)}</span>
-                  </div>
-                  <div style={{height:5,background:th.surface,borderRadius:2.5,overflow:"hidden"}}><div style={{height:"100%",width:pct+"%",background:cat.color,borderRadius:2.5}}/></div>
-                </div>
-              </Card>);
-            })}
-          </div>}
+        {/* ── TRANSACTIONS ── */}
+        {tab==="transactions"&&<div>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
+            <MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} t={t} th={th}/>
+            <p style={{...lbl,margin:0}}>{t.txCount(monthTxs.length)}</p>
+          </div>
+          {monthTxs.length===0
+            ?<div style={{textAlign:"center",padding:"60px 0"}}><p style={{fontSize:32,color:th.border,margin:"0 0 8px"}}>◎</p><p style={{fontSize:13,color:th.muted}}>{t.noTx}</p></div>
+            :monthTxs.map(tx=>{const cat=catById(tx.category||"other");const n=occsInMonth(tx,yr,mo).length;const total=tx.amount*n;return(<div key={tx.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderBottom:"1px solid "+th.border}}>
+              <div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:34,height:34,borderRadius:9,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{cat.emoji}</div><div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p><p style={{fontSize:11,color:th.muted,margin:"3px 0 0"}}>{t.catNames[cat.id]} · {recLabel(tx,t)}{n>1?<span style={{color:th.sub}}> ×{n}</span>:null}</p></div></div>
+              <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}><span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:tx.type==="income"?"#059669":"#ef4444"}}>{tx.type==="income"?"+":"−"}{fA(total,cur,true)}</span><button onClick={()=>openForm(tx)} style={{fontSize:13,color:th.muted,background:"none",border:"none",cursor:"pointer",padding:4}}>✎</button></div>
+            </div>);})
+          }
         </div>}
 
-        {/* ══ SIMULATION ══ */}
-        {tab==="simulation"&&<div className="fade">
-          {/* Simuler dépense */}
-          {subs.simulation===0&&<div>
-            <p style={{...lbl,marginBottom:16}}>{t.simExpTitle}</p>
-            <Card th={th} style={{padding:"16px 18px",marginBottom:16}}>
-              <div style={{marginBottom:14}}><label style={lbl}>{t.amtLbl}</label><input type="number" inputMode="decimal" value={simExpAmt} onChange={e=>setSimExpAmt(e.target.value)} placeholder="0.00" style={iSt}/></div>
-              <div style={{marginBottom:4}}><label style={lbl}>{t.simExpFreqLbl}</label></div>
-              <div style={{marginTop:8}}><Seg opts={t.FREQ_OPTS.map(o=>[o.v,o.l])} value={simExpFreq} onChange={setSimExpFreq} th={th}/></div>
-            </Card>
-            {simExpImpact&&<div style={{display:"flex",flexDirection:"column",gap:10}}>
-              <Card th={th} style={{padding:"14px 18px"}}>
-                <p style={{...lbl,margin:"0 0 4px"}}>{t.simExpImpact}</p>
-                <p style={{fontSize:20,fontWeight:700,color:th.neg,fontVariantNumeric:"tabular-nums",margin:0}}>−{fA(simExpImpact.monthly,cur,true)}</p>
-              </Card>
-              <Card th={th} style={{padding:"14px 18px"}}>
-                <p style={{...lbl,margin:"0 0 4px"}}>{t.simExpNewBal}</p>
-                <p style={{fontSize:20,fontWeight:700,color:simExpImpact.newEndBal>=0?th.pos:th.neg,fontVariantNumeric:"tabular-nums",margin:0}}>{fA(simExpImpact.newEndBal,cur,true)}</p>
-              </Card>
-            </div>}
-            {!simExpAmt&&<div style={{textAlign:"center",padding:"32px 0"}}><p style={{fontSize:13,color:th.muted}}>{isFr?"Entrez un montant pour voir l'impact.":"Enter an amount to see the impact."}</p></div>}
-          </div>}
-          {/* Projeter */}
-          {subs.simulation===1&&<div>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
-              <p style={{...lbl,margin:0}}>{t.simMonthsLbl}</p>
-              <select value={simMonths} onChange={e=>setSimMonths(Number(e.target.value))} style={{fontSize:13,color:th.text,background:th.surface,border:"1px solid "+th.border,borderRadius:8,padding:"5px 8px",cursor:"pointer",outline:"none"}}>{[3,6,12,18,24,36].map(n=><option key={n} value={n}>{n}</option>)}</select>
+        {/* ── BUDGET ── */}
+        {tab==="budget"&&<div>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
+            <MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} t={t} th={th}/>
+          </div>
+          {totalBudget>0&&<div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:"16px 18px",marginBottom:20}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}><span style={{fontSize:13,color:th.text,fontWeight:500}}>{t.budgetTotal}</span><span style={{fontSize:13,fontWeight:600,fontVariantNumeric:"tabular-nums",color:totalSpent>totalBudget?"#ef4444":"#059669"}}>{fA(totalSpent,cur,true)} <span style={{color:th.muted,fontWeight:400}}>{t.budgetOf} {fA(totalBudget,cur,true)}</span></span></div><div style={{height:6,background:th.surface,borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",width:Math.min(totalSpent/totalBudget*100,100)+"%",borderRadius:3,background:totalSpent>totalBudget?"#ef4444":totalSpent/totalBudget>0.8?"#f59e0b":"#10b981",transition:"width 0.4s"}}/></div></div>}
+          <p style={{...lbl,marginBottom:16}}>{t.budgetLbl}</p>
+          {expenseCats.map(cat=>{const stats=catStats[cat.id]||{spent:0};const budget=budgets[cat.id]||0;const pct=budget>0?Math.min(stats.spent/budget*100,100):0;const over=budget>0&&stats.spent>budget;return(<div key={cat.id} style={{marginBottom:14,background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:"14px 16px"}}><div style={{display:"flex",alignItems:"center",gap:12}}><div style={{width:38,height:38,borderRadius:10,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{cat.emoji}</div><div style={{flex:1,minWidth:0}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:6}}><span style={{fontSize:13,color:th.text,fontWeight:500}}>{t.catNames[cat.id]}</span><div style={{display:"flex",alignItems:"center",gap:4,flexShrink:0}}><span style={{fontSize:13,fontVariantNumeric:"tabular-nums",color:over?"#ef4444":stats.spent>0?th.text:th.muted}}>{fA(stats.spent,cur,true)}</span>{budget>0&&<span style={{fontSize:12,color:th.muted}}>{t.budgetOf}</span>}<input type="number" min={0} step={10} value={budget||""} onChange={e=>setBudgets(b=>({...b,[cat.id]:parseFloat(e.target.value)||0}))} placeholder={t.budgetUnset} style={{width:72,fontSize:12,textAlign:"right",color:"#2563eb",background:"transparent",border:"none",borderBottom:"1px dashed "+th.inputBorder,outline:"none",fontVariantNumeric:"tabular-nums"}}/></div></div><div style={{height:5,background:th.surface,borderRadius:2.5,overflow:"hidden"}}>{budget>0&&<div style={{height:"100%",width:pct+"%",background:over?"#ef4444":pct>80?"#f59e0b":"#10b981",borderRadius:2.5,transition:"width 0.4s"}}/>}</div></div></div></div>);})}
+          {monthStats.inc>0&&<div style={{marginTop:8,background:"#05966915",border:"1px solid #05966930",borderRadius:14,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}><div style={{width:38,height:38,borderRadius:10,background:"#05966922",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>💰</div><div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{t.revenuSummary}</p><p style={{fontSize:12,color:"#059669",margin:"2px 0 0",fontWeight:600,fontVariantNumeric:"tabular-nums"}}>+{fA(monthStats.inc,cur,true)}</p></div></div>}
+        </div>}
+
+        {/* ── PARAMÈTRES ── */}
+        {tab==="settings"&&<div>
+          <p style={{...lbl,marginBottom:8}}>{t.tabs[3]}</p>
+          <div style={{padding:"12px 0",borderBottom:"1px solid "+th.border,display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{t.initBalLbl}</p><p style={{fontSize:11,color:th.muted,margin:"3px 0 0"}}>{t.initBalSub}</p></div><div style={{display:"flex",alignItems:"center",gap:4}}><input type="number" value={initBal} step="0.01" onChange={e=>setInitBal(parseFloat(e.target.value)||0)} style={{width:96,textAlign:"right",fontSize:13,color:"#2563eb",background:"transparent",border:"none",outline:"none",fontVariantNumeric:"tabular-nums"}}/><span style={{fontSize:11,color:th.muted}}>$</span></div></div>
+          <Sel label={t.langLbl} value={lang} opts={t.langOpts} onChange={setLang} th={th}/>
+          <Sel label={t.curLbl} value={cur} opts={t.curOpts} onChange={setCur} th={th}/>
+          <p style={{...lbl,margin:"24px 0 4px"}}>{t.dispLbl}</p>
+          <Tog label={t.showEndBal} value={disp.endBal} onChange={v=>setDisp(d=>({...d,endBal:v}))} th={th}/>
+          <Tog label={t.showRevExp} value={disp.revExp} onChange={v=>setDisp(d=>({...d,revExp:v}))} th={th}/>
+          <Tog label={t.showNet} value={disp.net} onChange={v=>setDisp(d=>({...d,net:v}))} th={th}/>
+          <p style={{...lbl,margin:"24px 0 4px"}}>{t.darkLbl}</p>
+          <div style={{paddingBottom:16,borderBottom:"1px solid "+th.border}}><SegCtrl options={[["off",t.darkOff],["auto",t.darkAuto],["on",t.darkOn]]} value={darkMode} onChange={setDarkMode} th={th}/></div>
+
+          {/* ── SAUVEGARDE ── */}
+          <p style={{...lbl,margin:"24px 0 8px"}}>Sauvegarde</p>
+          <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:16,marginBottom:20,display:"flex",flexDirection:"column",gap:16}}>
+
+            {/* 1. Destination */}
+            <div>
+              <p style={{fontSize:11,color:th.muted,margin:"0 0 8px",letterSpacing:"0.08em",textTransform:"uppercase"}}>Destination</p>
+              <SegCtrl options={[["local","💾 Local"],["github","☁️ GitHub"]]} value={saveMode} onChange={setSaveMode} th={th}/>
             </div>
-            {simProj.map((row,i)=>{const isNow=row.yr===TODAY.getFullYear()&&row.mo===TODAY.getMonth();const maxAbs=Math.max(...simProj.map(r=>Math.abs(r.net)),1);const barW=Math.abs(row.net)/maxAbs*100;return(
-              <div key={i} style={{marginBottom:8,background:isNow?th.surface:th.cardBg,border:"1px solid "+(isNow?th.text:th.border),borderRadius:14,padding:"12px 16px"}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:6}}>
-                  <span style={{fontSize:13,color:th.text,fontWeight:isNow?600:400}}>{MONTHS[row.mo].slice(0,3)} {row.yr}</span>
-                  <div style={{display:"flex",gap:14,alignItems:"baseline"}}>
-                    <span style={{fontSize:11,color:row.net>=0?th.pos:th.neg,fontVariantNumeric:"tabular-nums"}}>{row.net>=0?"+":"−"}{fA(row.net,cur)}</span>
-                    <span style={{fontSize:13,fontWeight:600,fontVariantNumeric:"tabular-nums",color:row.bal>=0?th.pos:th.neg}}>{fA(row.bal,cur,true)}</span>
-                  </div>
-                </div>
-                <div style={{height:4,background:th.border,borderRadius:2,overflow:"hidden"}}><div style={{height:"100%",width:barW+"%",background:row.net>=0?"#059669":"#ef4444",borderRadius:2}}/></div>
-              </div>
-            );})}
-          </div>}
-          {/* Scénarios */}
-          {subs.simulation===2&&<div>
-            <p style={{...lbl,marginBottom:16}}>{t.scenTitle}</p>
-            <Card th={th} style={{padding:"16px 18px",marginBottom:16}}>
-              <div style={{marginBottom:14}}>
-                <label style={lbl}>{t.scenDeltaInc} ($)</label>
-                <input type="number" value={scenDeltaInc} onChange={e=>setScenDeltaInc(parseFloat(e.target.value)||0)} style={iSt}/>
+
+            {/* 2. Config GitHub */}
+            {saveMode==="github"&&<div style={{display:"flex",flexDirection:"column",gap:12,paddingTop:4,borderTop:"1px solid "+th.border}}>
+              <div>
+                <label style={lbl}>Personal Access Token</label>
+                <input type="password" value={ghToken} onChange={e=>setGhToken(e.target.value)} placeholder="ghp_xxxxxxxxxxxx" style={{...iSt,fontSize:12,fontFamily:"monospace"}}/>
               </div>
               <div>
-                <label style={lbl}>{t.scenDeltaExp} ($)</label>
-                <input type="number" value={scenDeltaExp} onChange={e=>setScenDeltaExp(parseFloat(e.target.value)||0)} style={iSt}/>
+                <label style={lbl}>Gist ID <span style={{color:th.muted,textTransform:"none",fontSize:10,letterSpacing:0}}>(auto après 1ère sauvegarde)</span></label>
+                <input type="text" value={ghGistId} onChange={e=>setGhGistId(e.target.value)} placeholder="Laisser vide pour créer un nouveau Gist" style={{...iSt,fontSize:12,fontFamily:"monospace"}}/>
               </div>
-            </Card>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
-              <div style={{padding:"10px 12px",background:th.surface,borderRadius:10,textAlign:"center"}}><p style={{...lbl,margin:"0 0 4px"}}>{t.scenBase}</p><p style={{fontSize:14,fontWeight:600,color:th.text,margin:0,fontVariantNumeric:"tabular-nums"}}>{fA(scenData[0]?.balA||0,cur,true)}</p></div>
-              <div style={{padding:"10px 12px",background:"#2563eb15",border:"1px solid #2563eb44",borderRadius:10,textAlign:"center"}}><p style={{...lbl,margin:"0 0 4px",color:"#2563eb"}}>{t.scenMod}</p><p style={{fontSize:14,fontWeight:600,color:"#2563eb",margin:0,fontVariantNumeric:"tabular-nums"}}>{fA(scenData[0]?.balB||0,cur,true)}</p></div>
-            </div>
-            {scenData.map((row,i)=>(
-              <div key={i} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",borderBottom:"1px solid "+th.border}}>
-                <span style={{fontSize:13,color:th.sub,minWidth:70}}>{MONTHS[row.mo].slice(0,3)} {row.yr}</span>
-                <div style={{display:"flex",gap:16,flex:1,justifyContent:"flex-end"}}>
-                  <span style={{fontSize:12,color:row.balA>=0?th.pos:th.neg,fontVariantNumeric:"tabular-nums"}}>{fA(row.balA,cur,true)}</span>
-                  <span style={{fontSize:12,fontWeight:600,color:"#2563eb",fontVariantNumeric:"tabular-nums"}}>{fA(row.balB,cur,true)}</span>
-                </div>
-              </div>
-            ))}
-          </div>}
-        </div>}
+              <Tog label="Charger au démarrage" sub="Pull automatique depuis GitHub à l'ouverture" value={ghPullOnStart} onChange={setGhPullOnStart} th={th}/>
+              {/* Restaurer manuellement seulement si pull auto désactivé */}
+              {!ghPullOnStart&&<button onClick={ghPull} style={{padding:"10px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:10,background:"none",color:th.text,cursor:"pointer"}}>↓ Restaurer depuis GitHub</button>}
+              <p style={{fontSize:11,color:th.muted,margin:0,lineHeight:1.5}}>Gist <strong>privé</strong>. Token requis : permission <code>gist</code> seulement.</p>
+            </div>}
 
-        {/* ══ PARAMÈTRES ══ */}
-        {tab==="settings"&&<div className="fade">
-          {/* Catégories */}
-          {subs.settings===0&&<div>
-            <p style={{...lbl,marginBottom:16}}>{t.catSettingsTitle}</p>
-            {CATS.map(cat=>(
-              <div key={cat.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 0",borderBottom:"1px solid "+th.border}}>
-                <div style={{width:34,height:34,borderRadius:9,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{cat.emoji}</div>
-                <input type="text" value={cn[cat.id]} onChange={e=>setCustomCatNames(prev=>({...prev,[cat.id]:e.target.value}))} style={{flex:1,fontSize:13,color:th.text,background:"transparent",border:"none",borderBottom:"1px solid "+th.inputBorder,padding:"4px 0",outline:"none"}}/>
-              </div>
-            ))}
-            <button onClick={()=>setCustomCatNames({})} style={{marginTop:14,fontSize:12,color:th.muted,background:"none",border:"1px solid "+th.border,borderRadius:8,padding:"6px 14px",cursor:"pointer"}}>{isFr?"Réinitialiser":"Reset"}</button>
-          </div>}
-          {/* Sauvegarde */}
-          {subs.settings===1&&<div>
-            <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:16,marginBottom:20,display:"flex",flexDirection:"column",gap:16}}>
-              <div>
-                <p style={{...lbl,margin:"0 0 10px"}}>Destination</p>
-                <Seg opts={[["local","💾 Local"],["github","☁️ GitHub"]]} value={saveMode} onChange={setSaveMode} th={th}/>
-              </div>
-              {saveMode==="github"&&<div style={{display:"flex",flexDirection:"column",gap:12,paddingTop:4,borderTop:"1px solid "+th.border}}>
-                <div><label style={lbl}>Personal Access Token</label><input type="password" value={ghToken} onChange={e=>setGhToken(e.target.value)} placeholder="ghp_xxxxxxxxxxxx" style={{...iSt,fontSize:12,fontFamily:"monospace"}}/></div>
-                <div><label style={lbl}>Gist ID <span style={{color:th.muted,textTransform:"none",fontSize:10,letterSpacing:0}}>(auto après 1ère sauvegarde)</span></label><input type="text" value={ghGistId} onChange={e=>setGhGistId(e.target.value)} placeholder="Laisser vide pour créer un nouveau Gist" style={{...iSt,fontSize:12,fontFamily:"monospace"}}/></div>
-                <Tog label="Charger au démarrage" sub="Pull automatique depuis GitHub à l'ouverture" value={ghPullOnStart} onChange={setGhPullOnStart} th={th}/>
-                {!ghPullOnStart&&<button onClick={ghPullFn} style={{padding:"10px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:10,background:"none",color:th.text,cursor:"pointer"}}>↓ Restaurer depuis GitHub</button>}
-                <p style={{fontSize:11,color:th.muted,margin:0,lineHeight:1.5}}>Gist <strong>privé</strong>. Token : permission <code>gist</code> seulement.</p>
-              </div>}
-              <div style={{borderTop:"1px solid "+th.border,paddingTop:14}}>
-                <p style={{...lbl,margin:"0 0 10px"}}>Déclenchement</p>
-                <Seg opts={[["auto","⚡ Auto (3s)"],["manual","✋ Manuel"]]} value={saveAuto?"auto":"manual"} onChange={v=>setSaveAuto(v==="auto")} th={th}/>
-              </div>
-              {!saveAuto&&<button onClick={handleManualSave} style={{padding:"11px 0",fontSize:13,fontWeight:600,border:"none",borderRadius:10,background:th.btnBg,color:th.btnText,cursor:"pointer"}}>↑ Sauvegarder maintenant</button>}
-              {ghStatus&&<p style={{fontSize:12,margin:0,color:ghStatus.startsWith("✓")?"#059669":ghStatus.startsWith("⏳")?th.sub:th.danger}}>{ghStatus}</p>}
+            {/* 3. Déclenchement */}
+            <div style={{borderTop:"1px solid "+th.border,paddingTop:14}}>
+              <p style={{fontSize:11,color:th.muted,margin:"0 0 8px",letterSpacing:"0.08em",textTransform:"uppercase"}}>Déclenchement</p>
+              <SegCtrl options={[["auto","⚡ Auto (3s)"],["manual","✋ Manuel"]]} value={saveAuto?"auto":"manual"} onChange={v=>setSaveAuto(v==="auto")} th={th}/>
             </div>
-            <p style={{...lbl,marginBottom:8}}>{t.savingData}</p>
-            <div style={{display:"flex",gap:8}}>
-              <button onClick={()=>setExportMod(true)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:10,background:"none",color:th.text,cursor:"pointer"}}>↑ {t.exportBtn}</button>
-              <button onClick={()=>{setImportText("");setImportMod(true);}} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:10,background:"none",color:th.text,cursor:"pointer"}}>↓ {t.importBtn}</button>
-            </div>
-          </div>}
-          {/* Langue */}
-          {subs.settings===2&&<div>
-            <p style={{...lbl,marginBottom:12}}>{t.langLbl}</p>
-            <Seg opts={t.LANG_OPTS.map(o=>[o.v,o.l])} value={lang} onChange={setLang} th={th}/>
-            <div style={{marginTop:20}}>
-              <p style={{...lbl,marginBottom:12}}>{t.curLbl}</p>
-              <Seg opts={t.CUR_OPTS.map(o=>[o.v,o.l])} value={cur} onChange={setCur} th={th}/>
-            </div>
-            <div style={{padding:"12px 0",borderBottom:"1px solid "+th.border,display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:20}}>
-              <div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{isFr?"Solde initial":"Initial balance"}</p><p style={{fontSize:11,color:th.muted,margin:"3px 0 0"}}>{isFr?"Montant de départ":"Starting amount"}</p></div>
-              <div style={{display:"flex",alignItems:"center",gap:4}}><input type="number" value={initBal} step="0.01" onChange={e=>setInitBal(parseFloat(e.target.value)||0)} style={{width:96,textAlign:"right",fontSize:13,color:"#2563eb",background:"transparent",border:"none",outline:"none",fontVariantNumeric:"tabular-nums"}}/><span style={{fontSize:11,color:th.muted}}>$</span></div>
-            </div>
-          </div>}
-          {/* Apparence */}
-          {subs.settings===3&&<div>
-            <p style={{...lbl,marginBottom:12}}>{t.darkLbl}</p>
-            <Seg opts={[["off",t.darkOff],["auto",t.darkAuto],["on",t.darkOn]]} value={darkMode} onChange={setDarkMode} th={th}/>
-            <div style={{marginTop:20}}>
-              <p style={{...lbl,marginBottom:12}}>{isFr?"Résumé du mois":"Month summary"}</p>
-              <Tog label={t.showEndBal} value={disp.endBal} onChange={v=>setDisp(d=>({...d,endBal:v}))} th={th}/>
-              <Tog label={t.showRevExp} value={disp.revExp} onChange={v=>setDisp(d=>({...d,revExp:v}))} th={th}/>
-              <Tog label={t.showNet} value={disp.net} onChange={v=>setDisp(d=>({...d,net:v}))} th={th}/>
-            </div>
-            <div style={{marginTop:20,padding:"16px",background:isDark?"rgba(239,68,68,0.07)":"#fff5f5",border:"1px solid "+th.danger+"44",borderRadius:14}}>
-              <p style={{fontSize:13,color:th.danger,margin:"0 0 2px",fontWeight:600}}>{t.delAccLbl}</p>
-              <p style={{fontSize:11,color:th.muted,margin:"0 0 12px"}}>{t.delAccSub}</p>
-              <button onClick={()=>{setDelAccMod(true);setDelAccInput("");}} style={{fontSize:13,color:th.danger,background:"none",border:"1px solid "+th.danger,borderRadius:10,padding:"8px 16px",cursor:"pointer"}}>{t.delAccLbl} →</button>
-            </div>
-            <button onClick={()=>{setAuth(false);setU("");setPw("");}} style={{marginTop:16,fontSize:13,color:th.muted,background:"none",border:"none",cursor:"pointer"}}>{t.logout}</button>
-          </div>}
+
+            {/* 4. Bouton manuel */}
+            {!saveAuto&&<button onClick={handleManualSave} style={{padding:"11px 0",fontSize:13,fontWeight:600,border:"none",borderRadius:10,background:th.btnBg,color:th.btnText,cursor:"pointer"}}>↑ Sauvegarder maintenant</button>}
+
+            {ghStatus&&<p style={{fontSize:12,margin:0,color:ghStatus.startsWith("✓")?"#059669":ghStatus.startsWith("⏳")?th.sub:"#ef4444"}}>{ghStatus}</p>}
+          </div>
+
+          {/* Données */}
+          <p style={{...lbl,margin:"0 0 8px"}}>{t.exportLbl}</p>
+          <div style={{display:"flex",gap:8,paddingBottom:20,borderBottom:"1px solid "+th.border}}>
+            <button onClick={()=>setExportMod(true)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:10,background:"none",color:th.text,cursor:"pointer"}}>↑ {t.exportBtn}</button>
+            <button onClick={()=>{setImportText("");setImportMod(true);}} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:10,background:"none",color:th.text,cursor:"pointer"}}>↓ {t.importBtn}</button>
+          </div>
+          <div style={{marginTop:20,padding:"16px",background:isDark?"rgba(239,68,68,0.07)":"#fff5f5",border:"1px solid "+th.danger+"44",borderRadius:14}}>
+            <p style={{fontSize:13,color:th.danger,margin:"0 0 2px",fontWeight:600}}>{t.delAccLbl}</p>
+            <p style={{fontSize:11,color:th.muted,margin:"0 0 12px"}}>{t.delAccSub}</p>
+            <button onClick={()=>{setDelAccMod(true);setDelAccInput("");}} style={{fontSize:13,color:th.danger,background:"none",border:"1px solid "+th.danger,borderRadius:10,padding:"8px 16px",cursor:"pointer"}}>{t.delAccLbl} →</button>
+          </div>
+          <div style={{marginTop:28}}><button onClick={()=>{setAuth(false);setU("");setPw("");}} style={{fontSize:13,color:th.muted,background:"none",border:"none",cursor:"pointer"}}>{t.logout}</button></div>
         </div>}
       </div>
 
-      {/* ══ MODALS ══ */}
-      {exportMod&&<Sheet onClose={()=>setExportMod(false)} th={th}><SHd title={t.exportBtn} onClose={()=>setExportMod(false)} th={th}/><p style={{fontSize:12,color:th.sub,marginBottom:12}}>{t.exportInstr}</p><textarea readOnly value={getJSON()} style={{width:"100%",height:160,padding:"10px 12px",fontSize:11,fontFamily:"monospace",color:th.sub,background:th.surface,border:"1px solid "+th.border,borderRadius:10,resize:"none",boxSizing:"border-box",lineHeight:1.5}}/><div style={{display:"flex",gap:8,marginTop:12}}><button onClick={()=>setExportMod(false)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>{t.exportClose}</button><button onClick={handleCopy} style={{flex:2,padding:"11px 0",fontSize:13,border:"none",borderRadius:12,background:copied?"#059669":th.btnBg,color:copied?"#fff":th.btnText,cursor:"pointer",fontWeight:500}}>{copied?t.exportCopied:t.exportCopy}</button></div></Sheet>}
-      {importMod&&<Sheet onClose={()=>setImportMod(false)} th={th}><SHd title={t.importBtn} onClose={()=>setImportMod(false)} th={th}/><p style={{fontSize:12,color:th.sub,marginBottom:12}}>{t.importInstr}</p><textarea value={importText} onChange={e=>setImportText(e.target.value)} placeholder={t.importPaste} style={{width:"100%",height:200,padding:"10px 12px",fontSize:11,fontFamily:"monospace",color:th.text,background:th.surface,border:"1px solid "+th.border,borderRadius:10,resize:"none",boxSizing:"border-box",lineHeight:1.5}}/><div style={{display:"flex",gap:8,marginTop:12}}><button onClick={()=>setImportMod(false)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>{t.cancel}</button><button onClick={handleImport} disabled={!importText.trim()} style={{flex:2,padding:"11px 0",fontSize:13,border:"none",borderRadius:12,background:importText.trim()?th.btnBg:th.surface,color:importText.trim()?th.btnText:th.muted,cursor:importText.trim()?"pointer":"default",fontWeight:500}}>{t.importRestore}</button></div></Sheet>}
-
-      {/* Day modal */}
-      {dayMod&&<Sheet onClose={()=>{setDayMod(null);setExpandedCatTx(null);}} th={th}>
-        <SHd title={MONTHS[mo]+" "+dayMod.day} onClose={()=>{setDayMod(null);setExpandedCatTx(null);}} th={th} right={<button onClick={()=>{setDayMod(null);openForm(null,dayDateStr);}} style={{fontSize:12,color:th.sub,background:"none",border:"1px solid "+th.border,borderRadius:8,padding:"5px 12px",cursor:"pointer"}}>+ {t.add}</button>}/>
+      {/* ── MODALS ── */}
+      {exportMod&&<Sheet onClose={()=>setExportMod(false)} th={th}><SheetHead title={t.exportModalTitle} onClose={()=>setExportMod(false)} th={th}/><p style={{fontSize:12,color:th.sub,marginBottom:12}}>{t.exportInstr}</p><textarea readOnly value={getExportJSON()} style={{width:"100%",height:180,padding:"10px 12px",fontSize:11,fontFamily:"monospace",color:th.sub,background:th.surface,border:"1px solid "+th.border,borderRadius:10,resize:"none",boxSizing:"border-box",lineHeight:1.5}}/><div style={{display:"flex",gap:8,marginTop:12}}><button onClick={()=>setExportMod(false)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>{t.exportClose}</button><button onClick={handleCopy} style={{flex:2,padding:"11px 0",fontSize:13,border:"none",borderRadius:12,background:copied?"#059669":th.btnBg,color:copied?"#fff":th.btnText,cursor:"pointer",fontWeight:500,transition:"background 0.2s"}}>{copied?t.exportCopied:t.exportCopy}</button></div></Sheet>}
+      {importMod&&<Sheet onClose={()=>setImportMod(false)} th={th}><SheetHead title={t.importModalTitle} onClose={()=>setImportMod(false)} th={th}/><p style={{fontSize:12,color:th.sub,marginBottom:12}}>{t.importInstr}</p><textarea value={importText} onChange={e=>setImportText(e.target.value)} placeholder={t.importPaste} style={{width:"100%",height:200,padding:"10px 12px",fontSize:11,fontFamily:"monospace",color:th.text,background:th.surface,border:"1px solid "+th.border,borderRadius:10,resize:"none",boxSizing:"border-box",lineHeight:1.5}}/><div style={{display:"flex",gap:8,marginTop:12}}><button onClick={()=>setImportMod(false)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>{t.cancel}</button><button onClick={handleImport} disabled={!importText.trim()} style={{flex:2,padding:"11px 0",fontSize:13,border:"none",borderRadius:12,background:importText.trim()?th.btnBg:th.surface,color:importText.trim()?th.btnText:th.muted,cursor:importText.trim()?"pointer":"default",fontWeight:500}}>{t.importRestore}</button></div></Sheet>}
+      {dayMod&&<Sheet onClose={()=>{setDayMod(null);setExpandedCatTx(null);}} th={th}><SheetHead title={t.months[mo]+" "+dayMod.day} onClose={()=>{setDayMod(null);setExpandedCatTx(null);}} th={th} right={<button onClick={()=>{setDayMod(null);openForm(null,dayModalDateStr);}} style={{fontSize:12,color:th.sub,background:"none",border:"1px solid "+th.border,borderRadius:8,padding:"5px 11px",cursor:"pointer"}}>+ {t.add}</button>}/>
         {dayModalList.length===0?<div style={{textAlign:"center",padding:"32px 0"}}><p style={{fontSize:13,color:th.muted}}>{t.emptyDay}</p></div>
-        :dayModalList.map(tx=>{const cat=catById(tx.category||"other");const isExp=expandedCatTx===tx.id;return(<div key={tx.id}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 0",borderBottom:isExp?"none":"1px solid "+th.border}}>
-            <div style={{display:"flex",alignItems:"center",gap:10,flex:1,cursor:"pointer"}} onClick={()=>setExpandedCatTx(isExp?null:tx.id)}>
-              <div style={{width:36,height:36,borderRadius:10,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0,border:"2px solid "+(isExp?cat.color:"transparent"),transition:"border 0.15s"}}>{cat.emoji}</div>
-              <div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p><p style={{fontSize:11,margin:"2px 0 0",color:cat.color,fontWeight:500}}>{cn[cat.id]} · {tx.type==="income"?t.incomeLbl:t.expenseLbl}</p></div>
-            </div>
-            <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
-              <span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:tx.type==="income"?th.pos:th.neg}}>{tx.type==="income"?"+":"−"}{fA(tx.amount,cur,true)}</span>
-              <button onClick={e=>{e.stopPropagation();openDel(tx,dayDateStr);}} style={{fontSize:15,color:th.muted,background:"none",border:"none",cursor:"pointer",padding:"4px 6px",lineHeight:1}}>✕</button>
-            </div>
-          </div>
-          {isExp&&<div style={{padding:"10px 0 16px 46px",borderBottom:"1px solid "+th.border}}><p style={{fontSize:10,color:th.muted,letterSpacing:"0.1em",textTransform:"uppercase",margin:"0 0 8px"}}>{t.quickCatLbl}</p><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{CATS.map(c=>(<button key={c.id} onClick={()=>changeTxCat(tx.id,c.id)} title={cn[c.id]} style={{width:36,height:36,borderRadius:9,background:c.id===cat.id?c.color+"30":th.surface,border:"2px solid "+(c.id===cat.id?c.color:"transparent"),fontSize:18,cursor:"pointer"}}>{c.emoji}</button>))}</div></div>}
-        </div>);})}
+        :dayModalList.map(tx=>{const cat=catById(tx.category||"other");const isExp=expandedCatTx===tx.id;return(<div key={tx.id}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 0",borderBottom:isExp?"none":"1px solid "+th.border}}><div style={{display:"flex",alignItems:"center",gap:10,flex:1,cursor:"pointer"}} onClick={()=>setExpandedCatTx(isExp?null:tx.id)}><div style={{width:36,height:36,borderRadius:10,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0,border:"2px solid "+(isExp?cat.color:"transparent"),transition:"border 0.15s"}}>{cat.emoji}</div><div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p><p style={{fontSize:11,margin:"2px 0 0",color:cat.color,fontWeight:500}}>{t.catNames[cat.id]} · {tx.type==="income"?t.incomeLbl:t.expenseLbl}</p></div></div><div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}><span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:tx.type==="income"?"#059669":"#ef4444"}}>{tx.type==="income"?"+":"−"}{fA(tx.amount,cur,true)}</span><button onClick={e=>{e.stopPropagation();openDel(tx,dayModalDateStr);}} style={{fontSize:15,color:th.muted,background:"none",border:"none",cursor:"pointer",padding:"4px 6px",lineHeight:1,borderRadius:6}}>✕</button></div></div>{isExp&&<div style={{padding:"10px 0 16px 46px",borderBottom:"1px solid "+th.border}}><p style={{fontSize:10,color:th.muted,letterSpacing:"0.1em",textTransform:"uppercase",margin:"0 0 8px"}}>{t.quickCatLbl}</p><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{CATS.map(c=>(<button key={c.id} onClick={()=>changeTxCat(tx.id,c.id)} title={t.catNames[c.id]} style={{width:36,height:36,borderRadius:9,background:c.id===cat.id?c.color+"30":th.surface,border:"2px solid "+(c.id===cat.id?c.color:"transparent"),fontSize:18,cursor:"pointer",transition:"all 0.15s"}}>{c.emoji}</button>))}</div></div>}</div>);})}
       </Sheet>}
-
-      {/* Delete modal */}
-      {delMod&&<Sheet onClose={()=>setDelMod(null)} th={th}>
-        <h3 style={{fontSize:15,color:th.text,fontWeight:600,margin:"0 0 4px"}}>{t.delTitle}</h3>
-        <p style={{fontSize:12,color:th.muted,margin:"0 0 20px"}}>{delMod.tx.description}</p>
-        <div style={{display:"flex",flexDirection:"column",gap:8}}>
-          {normRec(delMod.tx.recurrence,parseD(delMod.tx.startDate)).type==="once"
-            ?<button onClick={()=>handleDel("all")} style={{padding:"13px 16px",textAlign:"left",fontSize:14,color:"#ef4444",background:isDark?"rgba(239,68,68,0.1)":"#fff5f5",border:"none",borderRadius:12,cursor:"pointer",fontWeight:500}}>{t.allEvts}</button>
-            :[["this",t.thisEvt],["follow",t.thisFollow],["all",t.allEvts]].map(([sc,lb])=>(<button key={sc} onClick={()=>handleDel(sc)} style={{padding:"13px 16px",textAlign:"left",fontSize:14,color:sc==="all"?"#ef4444":th.text,background:sc==="all"?(isDark?"rgba(239,68,68,0.1)":"#fff5f5"):th.surface,border:"none",borderRadius:12,cursor:"pointer",fontWeight:sc==="all"?500:400}}>{lb}</button>))}
-        </div>
-        <button onClick={()=>setDelMod(null)} style={{width:"100%",marginTop:12,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>{t.cancel}</button>
-      </Sheet>}
-
-      {/* Delete account modal */}
-      {delAccMod&&<Sheet onClose={()=>{setDelAccMod(false);setDelAccInput("");}} th={th}>
-        <div style={{textAlign:"center",marginBottom:20}}><div style={{fontSize:40,marginBottom:12}}>⚠️</div><h3 style={{fontSize:16,color:th.text,fontWeight:700,margin:"0 0 8px"}}>{isFr?"Confirmer la suppression":"Confirm deletion"}</h3><p style={{fontSize:13,color:th.sub,margin:0,lineHeight:1.6}}>{t.delAccModalBody}</p></div>
-        <div style={{background:th.surface,borderRadius:10,padding:"10px 14px",textAlign:"center",marginBottom:16}}><span style={{fontSize:16,fontWeight:700,letterSpacing:"0.1em",color:th.danger}}>{t.delAccWord}</span></div>
-        <input type="text" value={delAccInput} onChange={e=>setDelAccInput(e.target.value)} placeholder={t.delAccWord} style={{...iSt,textAlign:"center",fontSize:15,fontWeight:600,letterSpacing:"0.05em",borderColor:delAccInput===t.delAccWord?"#059669":th.inputBorder,color:delAccInput===t.delAccWord?"#059669":th.text,marginBottom:16}}/>
-        <div style={{display:"flex",gap:8}}><button onClick={()=>{setDelAccMod(false);setDelAccInput("");}} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>{t.cancel}</button><button onClick={()=>{if(delAccInput===t.delAccWord){deleteAccount();setDelAccMod(false);}}} disabled={delAccInput!==t.delAccWord} style={{flex:2,padding:"11px 0",fontSize:13,border:"none",borderRadius:12,background:delAccInput===t.delAccWord?"#ef4444":th.surface,color:delAccInput===t.delAccWord?"#fff":th.muted,cursor:delAccInput===t.delAccWord?"pointer":"default",fontWeight:500}}>{isFr?"Supprimer définitivement":"Delete permanently"}</button></div>
-      </Sheet>}
-
-      {/* Transaction form */}
-      {formMod&&<Sheet onClose={()=>setFormMod(null)} th={th}>
-        <SHd title={formMod.tx?t.editTx:t.newTx} onClose={()=>setFormMod(null)} th={th}/>
-        <div style={{display:"flex",gap:8,marginBottom:20}}>
-          {[["expense",t.expenseLbl],["income",t.incomeLbl]].map(([v,l])=>(<button key={v} onClick={()=>handleTypeChange(v)} style={{flex:1,padding:"9px 0",fontSize:13,borderRadius:10,border:"none",cursor:"pointer",fontWeight:500,background:formMod.form.type===v?(v==="income"?"rgba(16,185,129,0.12)":"rgba(239,68,68,0.10)"):th.surface,color:formMod.form.type===v?(v==="income"?"#059669":"#ef4444"):th.muted}}>{l}</button>))}
-        </div>
-        <div style={{display:"flex",flexDirection:"column",gap:16}}>
-          <div><label style={lbl}>{t.descLbl}</label><input type="text" value={formMod.form.desc} onChange={e=>setFF("desc")(e.target.value)} style={iSt}/></div>
-          <div><label style={lbl}>{t.amtLbl}</label><input type="number" value={formMod.form.amt} step="0.01" placeholder="0.00" onChange={e=>setFF("amt")(e.target.value)} style={iSt}/></div>
-          <div><label style={lbl}>{t.startLbl}</label><input type="date" value={formMod.form.date} onChange={e=>handleDateChange(e.target.value)} style={iSt}/></div>
-          <div><label style={lbl}>{t.catLbl}</label><CatPicker value={formMod.form.cat} onChange={v=>setFF("cat")(v)} th={th} cn={cn}/></div>
-          <RecPicker value={formMod.form.rec} onChange={v=>setFF("rec")(v)} startDate={formMod.form.date} t={t} th={th}/>
-        </div>
-        <div style={{display:"flex",gap:8,marginTop:24,alignItems:"center"}}>
-          {formMod.tx&&<button onClick={()=>{setDelMod({tx:formMod.tx,dateStr:formMod.tx.startDate});setFormMod(null);}} style={{fontSize:13,color:th.danger,background:"none",border:"none",cursor:"pointer",padding:"4px 8px"}}>{t.delBtn}</button>}
-          <button onClick={()=>setFormMod(null)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>{t.cancel}</button>
-          <button onClick={saveForm} style={{flex:2,padding:"11px 0",fontSize:13,border:"none",borderRadius:12,background:th.btnBg,color:th.btnText,cursor:"pointer",fontWeight:500}}>{formMod.tx?t.save:t.add}</button>
-        </div>
-      </Sheet>}
-
-      {/* Goal form */}
-      {goalForm&&<Sheet onClose={()=>setGoalForm(null)} th={th}>
-        <SHd title={goalForm.id?isFr?"Modifier l'objectif":"Edit goal":t.addGoal} onClose={()=>setGoalForm(null)} th={th}/>
-        <div style={{display:"flex",flexDirection:"column",gap:16}}>
-          <div><label style={lbl}>{t.goalName}</label><input type="text" value={goalForm.name} onChange={e=>setGoalForm(g=>({...g,name:e.target.value}))} style={iSt}/></div>
-          <div><label style={lbl}>{t.goalTarget}</label><input type="number" value={goalForm.target} step="0.01" placeholder="0.00" onChange={e=>setGoalForm(g=>({...g,target:e.target.value}))} style={iSt}/></div>
-          <div><label style={lbl}>{t.goalSaved}</label><input type="number" value={goalForm.saved} step="0.01" placeholder="0.00" onChange={e=>setGoalForm(g=>({...g,saved:e.target.value}))} style={iSt}/></div>
-        </div>
-        <div style={{display:"flex",gap:8,marginTop:24}}>
-          <button onClick={()=>setGoalForm(null)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>{t.cancel}</button>
-          <button onClick={()=>{const tgt=parseFloat(goalForm.target)||0;const svd=parseFloat(goalForm.saved)||0;if(!goalForm.name.trim()||tgt<=0)return;if(goalForm.id){setGoals(prev=>prev.map(g=>g.id===goalForm.id?{...g,name:goalForm.name,target:tgt,saved:svd}:g));}else{setGoals(prev=>[...prev,{id:Date.now().toString(),name:goalForm.name,target:tgt,saved:svd}]);}setGoalForm(null);}} style={{flex:2,padding:"11px 0",fontSize:13,border:"none",borderRadius:12,background:th.btnBg,color:th.btnText,cursor:"pointer",fontWeight:500}}>{goalForm.id?t.save:t.add}</button>
-        </div>
-      </Sheet>}
+      {delMod&&<Sheet onClose={()=>setDelMod(null)} th={th}><h3 style={{fontSize:15,color:th.text,fontWeight:600,margin:"0 0 4px"}}>{t.delTitle}</h3><p style={{fontSize:12,color:th.muted,margin:"0 0 20px"}}>{delMod.tx.description}</p><div style={{display:"flex",flexDirection:"column",gap:8}}>{normRec(delMod.tx.recurrence,parseD(delMod.tx.startDate)).type==="once"?<button onClick={()=>handleDel("all")} style={{padding:"13px 16px",textAlign:"left",fontSize:14,color:"#ef4444",background:isDark?"rgba(239,68,68,0.1)":"#fff5f5",border:"none",borderRadius:12,cursor:"pointer",fontWeight:500}}>{t.allEvts}</button>:[["this",t.thisEvt],["follow",t.thisFollow],["all",t.allEvts]].map(([sc,lb])=>(<button key={sc} onClick={()=>handleDel(sc)} style={{padding:"13px 16px",textAlign:"left",fontSize:14,color:sc==="all"?"#ef4444":th.text,background:sc==="all"?(isDark?"rgba(239,68,68,0.1)":"#fff5f5"):th.surface,border:"none",borderRadius:12,cursor:"pointer",fontWeight:sc==="all"?500:400}}>{lb}</button>))}</div><button onClick={()=>setDelMod(null)} style={{width:"100%",marginTop:12,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>{t.cancel}</button></Sheet>}
+      {delAccMod&&<Sheet onClose={()=>{setDelAccMod(false);setDelAccInput("");}} th={th}><div style={{textAlign:"center",marginBottom:20}}><div style={{fontSize:40,marginBottom:12}}>⚠️</div><h3 style={{fontSize:16,color:th.text,fontWeight:700,margin:"0 0 8px"}}>{t.delAccModalTitle}</h3><p style={{fontSize:13,color:th.sub,margin:0,lineHeight:1.6}}>{t.delAccModalBody}</p></div><div style={{background:th.surface,borderRadius:10,padding:"10px 14px",textAlign:"center",marginBottom:16}}><span style={{fontSize:16,fontWeight:700,letterSpacing:"0.1em",color:th.danger}}>{t.delAccWord}</span></div><input type="text" value={delAccInput} onChange={e=>setDelAccInput(e.target.value)} placeholder={t.delAccWord} style={{...iSt,textAlign:"center",fontSize:15,fontWeight:600,letterSpacing:"0.05em",borderColor:delAccInput===t.delAccWord?"#059669":th.inputBorder,color:delAccInput===t.delAccWord?"#059669":th.text,marginBottom:16}}/><div style={{display:"flex",gap:8}}><button onClick={()=>{setDelAccMod(false);setDelAccInput("");}} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>{t.cancel}</button><button onClick={()=>{if(delAccInput===t.delAccWord){deleteAccount();setDelAccMod(false);}}} disabled={delAccInput!==t.delAccWord} style={{flex:2,padding:"11px 0",fontSize:13,border:"none",borderRadius:12,background:delAccInput===t.delAccWord?"#ef4444":th.surface,color:delAccInput===t.delAccWord?"#fff":th.muted,cursor:delAccInput===t.delAccWord?"pointer":"default",fontWeight:500}}>{t.delAccConfirm}</button></div></Sheet>}
+      {formMod&&<Sheet onClose={()=>setFormMod(null)} th={th}><SheetHead title={formMod.tx?t.editTx:t.newTx} onClose={()=>setFormMod(null)} th={th}/><div style={{display:"flex",gap:8,marginBottom:20}}>{[["expense",t.expenseLbl],["income",t.incomeLbl]].map(([v,l])=>(<button key={v} onClick={()=>handleTypeChange(v)} style={{flex:1,padding:"9px 0",fontSize:13,borderRadius:10,border:"none",cursor:"pointer",fontWeight:500,transition:"all 0.15s",background:formMod.form.type===v?(v==="income"?(isDark?"rgba(16,185,129,0.15)":"#ecfdf5"):(isDark?"rgba(239,68,68,0.12)":"#fff5f5")):th.surface,color:formMod.form.type===v?(v==="income"?"#059669":"#ef4444"):th.muted}}>{l}</button>))}</div><div style={{display:"flex",flexDirection:"column",gap:16}}><div><label style={lbl}>{t.descLbl}</label><input type="text" value={formMod.form.desc} onChange={e=>setFF("desc")(e.target.value)} style={iSt}/></div><div><label style={lbl}>{t.amtLbl}</label><input type="number" value={formMod.form.amt} step="0.01" placeholder="0.00" onChange={e=>setFF("amt")(e.target.value)} style={iSt}/></div><div><label style={lbl}>{t.startLbl}</label><input type="date" value={formMod.form.date} onChange={e=>handleDateChange(e.target.value)} style={iSt}/></div><CategoryPicker value={formMod.form.cat} onChange={v=>setFF("cat")(v)} th={th} t={t}/><RecurrencePicker value={formMod.form.rec} onChange={v=>setFF("rec")(v)} startDate={formMod.form.date} t={t} th={th}/></div><div style={{display:"flex",gap:8,marginTop:24,alignItems:"center"}}>{formMod.tx&&<button onClick={()=>{setDelMod({tx:formMod.tx,dateStr:formMod.tx.startDate});setFormMod(null);}} style={{fontSize:13,color:"#f87171",background:"none",border:"none",cursor:"pointer",padding:"4px 8px"}}>{t.delBtn}</button>}<button onClick={()=>setFormMod(null)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>{t.cancel}</button><button onClick={saveForm} style={{flex:2,padding:"11px 0",fontSize:13,border:"none",borderRadius:12,background:th.btnBg,color:th.btnText,cursor:"pointer",fontWeight:500}}>{formMod.tx?t.save:t.add}</button></div></Sheet>}
     </div>
   );
 }
