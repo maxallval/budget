@@ -108,176 +108,739 @@ fr:{sub:"Gestion financière",title:"Budget",
   confirmAction:"Confirmer ?",hasOverride:"personnalisé",
   langOpts:LANG_OPTS,curOpts:CUR_OPTS,
   catNames:{housing:"Logement",food:"Alimentation",transport:"Transport",savings:"Épargne",entertain:"Loisirs",health:"Santé",subscript:"Abonnements",shopping:"Magasinage",education:"Éducation",utilities:"Services",income:"Revenus",other:"Autre"}},
-en:{sub:"Financial management",title:"Budget",navHome:"Home",navTx:"Transactions",navBudget:"Budget",navAnalyse:"Analysis",navSettings:"Settings",subHistorique:"History",subRecurrent:"Recurring",subBudgetCat:"Budget by category",subObjectifs:"Goals",subStatistiques:"Statistics",subGraphiques:"Charts",noRecurTx:"No recurring transactions",saveLbl:"Backup",saveDestLbl:"Destination",triggerLbl:"Trigger",ghLoadOnStart:"Load on startup",ghLoadOnStartSub:"Auto-pull from GitHub on open",ghRestoreBtn:"↓ Restore from GitHub",ghPrivateNote:"Private Gist. Token: gist permission only.",saveManualBtn:"↑ Save now",offline:"OFFLINE",syncNever:"Never synced",syncJustNow:"Just synced",syncAgo:(n,u)=>`Synced ${n} ${u} ago`,syncSec:n=>n>1?"seconds":"second",syncMin:n=>n>1?"minutes":"minute",syncHr:n=>n>1?"hours":"hour",syncing:"Syncing",syncFail:"Sync failed",add:"Add",noTx:"No transactions",newTx:"New transaction",editTx:"Edit",descLbl:"Description",amtLbl:"Amount",startLbl:"Start date",recurLbl:"Recurrence",catLbl:"Category",cancel:"Cancel",save:"Save",delBtn:"Delete",incomeLbl:"Income",expenseLbl:"Expense",thisEvt:"This event",thisFollow:"This and following events",allEvts:"All events",delTitle:"Delete transaction",modDay:"Daily",modBal:"Balance",months:["January","February","March","April","May","June","July","August","September","October","November","December"],days:["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],daysS:["S","M","T","W","T","F","S"],nth:["","1st","2nd","3rd","4th","5th"],recOnce:"Once",recDaily:"Every day",recWeeklyPre:"Every week on",recMonthlyDay:"Every month",recMonthlyPre:"Every month on the",recAnnuallyPre:"Annually on",recWeekdays:"Weekdays (Mon–Fri)",recCustom:"Custom",recEvery:"Repeat every",recUnits:[{v:"day",l:"days"},{v:"week",l:"weeks"},{v:"month",l:"months"},{v:"year",l:"years"}],initBalLbl:"Current balance",initBalSub:"Current amount in the wallet after all transactions",langLbl:"Language",curLbl:"Currency",dispLbl:"Summary display",showEndBal:"End-of-month balance",showRevExp:"Revenues & expenses",showNet:"Monthly net",showSync:"Sync bar",revLbl:"Revenues",expLbl:"Expenses",netLbl:"Net",curBalLbl:"Current balance",endBalLbl:"End of month",emptyDay:"No transactions on this day",txCount:n=>`${n} transaction${n!==1?"s":""}`,exportLbl:"Data",exportBtn:"Export",importBtn:"Import",importOk:"Data restored",importErr:"Invalid JSON",exportModalTitle:"Export data",exportCopy:"Copy",exportCopied:"Copied ✓",exportClose:"Close",exportInstr:"Copy this JSON and keep it somewhere safe.",importModalTitle:"Import data",importPaste:"Paste your JSON here…",importRestore:"Restore",importInstr:"Paste a previously exported JSON.",darkLbl:"Dark mode",darkOff:"Off",darkOn:"On",darkAuto:"Automatic",delAccLbl:"Delete account",delAccSub:"This action is irreversible",delAccConfirm:"Delete permanently",delAccModalTitle:"Confirm deletion",delAccModalBody:"All your data will be permanently erased. Type the word below:",delAccWord:"DELETE",budgetLbl:"Monthly budget by category",budgetTotal:"Total expenses",budgetOf:"of",budgetUnset:"No limit",revenuSummary:"Income this month",sectionEdit:"Edit",sectionDelete:"Delete",editInst:"This occurrence",editFollow:"This and following",editAll:"Entire series",endAfter:"End after this date",delInst:"This occurrence",delFollow:"This and following",delBefore:"All prior occurrences",delAll:"All occurrences",confirmAction:"Confirm?",hasOverride:"customized",langOpts:LANG_OPTS,curOpts:CUR_OPTS,catNames:{housing:"Housing",food:"Food",transport:"Transport",savings:"Savings",entertain:"Entertainment",health:"Health",subscript:"Subscriptions",shopping:"Shopping",education:"Education",utilities:"Utilities",income:"Income",other:"Other"}}
+
+en:{sub:"Financial management",title:"Budget",
+  navHome:"Home",navTx:"Transactions",navBudget:"Budget",navAnalyse:"Analysis",navSettings:"Settings",
+  subHistorique:"History",subRecurrent:"Recurring",subBudgetCat:"Budget by category",subObjectifs:"Goals",subStatistiques:"Statistics",subGraphiques:"Charts",
+  noRecurTx:"No recurring transactions",
+  saveLbl:"Backup",saveDestLbl:"Destination",triggerLbl:"Trigger",
+  ghLoadOnStart:"Load on startup",ghLoadOnStartSub:"Auto-pull from GitHub on open",
+  ghRestoreBtn:"↓ Restore from GitHub",ghPrivateNote:"Private Gist. Token: gist permission only.",
+  saveManualBtn:"↑ Save now",offline:"OFFLINE",
+  syncNever:"Never synced",syncJustNow:"Just synced",
+  syncAgo:(n,u)=>`Synced ${n} ${u} ago`,
+  syncSec:n=>n>1?"seconds":"second",syncMin:n=>n>1?"minutes":"minute",syncHr:n=>n>1?"hours":"hour",
+  syncing:"Syncing",syncFail:"Sync failed",
+  add:"Add",noTx:"No transactions",newTx:"New transaction",editTx:"Edit",
+  descLbl:"Description",amtLbl:"Amount",startLbl:"Start date",recurLbl:"Recurrence",catLbl:"Category",
+  cancel:"Cancel",save:"Save",delBtn:"Delete",incomeLbl:"Income",expenseLbl:"Expense",
+  thisEvt:"This event",thisFollow:"This and following events",allEvts:"All events",
+  delTitle:"Delete transaction",modDay:"Daily",modBal:"Balance",
+  months:["January","February","March","April","May","June","July","August","September","October","November","December"],
+  days:["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],
+  daysS:["S","M","T","W","T","F","S"],nth:["","1st","2nd","3rd","4th","5th"],
+  recOnce:"Once",recDaily:"Every day",recWeeklyPre:"Every week on",
+  recMonthlyDay:"Every month",recMonthlyPre:"Every month on the",recAnnuallyPre:"Annually on",
+  recWeekdays:"Weekdays (Mon–Fri)",recCustom:"Custom",recEvery:"Repeat every",
+  recUnits:[{v:"day",l:"days"},{v:"week",l:"weeks"},{v:"month",l:"months"},{v:"year",l:"years"}],
+  initBalLbl:"Current balance",initBalSub:"Current amount in the wallet after all transactions",
+  langLbl:"Language",curLbl:"Currency",dispLbl:"Summary display",
+  showEndBal:"End-of-month balance",showRevExp:"Revenues & expenses",showNet:"Monthly net",showSync:"Sync bar",
+  revLbl:"Revenues",expLbl:"Expenses",netLbl:"Net",curBalLbl:"Current balance",endBalLbl:"End of month",
+  emptyDay:"No transactions on this day",txCount:n=>`${n} transaction${n!==1?"s":""}`,
+  exportLbl:"Data",exportBtn:"Export",importBtn:"Import",importOk:"Data restored",importErr:"Invalid JSON",
+  exportModalTitle:"Export data",exportCopy:"Copy",exportCopied:"Copied ✓",exportClose:"Close",
+  exportInstr:"Copy this JSON and keep it somewhere safe.",
+  importModalTitle:"Import data",importPaste:"Paste your JSON here…",importRestore:"Restore",
+  importInstr:"Paste a previously exported JSON.",
+  darkLbl:"Dark mode",darkOff:"Off",darkOn:"On",darkAuto:"Automatic",
+  delAccLbl:"Delete account",delAccSub:"This action is irreversible",delAccConfirm:"Delete permanently",
+  delAccModalTitle:"Confirm deletion",delAccModalBody:"All your data will be permanently erased. Type the word below:",
+  delAccWord:"DELETE",budgetLbl:"Monthly budget by category",budgetTotal:"Total expenses",
+  budgetOf:"of",budgetUnset:"No limit",revenuSummary:"Income this month",
+  sectionEdit:"Edit",sectionDelete:"Delete",
+  editInst:"This occurrence",editFollow:"This and following",editAll:"Entire series",
+  endAfter:"End after this date",
+  delInst:"This occurrence",delFollow:"This and following",delBefore:"All prior occurrences",delAll:"All occurrences",
+  confirmAction:"Confirm?",hasOverride:"customized",
+  langOpts:LANG_OPTS,curOpts:CUR_OPTS,
+  catNames:{housing:"Housing",food:"Food",transport:"Transport",savings:"Savings",entertain:"Entertainment",health:"Health",subscript:"Subscriptions",shopping:"Shopping",education:"Education",utilities:"Utilities",income:"Income",other:"Other"}},
+
+es:{sub:"Gestión financiera",title:"Presupuesto",
+  navHome:"Inicio",navTx:"Transacciones",navBudget:"Presupuesto",navAnalyse:"Análisis",navSettings:"Configuración",
+  subHistorique:"Historial",subRecurrent:"Recurrente",subBudgetCat:"Presupuesto por categoría",subObjectifs:"Objetivos",subStatistiques:"Estadísticas",subGraphiques:"Gráficos",
+  noRecurTx:"Sin transacciones recurrentes",
+  saveLbl:"Copia de seguridad",saveDestLbl:"Destino",triggerLbl:"Activación",
+  ghLoadOnStart:"Cargar al inicio",ghLoadOnStartSub:"Pull automático desde GitHub al abrir",
+  ghRestoreBtn:"↓ Restaurar desde GitHub",ghPrivateNote:"Gist privado. Token: solo permiso gist.",
+  saveManualBtn:"↑ Guardar ahora",offline:"SIN CONEXIÓN",
+  syncNever:"Nunca sincronizado",syncJustNow:"Sincronizado ahora",
+  syncAgo:(n,u)=>`Sincronizado hace ${n} ${u}`,
+  syncSec:n=>n>1?"segundos":"segundo",syncMin:n=>n>1?"minutos":"minuto",syncHr:n=>n>1?"horas":"hora",
+  syncing:"Sincronizando",syncFail:"Error de sincronización",
+  add:"Agregar",noTx:"Sin transacciones",newTx:"Nueva transacción",editTx:"Editar",
+  descLbl:"Descripción",amtLbl:"Monto",startLbl:"Fecha de inicio",recurLbl:"Recurrencia",catLbl:"Categoría",
+  cancel:"Cancelar",save:"Guardar",delBtn:"Eliminar",incomeLbl:"Ingreso",expenseLbl:"Gasto",
+  thisEvt:"Este evento",thisFollow:"Este y siguientes",allEvts:"Todos los eventos",
+  delTitle:"Eliminar transacción",modDay:"Día",modBal:"Saldo",
+  months:["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"],
+  days:["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"],
+  daysS:["D","L","M","M","J","V","S"],nth:["","1º","2º","3º","4º","5º"],
+  recOnce:"Una vez",recDaily:"Cada día",recWeeklyPre:"Cada semana el",
+  recMonthlyDay:"Cada mes",recMonthlyPre:"Cada mes el",recAnnuallyPre:"Anualmente el",
+  recWeekdays:"Días hábiles (lun.–vie.)",recCustom:"Personalizar",recEvery:"Repetir cada",
+  recUnits:[{v:"day",l:"días"},{v:"week",l:"semanas"},{v:"month",l:"meses"},{v:"year",l:"años"}],
+  initBalLbl:"Saldo actual",initBalSub:"Importe actual en la billetera después de todas las transacciones",
+  langLbl:"Idioma",curLbl:"Moneda",dispLbl:"Vista de resumen",
+  showEndBal:"Saldo fin de mes",showRevExp:"Ingresos y gastos",showNet:"Neto mensual",showSync:"Barra de sincronización",
+  revLbl:"Ingresos",expLbl:"Gastos",netLbl:"Neto",curBalLbl:"Saldo actual",endBalLbl:"Fin de mes",
+  emptyDay:"Sin transacciones este día",txCount:n=>`${n} transacción${n!==1?"es":""}`,
+  exportLbl:"Datos",exportBtn:"Exportar",importBtn:"Importar",importOk:"Datos restaurados",importErr:"JSON inválido",
+  exportModalTitle:"Exportar datos",exportCopy:"Copiar",exportCopied:"Copiado ✓",exportClose:"Cerrar",
+  exportInstr:"Copia este JSON y guárdalo en un lugar seguro.",
+  importModalTitle:"Importar datos",importPaste:"Pega tu JSON aquí…",importRestore:"Restaurar",
+  importInstr:"Pega un JSON exportado previamente.",
+  darkLbl:"Modo oscuro",darkOff:"Desactivado",darkOn:"Activado",darkAuto:"Automático",
+  delAccLbl:"Eliminar cuenta",delAccSub:"Esta acción es irreversible",delAccConfirm:"Eliminar definitivamente",
+  delAccModalTitle:"Confirmar eliminación",delAccModalBody:"Todos los datos serán eliminados. Escribe la palabra:",
+  delAccWord:"ELIMINAR",budgetLbl:"Presupuesto mensual por categoría",budgetTotal:"Total gastos",
+  budgetOf:"de",budgetUnset:"Sin límite",revenuSummary:"Ingresos este mes",
+  sectionEdit:"Editar",sectionDelete:"Eliminar",
+  editInst:"Esta ocurrencia",editFollow:"Esta ocurrencia y las siguientes",editAll:"Toda la serie",
+  endAfter:"Terminar después de esta fecha",
+  delInst:"Esta ocurrencia",delFollow:"Esta ocurrencia y las siguientes",delBefore:"Todas las ocurrencias anteriores",delAll:"Todas las ocurrencias",
+  confirmAction:"¿Confirmar?",hasOverride:"personalizado",
+  langOpts:LANG_OPTS,curOpts:CUR_OPTS,
+  catNames:{housing:"Vivienda",food:"Alimentación",transport:"Transporte",savings:"Ahorros",entertain:"Entretenimiento",health:"Salud",subscript:"Suscripciones",shopping:"Compras",education:"Educación",utilities:"Servicios",income:"Ingresos",other:"Otro"}},
+
+de:{sub:"Finanzverwaltung",title:"Budget",
+  navHome:"Startseite",navTx:"Transaktionen",navBudget:"Budget",navAnalyse:"Analyse",navSettings:"Einstellungen",
+  subHistorique:"Verlauf",subRecurrent:"Wiederkehrend",subBudgetCat:"Budget nach Kategorie",subObjectifs:"Ziele",subStatistiques:"Statistiken",subGraphiques:"Diagramme",
+  noRecurTx:"Keine wiederkehrenden Transaktionen",
+  saveLbl:"Sicherung",saveDestLbl:"Ziel",triggerLbl:"Auslösung",
+  ghLoadOnStart:"Beim Start laden",ghLoadOnStartSub:"Automatischer Pull von GitHub beim Öffnen",
+  ghRestoreBtn:"↓ Von GitHub wiederherstellen",ghPrivateNote:"Privates Gist. Token: nur Gist-Berechtigung.",
+  saveManualBtn:"↑ Jetzt speichern",offline:"OFFLINE",
+  syncNever:"Nie synchronisiert",syncJustNow:"Gerade synchronisiert",
+  syncAgo:(n,u)=>`Vor ${n} ${u} synchronisiert`,
+  syncSec:_=>"Sekunden",syncMin:_=>"Minuten",syncHr:_=>"Stunden",
+  syncing:"Synchronisierung",syncFail:"Synchronisierungsfehler",
+  add:"Hinzufügen",noTx:"Keine Transaktionen",newTx:"Neue Transaktion",editTx:"Bearbeiten",
+  descLbl:"Beschreibung",amtLbl:"Betrag",startLbl:"Startdatum",recurLbl:"Wiederholung",catLbl:"Kategorie",
+  cancel:"Abbrechen",save:"Speichern",delBtn:"Löschen",incomeLbl:"Einnahme",expenseLbl:"Ausgabe",
+  thisEvt:"Dieses Ereignis",thisFollow:"Dieses und folgende",allEvts:"Alle Ereignisse",
+  delTitle:"Transaktion löschen",modDay:"Tag",modBal:"Saldo",
+  months:["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"],
+  days:["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"],
+  daysS:["So","Mo","Di","Mi","Do","Fr","Sa"],nth:["","1.","2.","3.","4.","5."],
+  recOnce:"Einmalig",recDaily:"Täglich",recWeeklyPre:"Jede Woche am",
+  recMonthlyDay:"Jeden Monat",recMonthlyPre:"Jeden Monat am",recAnnuallyPre:"Jährlich am",
+  recWeekdays:"Werktage (Mo–Fr)",recCustom:"Anpassen",recEvery:"Wiederholen alle",
+  recUnits:[{v:"day",l:"Tage"},{v:"week",l:"Wochen"},{v:"month",l:"Monate"},{v:"year",l:"Jahre"}],
+  initBalLbl:"Aktueller Saldo",initBalSub:"Aktueller Betrag im Portfolio nach allen Transaktionen",
+  langLbl:"Sprache",curLbl:"Währung",dispLbl:"Zusammenfassung",
+  showEndBal:"Saldo Monatsende",showRevExp:"Einnahmen & Ausgaben",showNet:"Monatsnetto",showSync:"Synchronisierungsleiste",
+  revLbl:"Einnahmen",expLbl:"Ausgaben",netLbl:"Netto",curBalLbl:"Aktueller Saldo",endBalLbl:"Monatsende",
+  emptyDay:"Keine Transaktionen",txCount:n=>`${n} Transaktion${n!==1?"en":""}`,
+  exportLbl:"Daten",exportBtn:"Exportieren",importBtn:"Importieren",importOk:"Daten wiederhergestellt",importErr:"Ungültiges JSON",
+  exportModalTitle:"Daten exportieren",exportCopy:"Kopieren",exportCopied:"Kopiert ✓",exportClose:"Schließen",
+  exportInstr:"Kopiere dieses JSON und bewahre es sicher auf.",
+  importModalTitle:"Daten importieren",importPaste:"JSON hier einfügen…",importRestore:"Wiederherstellen",
+  importInstr:"Füge ein zuvor exportiertes JSON ein.",
+  darkLbl:"Dunkelmodus",darkOff:"Aus",darkOn:"An",darkAuto:"Automatisch",
+  delAccLbl:"Konto löschen",delAccSub:"Diese Aktion ist unwiderruflich",delAccConfirm:"Endgültig löschen",
+  delAccModalTitle:"Löschung bestätigen",delAccModalBody:"Alle Daten werden gelöscht. Tippe das Wort:",
+  delAccWord:"LÖSCHEN",budgetLbl:"Monatsbudget nach Kategorie",budgetTotal:"Gesamtausgaben",
+  budgetOf:"von",budgetUnset:"Kein Limit",revenuSummary:"Einnahmen diesen Monat",
+  sectionEdit:"Bearbeiten",sectionDelete:"Löschen",
+  editInst:"Diese Instanz",editFollow:"Diese Instanz und folgende",editAll:"Gesamte Serie",
+  endAfter:"Nach diesem Datum beenden",
+  delInst:"Diese Instanz",delFollow:"Diese Instanz und folgende",delBefore:"Alle vorherigen Instanzen",delAll:"Alle Instanzen",
+  confirmAction:"Bestätigen?",hasOverride:"angepasst",
+  langOpts:LANG_OPTS,curOpts:CUR_OPTS,
+  catNames:{housing:"Wohnen",food:"Ernährung",transport:"Transport",savings:"Ersparnisse",entertain:"Unterhaltung",health:"Gesundheit",subscript:"Abonnements",shopping:"Einkaufen",education:"Bildung",utilities:"Nebenkosten",income:"Einnahmen",other:"Sonstiges"}},
+
+pt:{sub:"Gestão financeira",title:"Orçamento",
+  navHome:"Início",navTx:"Transações",navBudget:"Orçamento",navAnalyse:"Análise",navSettings:"Configurações",
+  subHistorique:"Histórico",subRecurrent:"Recorrente",subBudgetCat:"Orçamento por categoria",subObjectifs:"Objetivos",subStatistiques:"Estatísticas",subGraphiques:"Gráficos",
+  noRecurTx:"Sem transações recorrentes",
+  saveLbl:"Backup",saveDestLbl:"Destino",triggerLbl:"Acionamento",
+  ghLoadOnStart:"Carregar ao iniciar",ghLoadOnStartSub:"Pull automático do GitHub ao abrir",
+  ghRestoreBtn:"↓ Restaurar do GitHub",ghPrivateNote:"Gist privado. Token: apenas permissão gist.",
+  saveManualBtn:"↑ Guardar agora",offline:"SEM LIGAÇÃO",
+  syncNever:"Nunca sincronizado",syncJustNow:"Sincronizado agora",
+  syncAgo:(n,u)=>`Sincronizado há ${n} ${u}`,
+  syncSec:n=>n>1?"segundos":"segundo",syncMin:n=>n>1?"minutos":"minuto",syncHr:n=>n>1?"horas":"hora",
+  syncing:"Sincronizando",syncFail:"Falha de sincronização",
+  add:"Adicionar",noTx:"Sem transações",newTx:"Nova transação",editTx:"Editar",
+  descLbl:"Descrição",amtLbl:"Valor",startLbl:"Data de início",recurLbl:"Recorrência",catLbl:"Categoria",
+  cancel:"Cancelar",save:"Guardar",delBtn:"Eliminar",incomeLbl:"Receita",expenseLbl:"Despesa",
+  thisEvt:"Este evento",thisFollow:"Este e seguintes",allEvts:"Todos os eventos",
+  delTitle:"Eliminar transação",modDay:"Dia",modBal:"Saldo",
+  months:["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"],
+  days:["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"],
+  daysS:["D","S","T","Q","Q","S","S"],nth:["","1º","2º","3º","4º","5º"],
+  recOnce:"Uma vez",recDaily:"Diariamente",recWeeklyPre:"Toda semana na",
+  recMonthlyDay:"Todo mês",recMonthlyPre:"Todo mês no",recAnnuallyPre:"Anualmente a",
+  recWeekdays:"Dias úteis (seg.–sex.)",recCustom:"Personalizar",recEvery:"Repetir a cada",
+  recUnits:[{v:"day",l:"dias"},{v:"week",l:"semanas"},{v:"month",l:"meses"},{v:"year",l:"anos"}],
+  initBalLbl:"Saldo atual",initBalSub:"Valor atual na carteira após todas as transações",
+  langLbl:"Idioma",curLbl:"Moeda",dispLbl:"Exibição do resumo",
+  showEndBal:"Saldo fim do mês",showRevExp:"Receitas e despesas",showNet:"Líquido mensal",showSync:"Barra de sincronização",
+  revLbl:"Receitas",expLbl:"Despesas",netLbl:"Líquido",curBalLbl:"Saldo atual",endBalLbl:"Fim do mês",
+  emptyDay:"Sem transações neste dia",txCount:n=>`${n} transaç${n!==1?"ões":"ão"}`,
+  exportLbl:"Dados",exportBtn:"Exportar",importBtn:"Importar",importOk:"Dados restaurados",importErr:"JSON inválido",
+  exportModalTitle:"Exportar dados",exportCopy:"Copiar",exportCopied:"Copiado ✓",exportClose:"Fechar",
+  exportInstr:"Copie este JSON e guarde-o em local seguro.",
+  importModalTitle:"Importar dados",importPaste:"Cole o seu JSON aqui…",importRestore:"Restaurar",
+  importInstr:"Cole um JSON exportado anteriormente.",
+  darkLbl:"Modo escuro",darkOff:"Desativado",darkOn:"Ativado",darkAuto:"Automático",
+  delAccLbl:"Eliminar conta",delAccSub:"Esta ação é irreversível",delAccConfirm:"Eliminar definitivamente",
+  delAccModalTitle:"Confirmar eliminação",delAccModalBody:"Todos os dados serão apagados. Escreva a palavra:",
+  delAccWord:"ELIMINAR",budgetLbl:"Orçamento mensal por categoria",budgetTotal:"Total de despesas",
+  budgetOf:"de",budgetUnset:"Sem limite",revenuSummary:"Receitas este mês",
+  sectionEdit:"Editar",sectionDelete:"Eliminar",
+  editInst:"Esta instância",editFollow:"Esta instância e as seguintes",editAll:"Toda a série",
+  endAfter:"Terminar após esta data",
+  delInst:"Esta instância",delFollow:"Esta instância e as seguintes",delBefore:"Todas as instâncias anteriores",delAll:"Todas as instâncias",
+  confirmAction:"Confirmar?",hasOverride:"personalizado",
+  langOpts:LANG_OPTS,curOpts:CUR_OPTS,
+  catNames:{housing:"Habitação",food:"Alimentação",transport:"Transporte",savings:"Poupanças",entertain:"Entretenimento",health:"Saúde",subscript:"Subscrições",shopping:"Compras",education:"Educação",utilities:"Serviços",income:"Receitas",other:"Outro"}},
+
+it:{sub:"Gestione finanziaria",title:"Budget",
+  navHome:"Home",navTx:"Transazioni",navBudget:"Budget",navAnalyse:"Analisi",navSettings:"Impostazioni",
+  subHistorique:"Storico",subRecurrent:"Ricorrente",subBudgetCat:"Budget per categoria",subObjectifs:"Obiettivi",subStatistiques:"Statistiche",subGraphiques:"Grafici",
+  noRecurTx:"Nessuna transazione ricorrente",
+  saveLbl:"Backup",saveDestLbl:"Destinazione",triggerLbl:"Attivazione",
+  ghLoadOnStart:"Carica all'avvio",ghLoadOnStartSub:"Pull automatico da GitHub all'apertura",
+  ghRestoreBtn:"↓ Ripristina da GitHub",ghPrivateNote:"Gist privato. Token: solo permesso gist.",
+  saveManualBtn:"↑ Salva ora",offline:"NON IN RETE",
+  syncNever:"Mai sincronizzato",syncJustNow:"Sincronizzato ora",
+  syncAgo:(n,u)=>`Sincronizzato ${n} ${u} fa`,
+  syncSec:n=>n>1?"secondi":"secondo",syncMin:n=>n>1?"minuti":"minuto",syncHr:n=>n>1?"ore":"ora",
+  syncing:"Sincronizzazione",syncFail:"Errore di sincronizzazione",
+  add:"Aggiungi",noTx:"Nessuna transazione",newTx:"Nuova transazione",editTx:"Modifica",
+  descLbl:"Descrizione",amtLbl:"Importo",startLbl:"Data di inizio",recurLbl:"Ricorrenza",catLbl:"Categoria",
+  cancel:"Annulla",save:"Salva",delBtn:"Elimina",incomeLbl:"Entrata",expenseLbl:"Uscita",
+  thisEvt:"Questo evento",thisFollow:"Questo e seguenti",allEvts:"Tutti gli eventi",
+  delTitle:"Elimina transazione",modDay:"Giorno",modBal:"Saldo",
+  months:["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"],
+  days:["Domenica","Lunedì","Martedì","Mercoledì","Giovedì","Venerdì","Sabato"],
+  daysS:["D","L","M","M","G","V","S"],nth:["","1°","2°","3°","4°","5°"],
+  recOnce:"Una volta",recDaily:"Ogni giorno",recWeeklyPre:"Ogni settimana il",
+  recMonthlyDay:"Ogni mese",recMonthlyPre:"Ogni mese il",recAnnuallyPre:"Annualmente il",
+  recWeekdays:"Giorni feriali (lun.–ven.)",recCustom:"Personalizza",recEvery:"Ripeti ogni",
+  recUnits:[{v:"day",l:"giorni"},{v:"week",l:"settimane"},{v:"month",l:"mesi"},{v:"year",l:"anni"}],
+  initBalLbl:"Saldo attuale",initBalSub:"Importo attuale nel portafoglio dopo tutte le transazioni",
+  langLbl:"Lingua",curLbl:"Valuta",dispLbl:"Visualizzazione riepilogo",
+  showEndBal:"Saldo fine mese",showRevExp:"Entrate e uscite",showNet:"Netto mensile",showSync:"Barra di sincronizzazione",
+  revLbl:"Entrate",expLbl:"Uscite",netLbl:"Netto",curBalLbl:"Saldo attuale",endBalLbl:"Fine mese",
+  emptyDay:"Nessuna transazione",txCount:n=>`${n} transazion${n!==1?"i":"e"}`,
+  exportLbl:"Dati",exportBtn:"Esporta",importBtn:"Importa",importOk:"Dati ripristinati",importErr:"JSON non valido",
+  exportModalTitle:"Esporta dati",exportCopy:"Copia",exportCopied:"Copiato ✓",exportClose:"Chiudi",
+  exportInstr:"Copia questo JSON e conservalo in un posto sicuro.",
+  importModalTitle:"Importa dati",importPaste:"Incolla il tuo JSON qui…",importRestore:"Ripristina",
+  importInstr:"Incolla un JSON esportato in precedenza.",
+  darkLbl:"Modalità scura",darkOff:"Disattivata",darkOn:"Attivata",darkAuto:"Automatica",
+  delAccLbl:"Elimina account",delAccSub:"Questa azione è irreversibile",delAccConfirm:"Elimina definitivamente",
+  delAccModalTitle:"Conferma eliminazione",delAccModalBody:"Tutti i dati verranno eliminati. Scrivi la parola:",
+  delAccWord:"ELIMINA",budgetLbl:"Budget mensile per categoria",budgetTotal:"Totale spese",
+  budgetOf:"di",budgetUnset:"Nessun limite",revenuSummary:"Entrate questo mese",
+  sectionEdit:"Modifica",sectionDelete:"Elimina",
+  editInst:"Questa istanza",editFollow:"Questa istanza e le seguenti",editAll:"Tutta la serie",
+  endAfter:"Termina dopo questa data",
+  delInst:"Questa istanza",delFollow:"Questa istanza e le seguenti",delBefore:"Tutte le istanze precedenti",delAll:"Tutte le istanze",
+  confirmAction:"Confermare?",hasOverride:"personalizzato",
+  langOpts:LANG_OPTS,curOpts:CUR_OPTS,
+  catNames:{housing:"Abitazione",food:"Alimentazione",transport:"Trasporti",savings:"Risparmio",entertain:"Intrattenimento",health:"Salute",subscript:"Abbonamenti",shopping:"Shopping",education:"Istruzione",utilities:"Utenze",income:"Entrate",other:"Altro"}},
+
+zh:{sub:"个人财务管理",title:"预算",
+  navHome:"主页",navTx:"交易",navBudget:"预算",navAnalyse:"分析",navSettings:"设置",
+  subHistorique:"历史",subRecurrent:"定期",subBudgetCat:"按类别预算",subObjectifs:"目标",subStatistiques:"统计",subGraphiques:"图表",
+  noRecurTx:"无定期交易",
+  saveLbl:"备份",saveDestLbl:"目标位置",triggerLbl:"触发",
+  ghLoadOnStart:"启动时加载",ghLoadOnStartSub:"打开时自动从GitHub拉取",
+  ghRestoreBtn:"↓ 从GitHub恢复",ghPrivateNote:"私有Gist。Token：仅gist权限。",
+  saveManualBtn:"↑ 立即保存",offline:"离线",
+  syncNever:"从未同步",syncJustNow:"刚刚同步",
+  syncAgo:(n,u)=>`${n}${u}前同步`,
+  syncSec:_=>"秒",syncMin:_=>"分钟",syncHr:_=>"小时",
+  syncing:"同步中",syncFail:"同步失败",
+  add:"添加",noTx:"无交易记录",newTx:"新建交易",editTx:"编辑",
+  descLbl:"描述",amtLbl:"金额",startLbl:"开始日期",recurLbl:"重复",catLbl:"分类",
+  cancel:"取消",save:"保存",delBtn:"删除",incomeLbl:"收入",expenseLbl:"支出",
+  thisEvt:"此事件",thisFollow:"此及以后事件",allEvts:"所有事件",
+  delTitle:"删除交易",modDay:"日视图",modBal:"余额",
+  months:["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"],
+  days:["周日","周一","周二","周三","周四","周五","周六"],
+  daysS:["日","一","二","三","四","五","六"],nth:["","第1","第2","第3","第4","第5"],
+  recOnce:"一次",recDaily:"每天",recWeeklyPre:"每周",
+  recMonthlyDay:"每月",recMonthlyPre:"每月第",recAnnuallyPre:"每年",
+  recWeekdays:"工作日（周一至周五）",recCustom:"自定义",recEvery:"每隔",
+  recUnits:[{v:"day",l:"天"},{v:"week",l:"周"},{v:"month",l:"月"},{v:"year",l:"年"}],
+  initBalLbl:"当前余额",initBalSub:"所有交易后钱包中的当前金额",
+  langLbl:"语言",curLbl:"货币",dispLbl:"摘要显示",
+  showEndBal:"月末余额",showRevExp:"收入与支出",showNet:"月净额",showSync:"同步栏",
+  revLbl:"收入",expLbl:"支出",netLbl:"净额",curBalLbl:"当前余额",endBalLbl:"月末",
+  emptyDay:"当天无交易",txCount:n=>`${n} 条交易`,
+  exportLbl:"数据",exportBtn:"导出",importBtn:"导入",importOk:"数据已恢复",importErr:"JSON无效",
+  exportModalTitle:"导出数据",exportCopy:"复制",exportCopied:"已复制 ✓",exportClose:"关闭",
+  exportInstr:"复制此JSON并妥善保存。",
+  importModalTitle:"导入数据",importPaste:"在此粘贴JSON…",importRestore:"恢复",
+  importInstr:"粘贴之前导出的JSON。",
+  darkLbl:"深色模式",darkOff:"关闭",darkOn:"开启",darkAuto:"自动",
+  delAccLbl:"删除账户",delAccSub:"此操作不可撤销",delAccConfirm:"永久删除",
+  delAccModalTitle:"确认删除",delAccModalBody:"所有数据将被清除。输入以下文字：",
+  delAccWord:"删除账户",budgetLbl:"各类别月度预算",budgetTotal:"总支出",
+  budgetOf:"共",budgetUnset:"不限",revenuSummary:"本月收入",
+  sectionEdit:"编辑",sectionDelete:"删除",
+  editInst:"此实例",editFollow:"此实例及以后",editAll:"整个系列",
+  endAfter:"在此日期后结束",
+  delInst:"此实例",delFollow:"此实例及以后",delBefore:"所有之前的实例",delAll:"全部实例",
+  confirmAction:"确认？",hasOverride:"已自定义",
+  langOpts:LANG_OPTS,curOpts:CUR_OPTS,
+  catNames:{housing:"住房",food:"饮食",transport:"交通",savings:"储蓄",entertain:"娱乐",health:"健康",subscript:"订阅",shopping:"购物",education:"教育",utilities:"公用事业",income:"收入",other:"其他"}},
 };
 
 function relTimeStr(lastSync,t){if(!lastSync)return t.syncNever;const secs=Math.floor((Date.now()-lastSync.getTime())/1000);if(secs<15)return t.syncJustNow;if(secs<60)return t.syncAgo(secs,t.syncSec(secs));const mins=Math.floor(secs/60);if(mins<60)return t.syncAgo(mins,t.syncMin(mins));const hrs=Math.floor(mins/60);return t.syncAgo(hrs,t.syncHr(hrs));}
 
 const mkTh=d=>d?{bg:"#0d0d0d",bgSub:"#161616",surface:"#1c1c1c",border:"#252525",inputBorder:"#333",text:"#f0f0f0",sub:"#888",muted:"#444",btnBg:"#efefef",btnText:"#111",togOff:"#3a3a3a",sheetBg:"#161616",danger:"#f87171",cardBg:"#181818"}:{bg:"#fff",bgSub:"#f9fafb",surface:"#f3f4f6",border:"#f0f0f0",inputBorder:"#e5e7eb",text:"#111",sub:"#6b7280",muted:"#9ca3af",btnBg:"#111",btnText:"#fff",togOff:"#d1d5db",sheetBg:"#fff",danger:"#ef4444",cardBg:"#fafafa"};
+
 const parseD=s=>{const[y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d);};
 const dStr=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-
+const dayBef=s=>{const d=parseD(s);d.setDate(d.getDate()-1);return dStr(d);};
+function getNthWD(date){let c=0;const d=new Date(date.getFullYear(),date.getMonth(),1);while(d<=date){if(d.getDay()===date.getDay())c++;d.setDate(d.getDate()+1);}return c;}
 function normRec(rec,s){if(rec&&typeof rec==="object")return rec;const wd=s instanceof Date?s.getDay():parseD(String(s||"2024-01-01")).getDay();return({once:{type:"once"},daily:{type:"daily"},weekly:{type:"weekly",weekday:wd},monthly:{type:"monthly_day"},annual:{type:"annually"}})[rec]||{type:"once"};}
+function recLabel(tx,t){const s=parseD(tx.startDate);const r=normRec(tx.recurrence,s);const wd=r.weekday!==undefined?r.weekday:s.getDay();switch(r.type){case"once":return t.recOnce;case"daily":return t.recDaily;case"weekly":return`${t.recWeeklyPre} ${t.days[wd]}`;case"monthly_day":return t.recMonthlyDay;case"monthly_nth_weekday":return`${t.recMonthlyPre} ${t.nth[r.nth]||r.nth} ${t.days[r.weekday]}`;case"annually":return`${t.recAnnuallyPre} ${s.getDate()} ${t.months[s.getMonth()]}`;case"weekdays":return t.recWeekdays;case"custom":{const{interval:iv=1,unit:u="week",weekdays:wds=[]}=r;const ul=t.recUnits.find(x=>x.v===u)?.l||u;let lb=`${t.recEvery} ${iv} ${ul}`;if(u==="week"&&wds.length>0)lb+=" · "+wds.map(w=>t.daysS[w]).join(" ");return lb;}default:return t.recOnce;}}
+function occsInMonth(tx,yr,mo){const ms=new Date(yr,mo,1),me=new Date(yr,mo+1,0);const s=parseD(tx.startDate),e=tx.endDate?parseD(tx.endDate):null;const ex=new Set(tx.exceptions||[]);const r=normRec(tx.recurrence,s);if(s>me||(e&&e<ms))return[];const ok=d=>d>=ms&&d<=me&&d>=s&&(!e||d<=e)&&!ex.has(dStr(d));const snap=d=>new Date(d.getTime());if(r.type==="once")return ok(s)?[s.getDate()]:[];if(r.type==="daily"){const res=[];const d=new Date(s>ms?s:ms);while(d<=me){if(ok(snap(d)))res.push(d.getDate());d.setDate(d.getDate()+1);}return res;}if(r.type==="weekly"){const twd=r.weekday!==undefined?r.weekday:s.getDay();const a=new Date(s);while(a.getDay()!==twd)a.setDate(a.getDate()+1);const res=[];const d=new Date(a);while(d<=me){if(ok(snap(d)))res.push(d.getDate());d.setDate(d.getDate()+7);}return res;}if(r.type==="monthly_day"){const day=s.getDate();if(day>me.getDate())return[];const d=new Date(yr,mo,day);return ok(d)?[day]:[];}if(r.type==="monthly_nth_weekday"){const{nth,weekday:wd2}=r;let c=0;for(let dy=1;dy<=me.getDate();dy++){const d=new Date(yr,mo,dy);if(d.getDay()===wd2){c++;if(c===nth)return ok(d)?[dy]:[];}}return[];}if(r.type==="annually"){if(mo!==s.getMonth()||yr<s.getFullYear())return[];const d=new Date(yr,mo,s.getDate());return ok(d)?[s.getDate()]:[];}if(r.type==="weekdays"){const res=[];const d=new Date(s>ms?s:ms);while(d<=me){const w=d.getDay();if(w>0&&w<6&&ok(snap(d)))res.push(d.getDate());d.setDate(d.getDate()+1);}return res;}if(r.type==="custom"){const{interval:iv=1,unit:u="day",weekdays:wds=[]}=r;const res=[];if(u==="day"){const d=new Date(s>ms?s:ms);while(d<=me){if(Math.round((d-s)/86400000)%iv===0&&ok(snap(d)))res.push(d.getDate());d.setDate(d.getDate()+1);}}else if(u==="week"){const wdSet=new Set(wds.length>0?wds:[s.getDay()]);wdSet.forEach(twd=>{const a=new Date(s);while(a.getDay()!==twd)a.setDate(a.getDate()+1);const d=new Date(a);while(d<=me){if(ok(snap(d)))res.push(d.getDate());d.setDate(d.getDate()+iv*7);}});res.sort((a,b)=>a-b);}else if(u==="month"){const sm=s.getMonth()+s.getFullYear()*12,cm=mo+yr*12;if((cm-sm)<0||(cm-sm)%iv!==0)return[];const d=new Date(yr,mo,s.getDate());if(ok(d))res.push(s.getDate());}else if(u==="year"){if(mo!==s.getMonth()||yr<s.getFullYear())return[];if((yr-s.getFullYear())%iv!==0)return[];const d=new Date(yr,mo,s.getDate());if(ok(d))res.push(s.getDate());}return res;}return[];}
 
-const App=()=>{
-  const[data,setData]=useState(null);
-  const[syncStatus,setSyncStatus]=useState("idle");
+function getOccsWithAmounts(tx,yr,mo){return occsInMonth(tx,yr,mo).map(day=>{const ds=dStr(new Date(yr,mo,day));const ov=(tx.overrides||[]).find(o=>o.date===ds);return{day,dateStr:ds,description:ov?.description??tx.description,amount:ov?.amount??tx.amount,type:ov?.type??tx.type,category:ov?.category??tx.category,hasOverride:!!ov};});}
+function sumOccsUpTo(tx,date){const s=parseD(tx.startDate);if(s>date)return 0;let total=0,y=s.getFullYear(),m=s.getMonth();const ey=date.getFullYear(),em=date.getMonth();let its=0;while((y<ey||(y===ey&&m<=em))&&its++<1200){for(const occ of getOccsWithAmounts(tx,y,m)){if(new Date(y,m,occ.day)<=date)total+=(occ.type==="income"?1:-1)*occ.amount;}m++;if(m>11){m=0;y++;}}return total;}
+const balAt=(txs,init,date)=>txs.reduce((b,tx)=>b+sumOccsUpTo(tx,date),init);
+
+function fA(n,cur,full=false){const a=Math.abs(n);const jpy=cur==="jpy";let nm;if(full){nm=jpy?Math.round(a).toLocaleString():a.toLocaleString("fr-CA",{minimumFractionDigits:2,maximumFractionDigits:2});}else{if(a>=10000)nm=(jpy?Math.round(a/1000):(a/1000)).toFixed(jpy?0:1)+"k";else if(a>=1000)nm=(a/1000).toFixed(jpy?0:2)+"k";else nm=jpy?Math.round(a).toString():a.toFixed(2);}if(cur==="usd")return"$"+nm;if(cur==="eur")return nm+" €";if(cur==="gbp")return"£"+nm;if(cur==="aud")return"A$"+nm;if(cur==="jpy")return"¥"+nm;if(cur==="chf")return nm+" Fr.";return nm+" $";}
+
+const Tog=({label,sub,value,onChange,th})=>(<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0",borderBottom:"1px solid "+th.border}}><div><span style={{fontSize:13,color:th.text,display:"block"}}>{label}</span>{sub&&<span style={{fontSize:11,color:th.muted}}>{sub}</span>}</div><button onClick={()=>onChange(!value)} style={{width:36,height:20,borderRadius:10,background:value?th.btnBg:th.togOff,border:"none",cursor:"pointer",position:"relative",flexShrink:0,transition:"background 0.2s"}}><div style={{position:"absolute",top:2,left:value?16:2,width:16,height:16,background:"#fff",borderRadius:"50%",transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.3)"}}/></button></div>);
+const Sel=({label,value,opts,onChange,th})=>(<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0",borderBottom:"1px solid "+th.border}}><span style={{fontSize:13,color:th.text}}>{label}</span><select value={value} onChange={e=>onChange(e.target.value)} style={{fontSize:13,color:th.text,background:th.bg,border:"none",cursor:"pointer",outline:"none"}}>{opts.map(o=><option key={o.v} value={o.v}>{o.l}</option>)}</select></div>);
+const SegCtrl=({options,value,onChange,th})=>(<div style={{display:"flex",background:th.surface,borderRadius:10,padding:3,gap:2}}>{options.map(([v,l])=>(<button key={v} onClick={()=>onChange(v)} style={{flex:1,fontSize:12,padding:"6px 10px",borderRadius:8,border:"none",cursor:"pointer",background:value===v?th.bg:"transparent",color:value===v?th.text:th.muted,boxShadow:value===v?"0 1px 4px rgba(0,0,0,0.12)":"none",fontWeight:value===v?500:400,transition:"all 0.15s",whiteSpace:"nowrap"}}>{l}</button>))}</div>);
+const Sheet=({onClose,children,th})=>(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.35)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:50,padding:16}} onClick={onClose}><div style={{background:th.sheetBg,width:"100%",maxWidth:480,borderRadius:20,padding:24,paddingBottom:88,boxShadow:"0 -4px 40px rgba(0,0,0,0.2)",maxHeight:"90vh",overflow:"auto"}} onClick={e=>e.stopPropagation()}>{children}</div></div>);
+const SheetHead=({title,onClose,right,th})=>(<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}><h3 style={{fontSize:15,color:th.text,fontWeight:600,margin:0}}>{title}</h3><div style={{display:"flex",gap:8,alignItems:"center"}}>{right}<button onClick={onClose} style={{fontSize:18,color:th.muted,background:"none",border:"none",cursor:"pointer",lineHeight:1}}>✕</button></div></div>);
+const MonthNav=({yr,mo,onPrev,onNext,onDbl,t,th})=>(<div style={{display:"flex",alignItems:"center",gap:4}}><button onClick={onPrev} style={{width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:"none",border:"none",cursor:"pointer",fontSize:20,color:th.muted,borderRadius:8}}>‹</button><span onDoubleClick={onDbl} style={{fontSize:15,color:th.text,fontWeight:500,minWidth:164,textAlign:"center",cursor:"default",userSelect:"none"}}>{t.months[mo]} {yr}</span><button onClick={onNext} style={{width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:"none",border:"none",cursor:"pointer",fontSize:20,color:th.muted,borderRadius:8}}>›</button></div>);
+function CategoryPicker({value,onChange,th,t}){return(<div><label style={{fontSize:10,color:th.muted,letterSpacing:"0.1em",textTransform:"uppercase"}}>{t.catLbl}</label><div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:6,marginTop:10}}>{CATS.map(c=>{const sel=value===c.id;return(<button key={c.id} onClick={()=>onChange(c.id)} title={t.catNames[c.id]} style={{padding:"10px 4px",borderRadius:10,border:"2px solid "+(sel?c.color:"transparent"),background:sel?c.color+"25":th.surface,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3}}><span style={{fontSize:18,lineHeight:1}}>{c.emoji}</span><span style={{fontSize:9,color:sel?c.color:th.muted,fontWeight:sel?600:400,lineHeight:1.2,textAlign:"center"}}>{t.catNames[c.id].split(" ")[0]}</span></button>);})}</div></div>);}
+
+function RecurrencePicker({value,onChange,startDate,t,th}){
+  const s=useMemo(()=>parseD(startDate),[startDate]);
+  const wd=s.getDay(),nth=getNthWD(s);
+  const nr=useMemo(()=>normRec(value,s),[value,s]);
+  const isCust=nr.type==="custom";
+  const opts=useMemo(()=>[{rec:{type:"once"},label:t.recOnce},{rec:{type:"daily"},label:t.recDaily},{rec:{type:"weekly",weekday:wd},label:`${t.recWeeklyPre} ${t.days[wd]}`},{rec:{type:"monthly_nth_weekday",nth,weekday:wd},label:`${t.recMonthlyPre} ${t.nth[nth]||nth} ${t.days[wd]}`},{rec:{type:"annually"},label:`${t.recAnnuallyPre} ${s.getDate()} ${t.months[s.getMonth()]}`},{rec:{type:"weekdays"},label:t.recWeekdays},{rec:null,isCustom:true,label:t.recCustom}],[s,wd,nth,t]);
+  const selIdx=useMemo(()=>{if(isCust)return 6;return opts.findIndex(o=>{if(!o.rec)return false;if(o.rec.type!==nr.type)return false;if(o.rec.type==="weekly")return o.rec.weekday===nr.weekday;if(o.rec.type==="monthly_nth_weekday")return o.rec.nth===nr.nth&&o.rec.weekday===nr.weekday;return true;});},[nr,opts,isCust]);
+  return(<div><label style={{fontSize:10,color:th.muted,letterSpacing:"0.1em",textTransform:"uppercase"}}>{t.recurLbl}</label><div style={{marginTop:10,border:"1px solid "+th.border,borderRadius:14,overflow:"hidden"}}>{opts.map((opt,i)=>(<div key={i}><button onClick={()=>{if(opt.isCustom){if(!isCust)onChange({type:"custom",interval:2,unit:"week",weekdays:[wd]});}else onChange(opt.rec);}} style={{width:"100%",display:"flex",alignItems:"center",gap:12,padding:"12px 14px",background:selIdx===i?th.surface:"none",border:"none",borderBottom:i<opts.length-1?"1px solid "+th.border:"none",cursor:"pointer",textAlign:"left"}}><div style={{width:18,height:18,borderRadius:"50%",flexShrink:0,border:selIdx===i?"5px solid "+th.text:"2px solid "+th.muted,background:th.bg,transition:"all 0.15s"}}/><span style={{fontSize:13,color:th.text}}>{opt.label}</span></button>{opt.isCustom&&isCust&&(<div style={{padding:"14px 14px 16px 44px",background:th.surface,borderTop:"1px solid "+th.border}}><div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}><span style={{fontSize:12,color:th.sub}}>{t.recEvery}</span>
+    <input type="number" min={1} max={99}
+      value={nr.interval==null?"":nr.interval}
+      onFocus={e=>e.target.select()}
+      onChange={e=>{const v=e.target.value;if(v==="")onChange({...nr,interval:undefined});else{const n=parseInt(v);if(!isNaN(n)&&n>=0)onChange({...nr,interval:n});}}}
+      onBlur={()=>{if(!(nr.interval>=1))onChange({...nr,interval:1});}}
+      style={{width:44,textAlign:"center",fontSize:13,color:th.text,background:th.bg,border:"1px solid "+th.border,borderRadius:7,padding:"5px 4px",outline:"none"}}/>
+    <select value={nr.unit||"week"} onChange={e=>onChange({...nr,unit:e.target.value})} style={{fontSize:13,color:th.text,background:th.bg,border:"1px solid "+th.border,borderRadius:7,padding:"5px 8px",outline:"none",cursor:"pointer"}}>{t.recUnits.map(u=><option key={u.v} value={u.v}>{u.l}</option>)}</select></div>{(nr.unit||"week")==="week"&&(<div style={{display:"flex",gap:5,marginTop:12}}>{t.daysS.map((d,di)=>{const wds=nr.weekdays||[wd],on=wds.includes(di);return(<button key={di} onClick={()=>{let nw=on?wds.filter(x=>x!==di):[...wds,di];if(nw.length===0)nw=[di];onChange({...nr,weekdays:nw});}} style={{width:33,height:33,borderRadius:"50%",fontSize:12,fontWeight:500,background:on?th.btnBg:th.bg,color:on?th.btnText:th.sub,border:"1.5px solid "+(on?th.btnBg:th.border),cursor:"pointer",transition:"all 0.15s"}}>{d}</button>);})}</div>)}</div>)}</div>))}</div></div>);}
+
+async function doPushToGitHub(json,token,gistId){const body={files:{"budget.json":{content:json}}};const url=gistId?`https://api.github.com/gists/${gistId}`:"https://api.github.com/gists";const method=gistId?"PATCH":"POST";const res=await fetch(url,{method,headers:{"Authorization":"token "+token,"Content-Type":"application/json"},body:JSON.stringify(gistId?body:{...body,description:"Budget App Data",public:false})});if(!res.ok){let msg="HTTP "+res.status;try{const d=await res.json();msg=d.message||msg;}catch(e){}throw new Error(msg);}return res.json();}
+
+function App(){
+  const[tab,setTab]=useState("home");
+  const[subTab,setSubTab]=useState({});
+  const[isOnline,setIsOnline]=useState(()=>navigator.onLine);
+  const[updateAvailable,setUpdateAvailable]=useState(false);
+  const[remoteData,setRemoteData]=useState(null);
+  const[yr,setYr]=useState(TODAY.getFullYear()),[mo,setMo]=useState(TODAY.getMonth());
+  const[mode,setMode]=useState("daily");
+  const[txs,setTxs]=useState([]);
+  const[initBal,setInitBal]=useState(1000);
+  const[budgets,setBudgets]=useState({});
+  const[loaded,setLoaded]=useState(false);
+  const[lang,setLang]=useState(detectLang);
+  const[cur,setCur]=useState("cad");
+  const[disp,setDisp]=useState({endBal:false,revExp:false,net:false,sync:true});
+  const[darkMode,setDarkMode]=useState("off");
+  const[sysDark,setSysDark]=useState(()=>window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const[saveMode,setSaveMode]=useState("local");
+  const[saveAuto,setSaveAuto]=useState(true);
+  const[ghToken,setGhToken]=useState("");
+  const[ghGistId,setGhGistId]=useState("");
+  const[ghPullOnStart,setGhPullOnStart]=useState(true);
+  const[isSyncing,setIsSyncing]=useState(false);
+  const[syncError,setSyncError]=useState(false);
   const[lastSync,setLastSync]=useState(null);
+  const[tick,setTick]=useState(0);
+  const[editingBal,setEditingBal]=useState(false);
+  const[balInput,setBalInput]=useState("");
+  const[editingBalSett,setEditingBalSett]=useState(false);
+  const[balInputSett,setBalInputSett]=useState("");
+  const[dayMod,setDayMod]=useState(null);
+  const[formMod,setFormMod]=useState(null);
+  const[delMod,setDelMod]=useState(null);
+  const[delAccMod,setDelAccMod]=useState(false);
+  const[delAccInput,setDelAccInput]=useState("");
+  const[expandedTx,setExpandedTx]=useState(null);
+  const[confirmPending,setConfirmPending]=useState(null);
+  const[exportMod,setExportMod]=useState(false);
+  const[importMod,setImportMod]=useState(false);
+  const[importText,setImportText]=useState("");
+  const[copied,setCopied]=useState(false);
+  const[swipeTx,setSwipeTx]=useState(null);
+
+  const balInputRef=useRef(null);
+  const balSettRef=useRef(null);
+  const lastTapRef=useRef(0);
+  const saveTimer=useRef(null);
+  const cfgTimer=useRef(null);
+  const ghSyncTimerRef=useRef(null);
+  const retryTimerRef=useRef(null);
+  const periodicCheckRef=useRef(null);
+  const syncQueueRef=useRef([]);
   const isSyncingRef=useRef(false);
-  const queueRef=useRef([]);
+  const lastSavedHashRef=useRef(null);
+  const lastRemoteTsRef=useRef(0);
+  const latestExportRef=useRef(null);
+  const processQueueRef=useRef(null);
+  const swipeStartRef=useRef(null);
+  const swipeDidMoveRef=useRef(false);
 
-  useEffect(()=>{
-    (async()=>{
-      const stored=await window.storage.get("budget_data");
-      let d=stored?JSON.parse(stored.value):{txs:[],settings:{lang:detectLang(),currency:"cad",darkMode:"auto",initBal:0}};
-      setData(d);
-      if(d.settings?.ghToken && d.settings?.ghGistId && d.settings?.ghLoadOnStart){
-        pullFromGithub(d.settings.ghToken, d.settings.ghGistId);
-      }
-    })();
-  },[]);
+  const t=TR[lang]||TR.fr;
+  const isDark=darkMode==="on"||(darkMode==="auto"&&sysDark);
+  const th=useMemo(()=>mkTh(isDark),[isDark]);
+  const iSt={display:"block",width:"100%",marginTop:6,padding:"8px 0",fontSize:14,color:th.text,background:"transparent",border:"none",borderBottom:"1px solid "+th.inputBorder,outline:"none",boxSizing:"border-box"};
+  const lbl={fontSize:10,color:th.muted,letterSpacing:"0.12em",textTransform:"uppercase"};
 
-  const processQueue=async()=>{
-    if(isSyncingRef.current) return;
-    if(queueRef.current.length===0) return;
+  const NAV_ITEMS=useMemo(()=>[["home",t.navHome],["transactions",t.navTx],["budget",t.navBudget],["analyse",t.navAnalyse],["settings",t.navSettings]],[t]);
+  const SUB_NAV=useMemo(()=>({transactions:[{id:"historique",label:t.subHistorique},{id:"recurrent",label:t.subRecurrent}],budget:[{id:"categories",label:t.subBudgetCat},{id:"objectifs",label:t.subObjectifs}],analyse:[{id:"statistiques",label:t.subStatistiques},{id:"graphiques",label:t.subGraphiques}]}),[t]);
+  const DEFAULT_SUB={transactions:"historique",budget:"categories",analyse:"statistiques"};
+  const curSub=subTab[tab]||(DEFAULT_SUB[tab]||null);
+  latestExportRef.current={txs,initBal,lang,cur,disp,darkMode,budgets};
 
-    isSyncingRef.current=true;
-    setSyncStatus("syncing");
-    
-    const latest=queueRef.current[queueRef.current.length-1];
-    queueRef.current=[];
+  useEffect(()=>{const id=setInterval(()=>setTick(n=>n+1),15000);return()=>clearInterval(id);},[]);
 
-    try{
-      const{ghToken:token,ghGistId:id}=latest.settings;
-      const url=`https://api.github.com/gists/${id}`;
-      
-      const controller=new AbortController();
-      const timeoutId=setTimeout(()=>controller.abort(),10000);
+  const processQueue=async()=>{if(isSyncingRef.current||!navigator.onLine)return;if(syncQueueRef.current.length===0)return;isSyncingRef.current=true;setIsSyncing(true);const item=syncQueueRef.current[0];try{const result=await doPushToGitHub(item.json,ghToken,ghGistId);if(result.id){if(result.id!==ghGistId)setGhGistId(result.id);await window.storage.set("bgt9-updated",String(item.ts));}syncQueueRef.current.shift();isSyncingRef.current=false;setIsSyncing(false);setSyncError(false);clearTimeout(retryTimerRef.current);setLastSync(new Date());if(syncQueueRef.current.length>0)setTimeout(()=>processQueueRef.current?.(),500);}catch(e){isSyncingRef.current=false;item.retries=(item.retries||0)+1;if(item.retries<=5){const delay=Math.min(2000*Math.pow(2,item.retries-1),32000);retryTimerRef.current=setTimeout(()=>processQueueRef.current?.(),delay);}else{syncQueueRef.current.shift();setIsSyncing(false);setSyncError(true);}}};
+  processQueueRef.current=processQueue;
 
-      const res=await fetch(url,{
-        method:"PATCH",
-        signal:controller.signal,
-        headers:{
-          "Authorization":"Bearer "+token, 
-          "Accept":"application/vnd.github+json",
-          "Content-Type":"application/json"
-        },
-        body:JSON.stringify({
-          files:{"budget.json":{
-            content:JSON.stringify({...latest, updated:Date.now()})
-          }}
-        })
-      });
-      clearTimeout(timeoutId);
-      
-      if(res.ok){
-        setLastSync(new Date());
-        setSyncStatus("idle");
-      } else {
-        setSyncStatus("fail");
-      }
-    } catch(e) {
-      setSyncStatus("fail");
-    } finally {
-      isSyncingRef.current=false;
-      if(queueRef.current.length>0) setTimeout(processQueue,5000);
-    }
+  const enqueuePush=()=>{const snap=latestExportRef.current;if(!snap||!ghToken)return;const ts=Date.now();const json=JSON.stringify({...snap,updated:ts},null,2);const idx=syncQueueRef.current.findIndex(i=>i.type==="push");const entry={type:"push",json,ts,retries:0};if(idx>=0)syncQueueRef.current[idx]=entry;else syncQueueRef.current.push(entry);processQueueRef.current?.();};
+  const getExportJSON=()=>JSON.stringify({txs,initBal,lang,cur,disp,darkMode,budgets,updated:Date.now()},null,2);
+
+  useEffect(()=>{const mq=window.matchMedia("(prefers-color-scheme: dark)");const h=e=>setSysDark(e.matches);mq.addEventListener("change",h);return()=>mq.removeEventListener("change",h);},[]);
+  useEffect(()=>{const goOnline=()=>{setIsOnline(true);if(syncQueueRef.current.length>0)setTimeout(()=>processQueueRef.current?.(),1000);};const goOffline=()=>setIsOnline(false);window.addEventListener("online",goOnline);window.addEventListener("offline",goOffline);return()=>{window.removeEventListener("online",goOnline);window.removeEventListener("offline",goOffline);};},[]);
+  useEffect(()=>{if(saveMode!=="github")setSyncError(false);},[saveMode]);
+
+  useEffect(()=>{(async()=>{
+    try{const r=await window.storage.get("bgt9-tx");if(r)try{setTxs(JSON.parse(r.value));}catch(e){}}catch(e){}
+    try{const r=await window.storage.get("bgt9-bal");if(r)setInitBal(parseFloat(r.value)||1000);}catch(e){}
+    try{const r=await window.storage.get("bgt9-bud");if(r)try{setBudgets(JSON.parse(r.value));}catch(e){}}catch(e){}
+    try{const r=await window.storage.get("bgt9-updated");if(r)lastRemoteTsRef.current=parseInt(r.value)||0;}catch(e){}
+    let sMode="local",ghPull=true,ghTok="",ghGid="";
+    try{const r=await window.storage.get("bgt9-cfg");if(r){const c=JSON.parse(r.value);if(c.lang)setLang(c.lang);if(c.cur)setCur(c.cur);if(c.disp)setDisp(d=>({...d,...c.disp}));if(c.darkMode)setDarkMode(c.darkMode);if(c.mode)setMode(c.mode);if(c.saveMode){setSaveMode(c.saveMode);sMode=c.saveMode;}if(c.saveAuto!==undefined)setSaveAuto(c.saveAuto);}}catch(e){}
+    try{const r=await window.storage.get("bgt9-gh");if(r){const g=JSON.parse(r.value);if(g.token){setGhToken(g.token);ghTok=g.token;}if(g.gistId){setGhGistId(g.gistId);ghGid=g.gistId;}if(g.pullOnStart!==undefined){setGhPullOnStart(g.pullOnStart);ghPull=g.pullOnStart;}}}catch(e){}
+    if(sMode==="github"&&ghPull&&ghTok&&ghGid){setIsSyncing(true);try{const res=await fetch(`https://api.github.com/gists/${ghGid}`,{headers:{"Authorization":"token "+ghTok}});if(!res.ok)throw new Error();const data=await res.json();const content=data.files?.["budget.json"]?.content;if(content){let d;try{d=JSON.parse(content);}catch(e){throw new Error();}if(Array.isArray(d.txs))setTxs(d.txs);if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.lang)setLang(d.lang);if(d.cur)setCur(d.cur);if(d.disp)setDisp(d=>({...d,...d.disp}));if(d.darkMode)setDarkMode(d.darkMode);if(d.budgets)setBudgets(d.budgets);if(d.updated){lastRemoteTsRef.current=d.updated;await window.storage.set("bgt9-updated",String(d.updated));}setLastSync(new Date());}}catch(e){}finally{setIsSyncing(false);}}
+    setLoaded(true);
+  })();},[]);
+
+  useEffect(()=>{if(!loaded)return;clearTimeout(cfgTimer.current);cfgTimer.current=setTimeout(async()=>{try{await window.storage.set("bgt9-cfg",JSON.stringify({lang,cur,disp,darkMode,mode,saveMode,saveAuto}));await window.storage.set("bgt9-gh",JSON.stringify({token:ghToken,gistId:ghGistId,pullOnStart:ghPullOnStart}));}catch(e){}},400);},[lang,cur,disp,darkMode,mode,saveMode,saveAuto,ghToken,ghGistId,ghPullOnStart,loaded]);
+  useEffect(()=>{if(!loaded||!saveAuto)return;setIsSyncing(true);clearTimeout(saveTimer.current);saveTimer.current=setTimeout(async()=>{try{const hash=JSON.stringify({txs,initBal,budgets});if(hash===lastSavedHashRef.current){setIsSyncing(false);return;}lastSavedHashRef.current=hash;await window.storage.set("bgt9-tx",JSON.stringify(txs));await window.storage.set("bgt9-bal",String(initBal));await window.storage.set("bgt9-bud",JSON.stringify(budgets));setLastSync(new Date());}catch(e){}finally{setIsSyncing(false);}},600);},[txs,initBal,budgets,loaded,saveAuto]);
+  useEffect(()=>{if(!loaded||!saveAuto||saveMode!=="github"||!ghToken)return;clearTimeout(ghSyncTimerRef.current);ghSyncTimerRef.current=setTimeout(()=>enqueuePush(),8000);return()=>clearTimeout(ghSyncTimerRef.current);},[txs,initBal,budgets,lang,cur,disp,darkMode,loaded,saveAuto,saveMode,ghToken]);
+  useEffect(()=>{if(saveMode!=="github"||!ghToken||!ghGistId){clearInterval(periodicCheckRef.current);return;}const check=async()=>{if(!navigator.onLine||isSyncingRef.current)return;try{const res=await fetch(`https://api.github.com/gists/${ghGistId}`,{headers:{"Authorization":"token "+ghToken}});if(!res.ok)return;const g=await res.json();const content=g.files?.["budget.json"]?.content;if(!content)return;let remote;try{remote=JSON.parse(content);}catch(e){return;}const rTs=remote.updated||0;const lRes=await window.storage.get("bgt9-updated");const lTs=parseInt(lRes?.value||"0")||0;if(rTs>lTs&&rTs!==lastRemoteTsRef.current){lastRemoteTsRef.current=rTs;setRemoteData(remote);setUpdateAvailable(true);}}catch(e){}};periodicCheckRef.current=setInterval(check,60000);return()=>clearInterval(periodicCheckRef.current);},[saveMode,ghToken,ghGistId]);
+
+  const applyRemoteData=d=>{try{if(Array.isArray(d.txs))setTxs(d.txs);if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.lang)setLang(d.lang);if(d.cur)setCur(d.cur);if(d.disp)setDisp(prev=>({...prev,...d.disp}));if(d.darkMode)setDarkMode(d.darkMode);if(d.budgets)setBudgets(d.budgets);if(d.updated)window.storage.set("bgt9-updated",String(d.updated));setLastSync(new Date());}catch(e){}};
+  const saveLocalNow=async()=>{setIsSyncing(true);try{await window.storage.set("bgt9-tx",JSON.stringify(txs));await window.storage.set("bgt9-bal",String(initBal));await window.storage.set("bgt9-bud",JSON.stringify(budgets));await window.storage.set("bgt9-updated",String(Date.now()));lastSavedHashRef.current=JSON.stringify({txs,initBal,budgets});setLastSync(new Date());}catch(e){}finally{setIsSyncing(false);}};
+  const ghPushNow=async()=>{if(!ghToken)return;setIsSyncing(true);try{const r=await doPushToGitHub(getExportJSON(),ghToken,ghGistId);if(r.id){setGhGistId(r.id);await window.storage.set("bgt9-updated",String(Date.now()));setLastSync(new Date());setSyncError(false);}}catch(e){setSyncError(true);}finally{setIsSyncing(false);}};
+  const ghPullNow=async()=>{if(!ghToken||!ghGistId)return;setIsSyncing(true);try{const res=await fetch(`https://api.github.com/gists/${ghGistId}`,{headers:{"Authorization":"token "+ghToken}});if(!res.ok)throw new Error();const data=await res.json();const content=data.files?.["budget.json"]?.content;if(!content)throw new Error();let d;try{d=JSON.parse(content);}catch(e){throw new Error();}applyRemoteData(d);if(d.updated){lastRemoteTsRef.current=d.updated;await window.storage.set("bgt9-updated",String(d.updated));}}catch(e){}finally{setIsSyncing(false);}};
+  const handleManualSave=()=>{if(saveMode==="local")saveLocalNow();else ghPushNow();};
+
+  const handleTitleClick=e=>{e.stopPropagation();const now=Date.now();if(now-lastTapRef.current<350){setTab("home");setMo(TODAY.getMonth());setYr(TODAY.getFullYear());}lastTapRef.current=now;};
+  const handleCopy=()=>{if(navigator.clipboard?.writeText){navigator.clipboard.writeText(getExportJSON()).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2500);});}};
+  const handleImport=()=>{try{const d=JSON.parse(importText);if(Array.isArray(d.txs))setTxs(d.txs);if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.lang)setLang(d.lang);if(d.cur)setCur(d.cur);if(d.disp)setDisp(prev=>({...prev,...d.disp}));if(d.darkMode)setDarkMode(d.darkMode);if(d.budgets)setBudgets(d.budgets);setImportMod(false);setImportText("");}catch(e){}};
+  const deleteAccount=async()=>{for(const k of["bgt9-tx","bgt9-bal","bgt9-bud","bgt9-cfg","bgt9-gh","bgt9-updated"])try{await window.storage.delete(k);}catch(e){}setTxs([]);setInitBal(1000);setBudgets({});setDisp({endBal:false,revExp:false,net:false,sync:true});setDarkMode("off");setGhToken("");setGhGistId("");setLastSync(null);};
+
+  const curBalVal=useMemo(()=>balAt(txs,initBal,TODAY),[txs,initBal]);
+  const dim=new Date(yr,mo+1,0).getDate();
+  const cells=useMemo(()=>{const fd=new Date(yr,mo,1).getDay();return[...Array(fd).fill(null),...Array.from({length:dim},(_,i)=>i+1)];},[yr,mo,dim]);
+  const monthOccs=useMemo(()=>{const byDay={};txs.forEach(tx=>{getOccsWithAmounts(tx,yr,mo).forEach(occ=>{(byDay[occ.day]=byDay[occ.day]||[]).push(occ);});});return byDay;},[txs,yr,mo]);
+  const dayData=useMemo(()=>{const d={};for(let day=1;day<=dim;day++){const occs=monthOccs[day]||[];d[day]={net:occs.reduce((s,o)=>s+(o.type==="income"?o.amount:-o.amount),0),bal:balAt(txs,initBal,new Date(yr,mo,day)),count:occs.length,cats:occs.map(o=>catById(o.category||"other"))};}return d;},[monthOccs,txs,yr,mo,dim,initBal]);
+  const monthStats=useMemo(()=>{let inc=0,exp=0;txs.forEach(tx=>{getOccsWithAmounts(tx,yr,mo).forEach(o=>{if(o.type==="income")inc+=o.amount;else exp+=o.amount;});});return{inc,exp,net:inc-exp};},[txs,yr,mo]);
+  const catStats=useMemo(()=>{const s={};CATS.forEach(c=>s[c.id]={spent:0,income:0});txs.forEach(tx=>{getOccsWithAmounts(tx,yr,mo).forEach(o=>{const cat=o.category||"other";if(o.type==="income")s[cat].income+=o.amount;else s[cat].spent+=o.amount;});});return s;},[txs,yr,mo]);
+  const totalBudget=useMemo(()=>CATS.filter(c=>c.id!=="income").reduce((s,c)=>s+(budgets[c.id]||0),0),[budgets]);
+  const totalSpent=useMemo(()=>CATS.filter(c=>c.id!=="income").reduce((s,c)=>s+(catStats[c.id]?.spent||0),0),[catStats]);
+  const endBalVal=dayData[dim]?.bal??null;
+  const isTod=d=>d===TODAY.getDate()&&mo===TODAY.getMonth()&&yr===TODAY.getFullYear();
+  const prevMo=()=>mo===0?(setMo(11),setYr(y=>y-1)):setMo(m=>m-1);
+  const nextMo=()=>mo===11?(setMo(0),setYr(y=>y+1)):setMo(m=>m+1);
+  const goToday=()=>{setMo(TODAY.getMonth());setYr(TODAY.getFullYear());};
+
+  const dayModalOccs=useMemo(()=>{if(!dayMod)return[];return txs.flatMap(tx=>{const match=getOccsWithAmounts(tx,yr,mo).find(o=>o.day===dayMod.day);return match?[{tx,occ:match}]:[];});},[dayMod,txs,yr,mo]);
+  const dayModalDateStr=dayMod?dStr(new Date(yr,mo,dayMod.day)):"";
+
+  const handleSwipeDelete=tx=>{
+    const isOnce=normRec(tx.recurrence,parseD(tx.startDate)).type==="once";
+    if(isOnce){handleDelFromModal(tx,"all",dayModalDateStr);}
+    else{closeDay();setDelMod({tx,dateStr:dayModalDateStr});}
+    setSwipeTx(null);
   };
 
-  const pullFromGithub=async(ghToken,id)=>{
-    setSyncStatus("syncing");
-    try{
-      const controller=new AbortController();
-      const timeoutId=setTimeout(()=>controller.abort(),10000);
+  const closeDay=()=>{setDayMod(null);setExpandedTx(null);setConfirmPending(null);setSwipeTx(null);};
+  const toggleExpanded=(txId)=>{setExpandedTx(p=>p===txId?null:txId);setConfirmPending(null);setSwipeTx(null);};
 
-      const res=await fetch(`https://api.github.com/gists/${id}`,{
-        signal:controller.signal,
-        headers:{
-          "Authorization":"Bearer "+ghToken,
-          "Accept":"application/vnd.github+json"
-        }
-      });
-      clearTimeout(timeoutId);
+  const openForm=(tx=null,prefill=null)=>{const dt=prefill||dStr(TODAY);setFormMod({tx,editScope:null,editDateStr:null,form:tx?{desc:tx.description,amt:String(tx.amount),type:tx.type,rec:normRec(tx.recurrence,parseD(tx.startDate)),date:tx.startDate,cat:tx.category||"other"}:{desc:"",amt:"",type:"expense",rec:{type:"once"},date:dt,cat:"other"}});};
 
-      if(res.ok){
-        const g=await res.json();
-        const content=g.files["budget.json"]?.content;
-        if(content){
-          const nd=JSON.parse(content);
-          setData(nd);
-          await window.storage.set("budget_data",JSON.stringify(nd));
-          setLastSync(new Date());
-          setSyncStatus("idle");
-        }
-      } else {
-        setSyncStatus("fail");
+  const openEditForm=(tx,scope,dateStr)=>{
+    setDayMod(null);setExpandedTx(null);setConfirmPending(null);setSwipeTx(null);
+    if(scope==="all"){openForm(tx);return;}
+    const r=normRec(tx.recurrence,parseD(tx.startDate));
+    let effDesc=tx.description,effAmt=tx.amount,effType=tx.type,effCat=tx.category||"other";
+    if(scope==="instance"){const ov=(tx.overrides||[]).find(o=>o.date===dateStr);if(ov){effDesc=ov.description??effDesc;effAmt=ov.amount??effAmt;effType=ov.type??effType;effCat=ov.category??effCat;}}
+    setFormMod({tx,editScope:scope,editDateStr:dateStr,form:{desc:effDesc,amt:String(effAmt),type:effType,cat:effCat,rec:scope==="instance"?{type:"once"}:r,date:scope==="follow"?dateStr:tx.startDate}});
+  };
+
+  const handleEndAfter=(tx,dateStr)=>{setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,endDate:dateStr}));closeDay();};
+
+  const setFF=k=>v=>setFormMod(m=>({...m,form:{...m.form,[k]:v}}));
+  const handleTypeChange=v=>setFormMod(m=>({...m,form:{...m.form,type:v,cat:v==="income"?"income":"other"}}));
+  const handleDateChange=nd=>{const ns=parseD(nd);const rec=formMod.form.rec;let nr=rec;if(rec.type==="weekly")nr={...rec,weekday:ns.getDay()};else if(rec.type==="monthly_nth_weekday")nr={...rec,nth:getNthWD(ns),weekday:ns.getDay()};setFormMod(m=>({...m,form:{...m.form,date:nd,rec:nr}}));};
+
+  const saveForm=()=>{
+    const{tx,form,editScope,editDateStr}=formMod;
+    const amt=parseFloat(form.amt);if(!form.desc.trim()||isNaN(amt)||amt<=0)return;
+    const data={description:form.desc,amount:amt,type:form.type,recurrence:form.rec,startDate:form.date,category:form.cat};
+    if(tx){
+      if(editScope==="instance"&&editDateStr){
+        setTxs(prev=>prev.map(t2=>{if(t2.id!==tx.id)return t2;const ovs=(t2.overrides||[]).filter(o=>o.date!==editDateStr);return{...t2,overrides:[...ovs,{date:editDateStr,description:form.desc,amount:amt,type:form.type,category:form.cat}]};}));
+      }else if(editScope==="follow"&&editDateStr){
+        const ne=dayBef(editDateStr);const beforeStart=parseD(ne)<parseD(tx.startDate);
+        setTxs(prev=>[...(beforeStart?prev.filter(t2=>t2.id!==tx.id):prev.map(t2=>t2.id!==tx.id?t2:{...t2,endDate:ne,overrides:(t2.overrides||[]).filter(o=>o.date<editDateStr),exceptions:(t2.exceptions||[]).filter(e=>e<editDateStr)})),{id:Date.now().toString(),...data,overrides:[],exceptions:[]}]);
+      }else{
+        setTxs(prev=>prev.map(t2=>t2.id===tx.id?{...t2,...data}:t2));
       }
-    } catch(e) {
-      setSyncStatus("fail");
+    }else{
+      setTxs(prev=>[...prev,{id:Date.now().toString(),...data,overrides:[],exceptions:[]}]);
     }
+    setFormMod(null);
   };
 
-  const updateData=async(nd)=>{
-    setData(nd);
-    await window.storage.set("budget_data",JSON.stringify(nd));
-    if(nd.settings?.ghToken && nd.settings?.ghGistId){
-      queueRef.current.push(nd);
-      processQueue();
-    }
+  const handleDelFromModal=(tx,scope,dateStr)=>{
+    const rec=normRec(tx.recurrence,parseD(tx.startDate));
+    if(scope==="this"){if(rec.type==="once")setTxs(prev=>prev.filter(t=>t.id!==tx.id));else setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,exceptions:[...(t.exceptions||[]),dateStr],overrides:(t.overrides||[]).filter(o=>o.date!==dateStr)}));}
+    else if(scope==="follow"){const ne=dayBef(dateStr);if(parseD(ne)<parseD(tx.startDate))setTxs(prev=>prev.filter(t=>t.id!==tx.id));else setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,endDate:ne,overrides:(t.overrides||[]).filter(o=>o.date<dateStr),exceptions:(t.exceptions||[]).filter(e=>e<dateStr)}));}
+    else if(scope==="before"){setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,startDate:dateStr,overrides:(t.overrides||[]).filter(o=>o.date>=dateStr),exceptions:(t.exceptions||[]).filter(e=>e>=dateStr)}));}
+    else if(scope==="all"){setTxs(prev=>prev.filter(t=>t.id!==tx.id));}
+    closeDay();
   };
 
-  if(!data) return null;
-  const t=TR[data.settings.lang]||TR.fr;
-  const th=mkTh(data.settings.darkMode==="on"||(data.settings.darkMode==="auto"&&window.matchMedia("(prefers-color-scheme:dark)").matches));
+  const handleDel=scope=>{const{tx,dateStr}=delMod;if(scope==="all"||normRec(tx.recurrence,parseD(tx.startDate)).type==="once"){setTxs(prev=>prev.filter(t2=>t2.id!==tx.id));}else if(scope==="this"){setTxs(prev=>prev.map(t2=>t2.id!==tx.id?t2:{...t2,exceptions:[...(t2.exceptions||[]),dateStr]}));}else if(scope==="follow"){const ne=dayBef(dateStr);if(parseD(ne)<parseD(tx.startDate))setTxs(prev=>prev.filter(t2=>t2.id!==tx.id));else setTxs(prev=>prev.map(t2=>t2.id!==tx.id?t2:{...t2,endDate:ne}));}setDelMod(null);};
 
-  return (
-    <div style={{minHeight:"100vh",background:th.bg,color:th.text,paddingBottom:80}}>
-      {/* Barre de Status Sync */}
-      <div style={{padding:12,fontSize:11,background:th.surface,display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid "+th.border}}>
-         <span style={{color:syncStatus==="fail"?th.danger:th.sub}}>
-           {syncStatus==="syncing" ? t.syncing : (syncStatus==="fail" ? t.syncFail : relTimeStr(lastSync,t))}
-         </span>
-         <div style={{width:8,height:8,borderRadius:"50%",background:syncStatus==="syncing"?"#3b82f6":syncStatus==="fail"?th.danger:"#10b981"}}></div>
+  const startEditBal=()=>{setBalInput(String(curBalVal.toFixed(2)));setEditingBal(true);setTimeout(()=>{balInputRef.current?.focus();balInputRef.current?.select();},50)};
+  const commitEditBal=()=>{const desired=parseFloat(balInput);if(!isNaN(desired)){const diff=desired-curBalVal;setInitBal(prev=>parseFloat((prev+diff).toFixed(2)));}setEditingBal(false);};
+  const startEditBalSett=()=>{setBalInputSett(String(curBalVal.toFixed(2)));setEditingBalSett(true);setTimeout(()=>{balSettRef.current?.focus();balSettRef.current?.select();},50)};
+  const commitEditBalSett=()=>{const desired=parseFloat(balInputSett);if(!isNaN(desired)){const diff=desired-curBalVal;setInitBal(prev=>parseFloat((prev+diff).toFixed(2)));}setEditingBalSett(false);};
+
+  const expenseCats=CATS.filter(c=>c.id!=="income");
+  const hasSummary=disp.endBal||disp.revExp||disp.net;
+  const monthTxs=useMemo(()=>txs.filter(tx=>occsInMonth(tx,yr,mo).length>0).sort((a,b)=>new Date(b.startDate)-new Date(a.startDate)),[txs,yr,mo]);
+  const recurTxs=useMemo(()=>txs.filter(tx=>normRec(tx.recurrence,parseD(tx.startDate)).type!=="once").sort((a,b)=>new Date(b.startDate)-new Date(a.startDate)),[txs]);
+  const syncText=useMemo(()=>isSyncing?t.syncing:relTimeStr(lastSync,t),[isSyncing,lastSync,t,tick]);
+
+  const secLbl={fontSize:9,color:th.muted,letterSpacing:"0.12em",textTransform:"uppercase",margin:"0 0 4px",display:"block"};
+  const actBtn=(label,onClick,color,isPending,isFirst)=>(<button onClick={onClick} style={{display:"block",width:"100%",textAlign:"left",padding:"7px 0",fontSize:14,color:isPending?"#ef4444":color,background:isPending?(isDark?"rgba(239,68,68,0.12)":"#fff5f5"):"none",border:"none",borderTop:isFirst?"none":"1px solid transparent",cursor:"pointer",transition:"color 0.12s",borderRadius:isPending?6:0,fontWeight:isPending?600:400}}>{label}</button>);
+
+  return(
+    <div style={{minHeight:"100vh",background:th.bg,fontFamily:"system-ui,sans-serif"}}>
+
+      {updateAvailable&&remoteData&&(<div style={{position:"sticky",top:0,zIndex:90,background:"#1d4ed8",color:"#fff",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",animation:"slideDown 0.3s ease",flexWrap:"wrap",gap:8}}><span style={{fontSize:13}}>📲 {t.importOk}</span><div style={{display:"flex",gap:8}}><button onClick={()=>{applyRemoteData(remoteData);setUpdateAvailable(false);setRemoteData(null);}} style={{fontSize:12,padding:"6px 14px",borderRadius:8,border:"none",background:"#fff",color:"#1d4ed8",cursor:"pointer",fontWeight:600}}>{t.importRestore}</button><button onClick={()=>setUpdateAvailable(false)} style={{fontSize:12,padding:"6px 12px",borderRadius:8,border:"1px solid rgba(255,255,255,0.35)",background:"transparent",color:"#fff",cursor:"pointer"}}>{t.cancel}</button></div></div>)}
+
+      <div style={{position:"fixed",bottom:16,right:16,zIndex:99}}>
+        <button onClick={()=>openForm()} style={{width:48,height:48,borderRadius:"50%",background:th.btnBg,color:th.btnText,border:"none",cursor:"pointer",fontSize:26,fontWeight:300,boxShadow:"0 4px 16px rgba(0,0,0,0.2)",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>+</button>
       </div>
 
-      <div style={{padding:20}}>
-        <h1 style={{fontSize:28,fontWeight:800,marginBottom:4}}>{t.title}</h1>
-        <p style={{color:th.sub,fontSize:14,marginBottom:24}}>{t.sub}</p>
-
-        {/* Section Simple pour tester */}
-        <div style={{background:th.surface,padding:20,borderRadius:16,border:"1px solid "+th.border}}>
-          <div style={{marginBottom:16}}>
-            <label style={{display:"block",fontSize:12,color:th.sub,marginBottom:4}}>{t.langLbl}</label>
-            <select 
-              value={data.settings.lang} 
-              onChange={e=>updateData({...data, settings:{...data.settings, lang:e.target.value}})}
-              style={{width:"100%",padding:12,borderRadius:8,background:th.bg,color:th.text,border:"1px solid "+th.inputBorder}}
-            >
-              {LANG_OPTS.map(o=><option key={o.v} value={o.v}>{o.l}</option>)}
-            </select>
+      <div style={{padding:"32px 24px 20px",borderBottom:"1px solid "+th.border}}>
+        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
+          <div><p style={{...lbl,marginBottom:4}}>{t.sub}</p><div style={{display:"flex",alignItems:"center",gap:8}}><h1 onClick={handleTitleClick} style={{fontSize:20,color:th.text,fontWeight:600,margin:0,cursor:"pointer",userSelect:"none"}}>{t.title}</h1>{!isOnline&&<span style={{fontSize:10,padding:"2px 8px",borderRadius:20,background:"#ef444422",color:"#ef4444",border:"1px solid #ef444440",letterSpacing:"0.05em",fontWeight:500}}>{t.offline}</span>}</div></div>
+          <div style={{textAlign:"right",cursor:"pointer"}} onClick={!editingBal?startEditBal:undefined}>
+            <p style={{...lbl,margin:"0 0 3px"}}>{t.curBalLbl}</p>
+            {editingBal?<input ref={balInputRef} type="number" inputMode="decimal" step="0.01" value={balInput} onChange={e=>setBalInput(e.target.value)} onBlur={commitEditBal} onKeyDown={e=>{if(e.key==="Enter")commitEditBal();if(e.key==="Escape")setEditingBal(false);}} style={{width:130,textAlign:"right",fontSize:20,fontWeight:600,color:th.text,background:"transparent",border:"none",borderBottom:"2px solid "+th.text,outline:"none",fontVariantNumeric:"tabular-nums"}}/>:<p style={{fontSize:20,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:curBalVal>=0?"#059669":"#ef4444"}}>{fA(curBalVal,cur,true)}</p>}
           </div>
-          
-          <button 
-             onClick={()=>pullFromGithub(data.settings.ghToken, data.settings.ghGistId)}
-             style={{width:"100%",padding:14,borderRadius:12,background:th.btnBg,color:th.btnText,border:"none",fontWeight:600}}
-          >
-            {t.ghRestoreBtn}
-          </button>
         </div>
       </div>
 
-      {/* Navigation Bas */}
-      <div style={{position:"fixed",bottom:0,left:0,right:0,height:70,background:th.sheetBg,borderTop:"1px solid "+th.border,display:"flex",justifyContent:"space-around",alignItems:"center",zIndex:100}}>
-          <div style={{textAlign:"center",color:th.sub,fontSize:10}}>{t.navHome}</div>
-          <div style={{textAlign:"center",color:th.sub,fontSize:10}}>{t.navTx}</div>
-          <div style={{textAlign:"center",color:th.sub,fontSize:10}}>{t.navSettings}</div>
+      {disp.sync&&<div style={{padding:"5px 24px",borderBottom:"1px solid "+th.border,display:"flex",alignItems:"center",gap:6,background:th.bg}}>
+        {syncError
+          ?<span style={{width:6,height:6,borderRadius:"50%",background:"#ef4444",display:"inline-block",flexShrink:0}}/>
+          :isSyncing
+            ?<span style={{width:6,height:6,borderRadius:"50%",background:"#f59e0b",display:"inline-block",flexShrink:0,animation:"pulse 1s infinite"}}/>
+            :<span style={{width:6,height:6,borderRadius:"50%",background:"#10b981",display:"inline-block",flexShrink:0,opacity:0.7}}/>}
+        <span style={{fontSize:10,color:syncError?"#ef4444":th.muted,flex:1}}>{syncError?t.syncFail:syncText}</span>
+        {syncError&&<button onClick={()=>{setSyncError(false);enqueuePush();}} style={{fontSize:10,color:"#ef4444",background:"none",border:"1px solid #ef444440",borderRadius:6,padding:"2px 8px",cursor:"pointer",flexShrink:0}}>↺</button>}
+      </div>}
+
+      <div style={{padding:"0 24px",borderBottom:"1px solid "+th.border,display:"flex",gap:0,overflowX:"auto"}}>
+        {NAV_ITEMS.map(([k,l])=>(<button key={k} onClick={()=>setTab(k)} style={{fontSize:13,paddingBottom:12,paddingTop:16,paddingLeft:12,paddingRight:12,border:"none",background:"none",cursor:"pointer",borderBottom:tab===k?"2px solid "+th.text:"2px solid transparent",color:tab===k?th.text:th.muted,fontWeight:tab===k?500:400,transition:"color 0.15s",whiteSpace:"nowrap",flexShrink:0}}>{l}</button>))}
       </div>
+
+      {SUB_NAV[tab]&&(<div style={{padding:"0 24px",borderBottom:"1px solid "+th.border,display:"flex",gap:0,overflowX:"auto",background:th.bgSub}}>
+        {tab==="transactions"&&(<button onClick={()=>openForm()} style={{fontSize:12,paddingBottom:10,paddingTop:12,paddingLeft:12,paddingRight:16,border:"none",background:"none",cursor:"pointer",borderBottom:"2px solid transparent",color:th.sub,whiteSpace:"nowrap",flexShrink:0,display:"flex",alignItems:"center",gap:4}}><span style={{fontSize:14,lineHeight:1}}>+</span> {t.add}</button>)}
+        {SUB_NAV[tab].map(s=>(<button key={s.id} onClick={()=>setSubTab(prev=>({...prev,[tab]:s.id}))} style={{fontSize:12,paddingBottom:10,paddingTop:12,paddingLeft:12,paddingRight:12,border:"none",background:"none",cursor:"pointer",borderBottom:curSub===s.id?"2px solid "+th.sub:"2px solid transparent",color:curSub===s.id?th.text:th.sub,fontWeight:curSub===s.id?500:400,whiteSpace:"nowrap",flexShrink:0}}>{s.label}</button>))}
+      </div>)}
+
+      <div style={{padding:"24px",paddingBottom:"100px",maxWidth:640}}>
+
+        {tab==="home"&&<div>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:hasSummary?16:20}}>
+            <MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} t={t} th={th}/>
+            <SegCtrl options={[["daily",t.modDay],["balance",t.modBal]]} value={mode} onChange={setMode} th={th}/>
+          </div>
+          {hasSummary&&<div style={{marginBottom:20,paddingBottom:20,borderBottom:"1px solid "+th.border,display:"flex",flexWrap:"wrap",gap:"16px 28px"}}>
+            {disp.endBal&&endBalVal!==null&&<div><p style={{...lbl,margin:"0 0 4px"}}>{t.endBalLbl}</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:endBalVal>=0?"#059669":"#ef4444"}}>{fA(endBalVal,cur,true)}</p></div>}
+            {disp.revExp&&<><div><p style={{...lbl,margin:"0 0 4px"}}>{t.revLbl}</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:"#059669"}}>+{fA(monthStats.inc,cur,true)}</p></div><div><p style={{...lbl,margin:"0 0 4px"}}>{t.expLbl}</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:"#ef4444"}}>−{fA(monthStats.exp,cur,true)}</p></div></>}
+            {disp.net&&<div><p style={{...lbl,margin:"0 0 4px"}}>{t.netLbl}</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:monthStats.net>=0?"#059669":"#ef4444"}}>{monthStats.net>=0?"+":"−"}{fA(monthStats.net,cur,true)}</p></div>}
+          </div>}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",marginBottom:4}}>{t.days.map((d,i)=><div key={i} style={{textAlign:"center",fontSize:11,color:th.muted,padding:"4px 0"}}>{d.slice(0,3)}</div>)}</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2}}>
+            {cells.map((day,i)=>{if(!day)return<div key={"e"+i} style={{paddingBottom:"100%"}}/>;const data=dayData[day]||{net:0,bal:0,count:0,cats:[]};const tod=isTod(day);const val=mode==="daily"?data.net:data.bal;const pos=val>0,neg=val<0;return(<div key={day} onClick={()=>setDayMod({day})} style={{paddingBottom:"100%",position:"relative",borderRadius:10,cursor:"pointer",background:tod?th.surface:"transparent",border:tod?"1.5px solid "+th.text:"1.5px solid transparent"}}><div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2}}><span style={{fontSize:12,fontWeight:tod?600:400,color:tod?th.text:th.sub}}>{day}</span>{data.count>0&&<span style={{fontSize:10,fontWeight:500,fontVariantNumeric:"tabular-nums",lineHeight:1.2,color:pos?"#059669":neg?"#ef4444":th.muted}}>{mode==="daily"?(val>=0?"+":"−")+fA(val,cur):(val>=0?"":"-")+fA(val,cur)}</span>}{data.cats.length>0&&<div style={{display:"flex",gap:2,marginTop:1}}>{[...new Set(data.cats.map(c=>c.color))].slice(0,3).map((c,ci)=><div key={ci} style={{width:4,height:4,borderRadius:"50%",background:c}}/>)}</div>}</div></div>);})}
+          </div>
+        </div>}
+
+        {tab==="transactions"&&curSub==="historique"&&<div>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}><MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} t={t} th={th}/><p style={{...lbl,margin:0}}>{t.txCount(monthTxs.length)}</p></div>
+          {monthTxs.length===0?<div style={{textAlign:"center",padding:"60px 0"}}><p style={{fontSize:32,color:th.border,margin:"0 0 8px"}}>◎</p><p style={{fontSize:13,color:th.muted}}>{t.noTx}</p></div>
+          :monthTxs.map(tx=>{const cat=catById(tx.category||"other");const n=occsInMonth(tx,yr,mo).length;const total=tx.amount*n;return(<div key={tx.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderBottom:"1px solid "+th.border}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:34,height:34,borderRadius:9,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{cat.emoji}</div><div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p><p style={{fontSize:11,color:th.muted,margin:"3px 0 0"}}>{t.catNames[cat.id]} · {recLabel(tx,t)}{n>1?<span style={{color:th.sub}}> ×{n}</span>:null}</p></div></div><div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}><span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:tx.type==="income"?"#059669":"#ef4444"}}>{tx.type==="income"?"+":"−"}{fA(total,cur,true)}</span><button onClick={()=>openForm(tx)} style={{fontSize:13,color:th.muted,background:"none",border:"none",cursor:"pointer",padding:4}}>✎</button></div></div>);})}
+        </div>}
+
+        {tab==="transactions"&&curSub==="recurrent"&&<div>
+          {recurTxs.length===0?<div style={{textAlign:"center",padding:"60px 0"}}><p style={{fontSize:32,color:th.border,margin:"0 0 8px"}}>◎</p><p style={{fontSize:13,color:th.muted}}>{t.noRecurTx}</p></div>
+          :recurTxs.map(tx=>{const cat=catById(tx.category||"other");return(<div key={tx.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderBottom:"1px solid "+th.border}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:34,height:34,borderRadius:9,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{cat.emoji}</div><div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p><p style={{fontSize:11,color:th.muted,margin:"3px 0 0"}}>{t.catNames[cat.id]} · {recLabel(tx,t)}</p></div></div><div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}><span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:tx.type==="income"?"#059669":"#ef4444"}}>{tx.type==="income"?"+":"−"}{fA(tx.amount,cur,true)}</span><button onClick={()=>openForm(tx)} style={{fontSize:13,color:th.muted,background:"none",border:"none",cursor:"pointer",padding:4}}>✎</button></div></div>);})}
+        </div>}
+
+        {tab==="budget"&&curSub==="categories"&&<div>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}><MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} t={t} th={th}/></div>
+          {totalBudget>0&&<div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:"16px 18px",marginBottom:20}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}><span style={{fontSize:13,color:th.text,fontWeight:500}}>{t.budgetTotal}</span><span style={{fontSize:13,fontWeight:600,fontVariantNumeric:"tabular-nums",color:totalSpent>totalBudget?"#ef4444":"#059669"}}>{fA(totalSpent,cur,true)} <span style={{color:th.muted,fontWeight:400}}>{t.budgetOf} {fA(totalBudget,cur,true)}</span></span></div><div style={{height:6,background:th.surface,borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",width:Math.min(totalSpent/totalBudget*100,100)+"%",borderRadius:3,background:totalSpent>totalBudget?"#ef4444":totalSpent/totalBudget>0.8?"#f59e0b":"#10b981",transition:"width 0.4s"}}/></div></div>}
+          <p style={{...lbl,marginBottom:16}}>{t.budgetLbl}</p>
+          {expenseCats.map(cat=>{const stats=catStats[cat.id]||{spent:0};const budget=budgets[cat.id]||0;const pct=budget>0?Math.min(stats.spent/budget*100,100):0;const over=budget>0&&stats.spent>budget;return(<div key={cat.id} style={{marginBottom:14,background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:"14px 16px"}}><div style={{display:"flex",alignItems:"center",gap:12}}><div style={{width:38,height:38,borderRadius:10,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{cat.emoji}</div><div style={{flex:1,minWidth:0}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:6}}><span style={{fontSize:13,color:th.text,fontWeight:500}}>{t.catNames[cat.id]}</span><div style={{display:"flex",alignItems:"center",gap:4,flexShrink:0}}><span style={{fontSize:13,fontVariantNumeric:"tabular-nums",color:over?"#ef4444":stats.spent>0?th.text:th.muted}}>{fA(stats.spent,cur,true)}</span>{budget>0&&<span style={{fontSize:12,color:th.muted}}>{t.budgetOf}</span>}<input type="number" min={0} step={10} value={budget||""} onChange={e=>setBudgets(b=>({...b,[cat.id]:parseFloat(e.target.value)||0}))} placeholder={t.budgetUnset} style={{width:72,fontSize:12,textAlign:"right",color:"#2563eb",background:"transparent",border:"none",borderBottom:"1px dashed "+th.inputBorder,outline:"none",fontVariantNumeric:"tabular-nums"}}/></div></div><div style={{height:5,background:th.surface,borderRadius:2.5,overflow:"hidden"}}>{budget>0&&<div style={{height:"100%",width:pct+"%",background:over?"#ef4444":pct>80?"#f59e0b":"#10b981",borderRadius:2.5,transition:"width 0.4s"}}/>}</div></div></div></div>);})}
+          {monthStats.inc>0&&<div style={{marginTop:8,background:"#05966915",border:"1px solid #05966930",borderRadius:14,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}><div style={{width:38,height:38,borderRadius:10,background:"#05966922",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>💰</div><div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{t.revenuSummary}</p><p style={{fontSize:12,color:"#059669",margin:"2px 0 0",fontWeight:600,fontVariantNumeric:"tabular-nums"}}>+{fA(monthStats.inc,cur,true)}</p></div></div>}
+        </div>}
+
+        {tab==="budget"&&curSub==="objectifs"&&<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"100px 0"}}><p style={{fontSize:22,color:th.muted,fontWeight:300}}>{t.subObjectifs}</p></div>}
+        {tab==="analyse"&&curSub==="statistiques"&&<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"100px 0"}}><p style={{fontSize:22,color:th.muted,fontWeight:300}}>{t.subStatistiques}</p></div>}
+        {tab==="analyse"&&curSub==="graphiques"&&<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"100px 0"}}><p style={{fontSize:22,color:th.muted,fontWeight:300}}>{t.subGraphiques}</p></div>}
+
+        {tab==="settings"&&<div>
+          <p style={{...lbl,marginBottom:8}}>{t.navSettings}</p>
+          <div style={{padding:"12px 0",borderBottom:"1px solid "+th.border,display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{t.initBalLbl}</p><p style={{fontSize:11,color:th.muted,margin:"3px 0 0"}}>{t.initBalSub}</p></div><div style={{cursor:"pointer"}} onClick={!editingBalSett?startEditBalSett:undefined}>{editingBalSett?<input ref={balSettRef} type="number" inputMode="decimal" step="0.01" value={balInputSett} onChange={e=>setBalInputSett(e.target.value)} onBlur={commitEditBalSett} onKeyDown={e=>{if(e.key==="Enter")commitEditBalSett();if(e.key==="Escape")setEditingBalSett(false);}} style={{width:110,textAlign:"right",fontSize:13,fontWeight:600,color:th.text,background:"transparent",border:"none",borderBottom:"2px solid "+th.text,outline:"none",fontVariantNumeric:"tabular-nums"}}/>:<span style={{fontSize:13,fontWeight:600,fontVariantNumeric:"tabular-nums",color:curBalVal>=0?"#059669":"#ef4444"}}>{fA(curBalVal,cur,true)}</span>}</div></div>
+          <Sel label={t.langLbl} value={lang} opts={t.langOpts} onChange={setLang} th={th}/>
+          <Sel label={t.curLbl} value={cur} opts={t.curOpts} onChange={setCur} th={th}/>
+          <p style={{...lbl,margin:"24px 0 4px"}}>{t.dispLbl}</p>
+          <Tog label={t.showSync} value={disp.sync!==false} onChange={v=>setDisp(d=>({...d,sync:v}))} th={th}/>
+          <Tog label={t.showEndBal} value={disp.endBal} onChange={v=>setDisp(d=>({...d,endBal:v}))} th={th}/>
+          <Tog label={t.showRevExp} value={disp.revExp} onChange={v=>setDisp(d=>({...d,revExp:v}))} th={th}/>
+          <Tog label={t.showNet} value={disp.net} onChange={v=>setDisp(d=>({...d,net:v}))} th={th}/>
+          <p style={{...lbl,margin:"24px 0 4px"}}>{t.darkLbl}</p>
+          <div style={{paddingBottom:16,borderBottom:"1px solid "+th.border}}><SegCtrl options={[["off",t.darkOff],["auto",t.darkAuto],["on",t.darkOn]]} value={darkMode} onChange={setDarkMode} th={th}/></div>
+          <p style={{...lbl,margin:"24px 0 8px"}}>{t.saveLbl}</p>
+          <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:16,marginBottom:20,display:"flex",flexDirection:"column",gap:16}}>
+            <div><p style={{fontSize:11,color:th.muted,margin:"0 0 8px",letterSpacing:"0.08em",textTransform:"uppercase"}}>{t.saveDestLbl}</p><SegCtrl options={[["local","💾 Local"],["github","☁️ GitHub"]]} value={saveMode} onChange={setSaveMode} th={th}/></div>
+            {saveMode==="github"&&<div style={{display:"flex",flexDirection:"column",gap:12,paddingTop:4,borderTop:"1px solid "+th.border}}>
+              <div><label style={lbl}>Personal Access Token</label><input type="password" value={ghToken} onChange={e=>setGhToken(e.target.value)} placeholder="ghp_xxxxxxxxxxxx" style={{...iSt,fontSize:12,fontFamily:"monospace"}}/></div>
+              <div><label style={lbl}>Gist ID <span style={{color:th.muted,textTransform:"none",fontSize:10,letterSpacing:0}}>(auto)</span></label><input type="text" value={ghGistId} onChange={e=>setGhGistId(e.target.value)} placeholder="—" style={{...iSt,fontSize:12,fontFamily:"monospace"}}/></div>
+              <Tog label={t.ghLoadOnStart} sub={t.ghLoadOnStartSub} value={ghPullOnStart} onChange={setGhPullOnStart} th={th}/>
+              {!ghPullOnStart&&<button onClick={ghPullNow} style={{padding:"10px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:10,background:"none",color:th.text,cursor:"pointer"}}>{t.ghRestoreBtn}</button>}
+              <p style={{fontSize:11,color:th.muted,margin:0,lineHeight:1.5}}>{t.ghPrivateNote}</p>
+            </div>}
+            <div style={{borderTop:"1px solid "+th.border,paddingTop:14}}><p style={{fontSize:11,color:th.muted,margin:"0 0 8px",letterSpacing:"0.08em",textTransform:"uppercase"}}>{t.triggerLbl}</p><SegCtrl options={[["auto","⚡ Auto (8s)"],["manual","✋ "+t.save]]} value={saveAuto?"auto":"manual"} onChange={v=>setSaveAuto(v==="auto")} th={th}/></div>
+            {!saveAuto&&<button onClick={handleManualSave} style={{padding:"11px 0",fontSize:13,fontWeight:600,border:"none",borderRadius:10,background:th.btnBg,color:th.btnText,cursor:"pointer"}}>{t.saveManualBtn}</button>}
+          </div>
+          <p style={{...lbl,margin:"0 0 8px"}}>{t.exportLbl}</p>
+          <div style={{display:"flex",gap:8,paddingBottom:20,borderBottom:"1px solid "+th.border}}>
+            <button onClick={()=>setExportMod(true)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:10,background:"none",color:th.text,cursor:"pointer"}}>↑ {t.exportBtn}</button>
+            <button onClick={()=>{setImportText("");setImportMod(true);}} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:10,background:"none",color:th.text,cursor:"pointer"}}>↓ {t.importBtn}</button>
+          </div>
+          <div style={{marginTop:20,padding:"16px",background:isDark?"rgba(239,68,68,0.07)":"#fff5f5",border:"1px solid "+th.danger+"44",borderRadius:14}}><p style={{fontSize:13,color:th.danger,margin:"0 0 2px",fontWeight:600}}>{t.delAccLbl}</p><p style={{fontSize:11,color:th.muted,margin:"0 0 12px"}}>{t.delAccSub}</p><button onClick={()=>{setDelAccMod(true);setDelAccInput("");}} style={{fontSize:13,color:th.danger,background:"none",border:"1px solid "+th.danger,borderRadius:10,padding:"8px 16px",cursor:"pointer"}}>{t.delAccLbl} →</button></div>
+          <div style={{marginTop:32,paddingTop:20,borderTop:"1px solid "+th.border,textAlign:"center"}}><p style={{fontSize:11,color:th.muted,letterSpacing:"0.1em"}}>v0.024</p></div>
+        </div>}
+      </div>
+
+      {exportMod&&<Sheet onClose={()=>setExportMod(false)} th={th}><SheetHead title={t.exportModalTitle} onClose={()=>setExportMod(false)} th={th}/><p style={{fontSize:12,color:th.sub,marginBottom:12}}>{t.exportInstr}</p><textarea readOnly value={getExportJSON()} style={{width:"100%",height:180,padding:"10px 12px",fontSize:11,fontFamily:"monospace",color:th.sub,background:th.surface,border:"1px solid "+th.border,borderRadius:10,resize:"none",boxSizing:"border-box",lineHeight:1.5}}/><div style={{display:"flex",gap:8,marginTop:12}}><button onClick={()=>setExportMod(false)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>{t.exportClose}</button><button onClick={handleCopy} style={{flex:2,padding:"11px 0",fontSize:13,border:"none",borderRadius:12,background:copied?"#059669":th.btnBg,color:copied?"#fff":th.btnText,cursor:"pointer",fontWeight:500,transition:"background 0.2s"}}>{copied?t.exportCopied:t.exportCopy}</button></div></Sheet>}
+      {importMod&&<Sheet onClose={()=>setImportMod(false)} th={th}><SheetHead title={t.importModalTitle} onClose={()=>setImportMod(false)} th={th}/><p style={{fontSize:12,color:th.sub,marginBottom:12}}>{t.importInstr}</p><textarea value={importText} onChange={e=>setImportText(e.target.value)} placeholder={t.importPaste} style={{width:"100%",height:200,padding:"10px 12px",fontSize:11,fontFamily:"monospace",color:th.text,background:th.surface,border:"1px solid "+th.border,borderRadius:10,resize:"none",boxSizing:"border-box",lineHeight:1.5}}/><div style={{display:"flex",gap:8,marginTop:12}}><button onClick={()=>setImportMod(false)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>{t.cancel}</button><button onClick={handleImport} disabled={!importText.trim()} style={{flex:2,padding:"11px 0",fontSize:13,border:"none",borderRadius:12,background:importText.trim()?th.btnBg:th.surface,color:importText.trim()?th.btnText:th.muted,cursor:importText.trim()?"pointer":"default",fontWeight:500}}>{t.importRestore}</button></div></Sheet>}
+
+      {dayMod&&<Sheet onClose={closeDay} th={th}>
+        <SheetHead title={t.months[mo]+" "+dayMod.day} onClose={closeDay} th={th} right={<button onClick={()=>{closeDay();openForm(null,dayModalDateStr);}} style={{fontSize:12,color:th.sub,background:"none",border:"1px solid "+th.border,borderRadius:8,padding:"5px 11px",cursor:"pointer"}}>+ {t.add}</button>}/>
+        {dayModalOccs.length===0
+          ?<div style={{textAlign:"center",padding:"32px 0"}}><p style={{fontSize:13,color:th.muted}}>{t.emptyDay}</p></div>
+          :dayModalOccs.map(({tx,occ})=>{
+            const cat=catById(occ.category||"other");
+            const isExp=expandedTx===tx.id;
+            const isOnce=normRec(tx.recurrence,parseD(tx.startDate)).type==="once";
+            const isSwiped=swipeTx===tx.id;
+            return(
+              <div key={tx.id}>
+                <div style={{position:"relative",overflow:"hidden"}}>
+                  <div
+                    style={{position:"absolute",right:0,top:0,bottom:0,width:72,background:"#ef4444",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}
+                    onClick={()=>handleSwipeDelete(tx)}>
+                    <span style={{color:"#fff",fontSize:12,fontWeight:600}}>{t.delBtn}</span>
+                  </div>
+                  <div
+                    style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 0",borderBottom:isExp?"none":"1px solid "+th.border,cursor:"pointer",background:th.sheetBg,transform:isSwiped?"translateX(-72px)":"translateX(0)",transition:"transform 0.25s ease"}}
+                    onClick={e=>{if(swipeDidMoveRef.current){swipeDidMoveRef.current=false;return;}toggleExpanded(tx.id);}}
+                    onTouchStart={e=>{swipeStartRef.current={x:e.touches[0].clientX,y:e.touches[0].clientY,id:tx.id};swipeDidMoveRef.current=false;}}
+                    onTouchEnd={e=>{if(!swipeStartRef.current||swipeStartRef.current.id!==tx.id)return;const dx=e.changedTouches[0].clientX-swipeStartRef.current.x;const dy=e.changedTouches[0].clientY-swipeStartRef.current.y;if(dx<-50&&Math.abs(dy)<40){setSwipeTx(prev=>prev===tx.id?null:tx.id);swipeDidMoveRef.current=true;}else if(dx>20&&isSwiped){setSwipeTx(null);swipeDidMoveRef.current=true;}swipeStartRef.current=null;}}>
+                    <div style={{display:"flex",alignItems:"center",gap:10,flex:1}}>
+                      <div style={{width:36,height:36,borderRadius:10,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0,border:"2px solid "+(isExp?cat.color:"transparent"),transition:"border-color 0.15s"}}>{cat.emoji}</div>
+                      <div>
+                        <div style={{display:"flex",alignItems:"center",gap:5}}>
+                          <p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{occ.description}</p>
+                          {occ.hasOverride&&<span style={{fontSize:9,color:"#2563eb",background:"#2563eb18",borderRadius:4,padding:"1px 5px",letterSpacing:"0.04em"}}>{t.hasOverride}</span>}
+                        </div>
+                        <p style={{fontSize:11,margin:"2px 0 0",color:cat.color,fontWeight:500}}>{t.catNames[cat.id]} · {occ.type==="income"?t.incomeLbl:t.expenseLbl}</p>
+                      </div>
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+                      <span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:occ.type==="income"?"#059669":"#ef4444"}}>{occ.type==="income"?"+":"−"}{fA(occ.amount,cur,true)}</span>
+                      <span style={{fontSize:11,color:th.muted,transition:"transform 0.15s",display:"inline-block",transform:isExp?"rotate(180deg)":"rotate(0deg)"}}>›</span>
+                    </div>
+                  </div>
+                </div>
+                {isExp&&(
+                  <div style={{borderBottom:"1px solid "+th.border,animation:"fadeSlideIn 0.15s ease"}}>
+                    <div style={{padding:"10px 0 8px 46px"}}>
+                      <span style={secLbl}>{t.sectionEdit}</span>
+                      {isOnce
+                        ?actBtn(t.editAll,()=>openEditForm(tx,"all",dayModalDateStr),th.text,false,true)
+                        :(<>{actBtn(t.editInst,()=>openEditForm(tx,"instance",dayModalDateStr),th.text,false,true)}{actBtn(t.editFollow,()=>openEditForm(tx,"follow",dayModalDateStr),th.text,false,false)}{actBtn(t.editAll,()=>openEditForm(tx,"all",dayModalDateStr),th.text,false,false)}{actBtn(t.endAfter,()=>handleEndAfter(tx,dayModalDateStr),th.sub,false,false)}</>)
+                      }
+                    </div>
+                    <div style={{padding:"8px 0 12px 46px",borderTop:"1px solid "+th.border}}>
+                      <span style={secLbl}>{t.sectionDelete}</span>
+                      {isOnce
+                        ?(()=>{const pend=confirmPending?.txId===tx.id&&confirmPending?.scope==="all";return actBtn(pend?"→ "+t.confirmAction:t.delAll,()=>{if(pend)handleDelFromModal(tx,"all",dayModalDateStr);else setConfirmPending({txId:tx.id,scope:"all"});},th.danger,pend,true);})()
+                        :(<>{actBtn(t.delInst,()=>handleDelFromModal(tx,"this",dayModalDateStr),th.sub,false,true)}{[["follow",t.delFollow,th.sub],["before",t.delBefore,th.sub],["all",t.delAll,th.danger]].map(([sc,lb,clr])=>{const pend=confirmPending?.txId===tx.id&&confirmPending?.scope===sc;return actBtn(pend?"→ "+t.confirmAction:lb,()=>{if(pend)handleDelFromModal(tx,sc,dayModalDateStr);else setConfirmPending({txId:tx.id,scope:sc});},clr,pend,false);})}</>)
+                      }
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })
+        }
+      </Sheet>}
+
+      {delMod&&<Sheet onClose={()=>setDelMod(null)} th={th}><h3 style={{fontSize:15,color:th.text,fontWeight:600,margin:"0 0 4px"}}>{t.delTitle}</h3><p style={{fontSize:12,color:th.muted,margin:"0 0 20px"}}>{delMod.tx.description}</p><div style={{display:"flex",flexDirection:"column",gap:8}}>{normRec(delMod.tx.recurrence,parseD(delMod.tx.startDate)).type==="once"?<button onClick={()=>handleDel("all")} style={{padding:"13px 16px",textAlign:"left",fontSize:14,color:"#ef4444",background:isDark?"rgba(239,68,68,0.1)":"#fff5f5",border:"none",borderRadius:12,cursor:"pointer",fontWeight:500}}>{t.allEvts}</button>:[["this",t.thisEvt],["follow",t.thisFollow],["all",t.allEvts]].map(([sc,lb])=>(<button key={sc} onClick={()=>handleDel(sc)} style={{padding:"13px 16px",textAlign:"left",fontSize:14,color:sc==="all"?"#ef4444":th.text,background:sc==="all"?(isDark?"rgba(239,68,68,0.1)":"#fff5f5"):th.surface,border:"none",borderRadius:12,cursor:"pointer",fontWeight:sc==="all"?500:400}}>{lb}</button>))}</div><button onClick={()=>setDelMod(null)} style={{width:"100%",marginTop:12,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>{t.cancel}</button></Sheet>}
+      {delAccMod&&<Sheet onClose={()=>{setDelAccMod(false);setDelAccInput("");}} th={th}><div style={{textAlign:"center",marginBottom:20}}><div style={{fontSize:40,marginBottom:12}}>⚠️</div><h3 style={{fontSize:16,color:th.text,fontWeight:700,margin:"0 0 8px"}}>{t.delAccModalTitle}</h3><p style={{fontSize:13,color:th.sub,margin:0,lineHeight:1.6}}>{t.delAccModalBody}</p></div><div style={{background:th.surface,borderRadius:10,padding:"10px 14px",textAlign:"center",marginBottom:16}}><span style={{fontSize:16,fontWeight:700,letterSpacing:"0.1em",color:th.danger}}>{t.delAccWord}</span></div><input type="text" value={delAccInput} onChange={e=>setDelAccInput(e.target.value)} placeholder={t.delAccWord} style={{...iSt,textAlign:"center",fontSize:15,fontWeight:600,letterSpacing:"0.05em",borderColor:delAccInput===t.delAccWord?"#059669":th.inputBorder,color:delAccInput===t.delAccWord?"#059669":th.text,marginBottom:16}}/><div style={{display:"flex",gap:8}}><button onClick={()=>{setDelAccMod(false);setDelAccInput("");}} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>{t.cancel}</button><button onClick={()=>{if(delAccInput===t.delAccWord){deleteAccount();setDelAccMod(false);}}} disabled={delAccInput!==t.delAccWord} style={{flex:2,padding:"11px 0",fontSize:13,border:"none",borderRadius:12,background:delAccInput===t.delAccWord?"#ef4444":th.surface,color:delAccInput===t.delAccWord?"#fff":th.muted,cursor:delAccInput===t.delAccWord?"pointer":"default",fontWeight:500}}>{t.delAccConfirm}</button></div></Sheet>}
+
+      {formMod&&<Sheet onClose={()=>setFormMod(null)} th={th}>
+        <SheetHead title={formMod.tx?t.editTx:t.newTx} onClose={()=>setFormMod(null)} th={th}/>
+        {formMod.editScope==="instance"&&<p style={{fontSize:11,color:th.muted,marginTop:-14,marginBottom:16}}>{formMod.editDateStr}</p>}
+        <div style={{display:"flex",gap:8,marginBottom:20}}>{[["expense",t.expenseLbl],["income",t.incomeLbl]].map(([v,l])=>(<button key={v} onClick={()=>handleTypeChange(v)} style={{flex:1,padding:"9px 0",fontSize:13,borderRadius:10,border:"none",cursor:"pointer",fontWeight:500,transition:"all 0.15s",background:formMod.form.type===v?(v==="income"?(isDark?"rgba(16,185,129,0.15)":"#ecfdf5"):(isDark?"rgba(239,68,68,0.12)":"#fff5f5")):th.surface,color:formMod.form.type===v?(v==="income"?"#059669":"#ef4444"):th.muted}}>{l}</button>))}</div>
+        <div style={{display:"flex",flexDirection:"column",gap:16}}>
+          <div><label style={lbl}>{t.descLbl}</label><input type="text" value={formMod.form.desc} onChange={e=>setFF("desc")(e.target.value)} style={iSt}/></div>
+          <div><label style={lbl}>{t.amtLbl}</label><input type="number" value={formMod.form.amt} step="0.01" placeholder="0.00" onChange={e=>setFF("amt")(e.target.value)} style={iSt}/></div>
+          {formMod.editScope!=="instance"&&<div><label style={lbl}>{t.startLbl}</label><input type="date" value={formMod.form.date} onChange={e=>handleDateChange(e.target.value)} style={iSt}/></div>}
+          <CategoryPicker value={formMod.form.cat} onChange={v=>setFF("cat")(v)} th={th} t={t}/>
+          {formMod.editScope!=="instance"&&<RecurrencePicker value={formMod.form.rec} onChange={v=>setFF("rec")(v)} startDate={formMod.form.date} t={t} th={th}/>}
+        </div>
+        <div style={{display:"flex",gap:8,marginTop:24,alignItems:"center"}}>
+          {formMod.tx&&!formMod.editScope&&<button onClick={()=>{setDelMod({tx:formMod.tx,dateStr:formMod.tx.startDate});setFormMod(null);}} style={{fontSize:13,color:"#f87171",background:"none",border:"none",cursor:"pointer",padding:"4px 8px"}}>{t.delBtn}</button>}
+          <button onClick={()=>setFormMod(null)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>{t.cancel}</button>
+          <button onClick={saveForm} style={{flex:2,padding:"11px 0",fontSize:13,border:"none",borderRadius:12,background:th.btnBg,color:th.btnText,cursor:"pointer",fontWeight:500}}>{formMod.tx?t.save:t.add}</button>
+        </div>
+      </Sheet>}
     </div>
   );
-};
+}
 
-const root=ReactDOM.createRoot(document.getElementById("root"));
-root.render(<App/>);
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 </body>
 </html>
