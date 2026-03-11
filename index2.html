@@ -8,9 +8,6 @@
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="apple-mobile-web-app-title" content="Budget"/>
-  <meta name="application-name" content="Budget"/>
-  <meta name="description" content="Gestion financière personnelle"/>
-  <link id="pwa-manifest" rel="manifest" href=""/>
   <title>Budget</title>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -20,7 +17,7 @@
     button:focus,input:focus,select:focus,textarea:focus{outline:none}
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
     @keyframes slideDown{from{transform:translateY(-100%)}to{transform:translateY(0)}}
-    @keyframes fadeSlideIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes fadeSlideIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
   </style>
 </head>
 <body>
@@ -31,12 +28,12 @@
 <script>
 (function injectManifest(){
   const ico=(s,r)=>`data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 ${s} ${s}'><rect width='${s}' height='${s}' rx='${r}' fill='%23111'/><text x='${s/2}' y='${Math.round(s*.74)}' font-size='${Math.round(s*.56)}' text-anchor='middle'>%F0%9F%92%B0</text></svg>`;
-  const m={name:"Budget – Gestion financière",short_name:"Budget",description:"Application de gestion financière personnelle",start_url:"./",scope:"./",display:"standalone",orientation:"portrait",background_color:"#111111",theme_color:"#111111",lang:"fr",categories:["finance","productivity"],icons:[{src:ico(192,40),sizes:"192x192",type:"image/svg+xml",purpose:"any maskable"},{src:ico(512,96),sizes:"512x512",type:"image/svg+xml",purpose:"any maskable"}]};
-  try{const b=new Blob([JSON.stringify(m)],{type:"application/manifest+json"});document.getElementById("pwa-manifest").href=URL.createObjectURL(b);}catch(e){}
+  const m={name:"Budget – Gestion financière",short_name:"Budget",start_url:"./",scope:"./",display:"standalone",orientation:"portrait",background_color:"#111111",theme_color:"#111111",lang:"fr",icons:[{src:ico(192,40),sizes:"192x192",type:"image/svg+xml",purpose:"any maskable"},{src:ico(512,96),sizes:"512x512",type:"image/svg+xml",purpose:"any maskable"}]};
+  try{const b=new Blob([JSON.stringify(m)],{type:"application/manifest+json"});document.querySelector("#pwa-manifest")?.remove();const l=document.createElement("link");l.id="pwa-manifest";l.rel="manifest";l.href=URL.createObjectURL(b);document.head.appendChild(l);}catch(e){}
 })();
 (function registerSW(){
   if(!('serviceWorker' in navigator))return;
-  const sw=`const CACHE='budget-v0022';const CDN=['https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js','https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js','https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js'];self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CDN)).then(()=>self.skipWaiting()).catch(()=>self.skipWaiting()));});self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});self.addEventListener('fetch',e=>{if(e.request.method!=='GET'||!e.request.url.includes('cdnjs'))return;e.respondWith(caches.match(e.request).then(c=>{if(c)return c;return fetch(e.request).then(r=>{if(r.ok)caches.open(CACHE).then(ch=>ch.put(e.request,r.clone()));return r;}).catch(()=>c);}));});`;
+  const sw=`const CACHE='budget-v0023';const CDN=['https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js','https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js','https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js'];self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CDN)).then(()=>self.skipWaiting()).catch(()=>self.skipWaiting()));});self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});self.addEventListener('fetch',e=>{if(e.request.method!=='GET'||!e.request.url.includes('cdnjs'))return;e.respondWith(caches.match(e.request).then(c=>{if(c)return c;return fetch(e.request).then(r=>{if(r.ok)caches.open(CACHE).then(ch=>ch.put(e.request,r.clone()));return r;}).catch(()=>c);}));});`;
   try{const b=new Blob([sw],{type:"application/javascript"});navigator.serviceWorker.register(URL.createObjectURL(b)).catch(()=>{});}catch(e){}
 })();
 </script>
@@ -77,7 +74,7 @@ fr:{sub:"Gestion financière",title:"Budget",
   syncAgo:(n,u)=>`Synchronisé il y a ${n} ${u}`,
   syncSec:n=>n>1?"secondes":"seconde",syncMin:n=>n>1?"minutes":"minute",syncHr:n=>n>1?"heures":"heure",
   syncing:"Synchronisation",
-  add:"Ajouter",noTx:"Aucune transaction",newTx:"Nouvelle transaction",editTx:"Modifier la transaction",
+  add:"Ajouter",noTx:"Aucune transaction",newTx:"Nouvelle transaction",editTx:"Modifier",
   descLbl:"Description",amtLbl:"Montant",startLbl:"Date de début",recurLbl:"Récurrence",catLbl:"Catégorie",
   cancel:"Annuler",save:"Enregistrer",delBtn:"Supprimer",incomeLbl:"Revenu",expenseLbl:"Dépense",
   thisEvt:"Cet événement",thisFollow:"Cet événement et ceux qui suivront",allEvts:"Tous les événements",
@@ -103,9 +100,12 @@ fr:{sub:"Gestion financière",title:"Budget",
   delAccLbl:"Supprimer le compte",delAccSub:"Cette action est irréversible",delAccConfirm:"Supprimer définitivement",
   delAccModalTitle:"Confirmer la suppression",delAccModalBody:"Toutes vos données seront effacées. Tapez le mot ci-dessous :",
   delAccWord:"SUPPRIMER",budgetLbl:"Budget mensuel par catégorie",budgetTotal:"Total dépenses",
-  budgetOf:"sur",budgetUnset:"Illimité",quickCatLbl:"Changer la catégorie",revenuSummary:"Revenus ce mois",
-  editInst:"Modifier cette instance",editFollow:"Modifier cette instance et les suivantes",
-  delInst:"Supprimer cette instance",delFollow:"Supprimer tout ce qui suit",delBefore:"Supprimer tout ce qui précède",delAll:"Supprimer tout",
+  budgetOf:"sur",budgetUnset:"Illimité",revenuSummary:"Revenus ce mois",
+  sectionEdit:"Modifier",sectionDelete:"Supprimer",
+  editInst:"Cette occurrence",editFollow:"Cette occurrence et les suivantes",editAll:"Toute la série",
+  endAfter:"Terminer après cette date",
+  delInst:"Cette occurrence",delFollow:"Cette occurrence et les suivantes",delBefore:"Toutes les occurrences antérieures",delAll:"Toutes les occurrences",
+  confirmAction:"Confirmer ?",hasOverride:"personnalisé",
   langOpts:LANG_OPTS,curOpts:CUR_OPTS,
   catNames:{housing:"Logement",food:"Alimentation",transport:"Transport",savings:"Épargne",entertain:"Loisirs",health:"Santé",subscript:"Abonnements",shopping:"Magasinage",education:"Éducation",utilities:"Services",income:"Revenus",other:"Autre"}},
 
@@ -121,7 +121,7 @@ en:{sub:"Financial management",title:"Budget",
   syncAgo:(n,u)=>`Synced ${n} ${u} ago`,
   syncSec:n=>n>1?"seconds":"second",syncMin:n=>n>1?"minutes":"minute",syncHr:n=>n>1?"hours":"hour",
   syncing:"Syncing",
-  add:"Add",noTx:"No transactions",newTx:"New transaction",editTx:"Edit transaction",
+  add:"Add",noTx:"No transactions",newTx:"New transaction",editTx:"Edit",
   descLbl:"Description",amtLbl:"Amount",startLbl:"Start date",recurLbl:"Recurrence",catLbl:"Category",
   cancel:"Cancel",save:"Save",delBtn:"Delete",incomeLbl:"Income",expenseLbl:"Expense",
   thisEvt:"This event",thisFollow:"This and following events",allEvts:"All events",
@@ -147,9 +147,12 @@ en:{sub:"Financial management",title:"Budget",
   delAccLbl:"Delete account",delAccSub:"This action is irreversible",delAccConfirm:"Delete permanently",
   delAccModalTitle:"Confirm deletion",delAccModalBody:"All your data will be permanently erased. Type the word below:",
   delAccWord:"DELETE",budgetLbl:"Monthly budget by category",budgetTotal:"Total expenses",
-  budgetOf:"of",budgetUnset:"No limit",quickCatLbl:"Change category",revenuSummary:"Income this month",
-  editInst:"Edit this instance",editFollow:"Edit this and following",
-  delInst:"Delete this instance",delFollow:"Delete all following",delBefore:"Delete all before",delAll:"Delete all",
+  budgetOf:"of",budgetUnset:"No limit",revenuSummary:"Income this month",
+  sectionEdit:"Edit",sectionDelete:"Delete",
+  editInst:"This occurrence",editFollow:"This and following",editAll:"Entire series",
+  endAfter:"End after this date",
+  delInst:"This occurrence",delFollow:"This and following",delBefore:"All prior occurrences",delAll:"All occurrences",
+  confirmAction:"Confirm?",hasOverride:"customized",
   langOpts:LANG_OPTS,curOpts:CUR_OPTS,
   catNames:{housing:"Housing",food:"Food",transport:"Transport",savings:"Savings",entertain:"Entertainment",health:"Health",subscript:"Subscriptions",shopping:"Shopping",education:"Education",utilities:"Utilities",income:"Income",other:"Other"}},
 
@@ -165,7 +168,7 @@ es:{sub:"Gestión financiera",title:"Presupuesto",
   syncAgo:(n,u)=>`Sincronizado hace ${n} ${u}`,
   syncSec:n=>n>1?"segundos":"segundo",syncMin:n=>n>1?"minutos":"minuto",syncHr:n=>n>1?"horas":"hora",
   syncing:"Sincronizando",
-  add:"Agregar",noTx:"Sin transacciones",newTx:"Nueva transacción",editTx:"Editar transacción",
+  add:"Agregar",noTx:"Sin transacciones",newTx:"Nueva transacción",editTx:"Editar",
   descLbl:"Descripción",amtLbl:"Monto",startLbl:"Fecha de inicio",recurLbl:"Recurrencia",catLbl:"Categoría",
   cancel:"Cancelar",save:"Guardar",delBtn:"Eliminar",incomeLbl:"Ingreso",expenseLbl:"Gasto",
   thisEvt:"Este evento",thisFollow:"Este y siguientes",allEvts:"Todos los eventos",
@@ -191,9 +194,12 @@ es:{sub:"Gestión financiera",title:"Presupuesto",
   delAccLbl:"Eliminar cuenta",delAccSub:"Esta acción es irreversible",delAccConfirm:"Eliminar definitivamente",
   delAccModalTitle:"Confirmar eliminación",delAccModalBody:"Todos los datos serán eliminados. Escribe la palabra:",
   delAccWord:"ELIMINAR",budgetLbl:"Presupuesto mensual por categoría",budgetTotal:"Total gastos",
-  budgetOf:"de",budgetUnset:"Sin límite",quickCatLbl:"Cambiar categoría",revenuSummary:"Ingresos este mes",
-  editInst:"Editar esta instancia",editFollow:"Editar esta y las siguientes",
-  delInst:"Eliminar esta instancia",delFollow:"Eliminar todo lo siguiente",delBefore:"Eliminar todo lo anterior",delAll:"Eliminar todo",
+  budgetOf:"de",budgetUnset:"Sin límite",revenuSummary:"Ingresos este mes",
+  sectionEdit:"Editar",sectionDelete:"Eliminar",
+  editInst:"Esta ocurrencia",editFollow:"Esta ocurrencia y las siguientes",editAll:"Toda la serie",
+  endAfter:"Terminar después de esta fecha",
+  delInst:"Esta ocurrencia",delFollow:"Esta ocurrencia y las siguientes",delBefore:"Todas las ocurrencias anteriores",delAll:"Todas las ocurrencias",
+  confirmAction:"¿Confirmar?",hasOverride:"personalizado",
   langOpts:LANG_OPTS,curOpts:CUR_OPTS,
   catNames:{housing:"Vivienda",food:"Alimentación",transport:"Transporte",savings:"Ahorros",entertain:"Entretenimiento",health:"Salud",subscript:"Suscripciones",shopping:"Compras",education:"Educación",utilities:"Servicios",income:"Ingresos",other:"Otro"}},
 
@@ -209,7 +215,7 @@ de:{sub:"Finanzverwaltung",title:"Budget",
   syncAgo:(n,u)=>`Vor ${n} ${u} synchronisiert`,
   syncSec:_=>"Sekunden",syncMin:_=>"Minuten",syncHr:_=>"Stunden",
   syncing:"Synchronisierung",
-  add:"Hinzufügen",noTx:"Keine Transaktionen",newTx:"Neue Transaktion",editTx:"Transaktion bearbeiten",
+  add:"Hinzufügen",noTx:"Keine Transaktionen",newTx:"Neue Transaktion",editTx:"Bearbeiten",
   descLbl:"Beschreibung",amtLbl:"Betrag",startLbl:"Startdatum",recurLbl:"Wiederholung",catLbl:"Kategorie",
   cancel:"Abbrechen",save:"Speichern",delBtn:"Löschen",incomeLbl:"Einnahme",expenseLbl:"Ausgabe",
   thisEvt:"Dieses Ereignis",thisFollow:"Dieses und folgende",allEvts:"Alle Ereignisse",
@@ -235,9 +241,12 @@ de:{sub:"Finanzverwaltung",title:"Budget",
   delAccLbl:"Konto löschen",delAccSub:"Diese Aktion ist unwiderruflich",delAccConfirm:"Endgültig löschen",
   delAccModalTitle:"Löschung bestätigen",delAccModalBody:"Alle Daten werden gelöscht. Tippe das Wort:",
   delAccWord:"LÖSCHEN",budgetLbl:"Monatsbudget nach Kategorie",budgetTotal:"Gesamtausgaben",
-  budgetOf:"von",budgetUnset:"Kein Limit",quickCatLbl:"Kategorie ändern",revenuSummary:"Einnahmen diesen Monat",
-  editInst:"Diese Instanz bearbeiten",editFollow:"Diese und folgende bearbeiten",
-  delInst:"Diese Instanz löschen",delFollow:"Alle folgenden löschen",delBefore:"Alle vorherigen löschen",delAll:"Alles löschen",
+  budgetOf:"von",budgetUnset:"Kein Limit",revenuSummary:"Einnahmen diesen Monat",
+  sectionEdit:"Bearbeiten",sectionDelete:"Löschen",
+  editInst:"Diese Instanz",editFollow:"Diese Instanz und folgende",editAll:"Gesamte Serie",
+  endAfter:"Nach diesem Datum beenden",
+  delInst:"Diese Instanz",delFollow:"Diese Instanz und folgende",delBefore:"Alle vorherigen Instanzen",delAll:"Alle Instanzen",
+  confirmAction:"Bestätigen?",hasOverride:"angepasst",
   langOpts:LANG_OPTS,curOpts:CUR_OPTS,
   catNames:{housing:"Wohnen",food:"Ernährung",transport:"Transport",savings:"Ersparnisse",entertain:"Unterhaltung",health:"Gesundheit",subscript:"Abonnements",shopping:"Einkaufen",education:"Bildung",utilities:"Nebenkosten",income:"Einnahmen",other:"Sonstiges"}},
 
@@ -253,7 +262,7 @@ pt:{sub:"Gestão financeira",title:"Orçamento",
   syncAgo:(n,u)=>`Sincronizado há ${n} ${u}`,
   syncSec:n=>n>1?"segundos":"segundo",syncMin:n=>n>1?"minutos":"minuto",syncHr:n=>n>1?"horas":"hora",
   syncing:"Sincronizando",
-  add:"Adicionar",noTx:"Sem transações",newTx:"Nova transação",editTx:"Editar transação",
+  add:"Adicionar",noTx:"Sem transações",newTx:"Nova transação",editTx:"Editar",
   descLbl:"Descrição",amtLbl:"Valor",startLbl:"Data de início",recurLbl:"Recorrência",catLbl:"Categoria",
   cancel:"Cancelar",save:"Guardar",delBtn:"Eliminar",incomeLbl:"Receita",expenseLbl:"Despesa",
   thisEvt:"Este evento",thisFollow:"Este e seguintes",allEvts:"Todos os eventos",
@@ -279,9 +288,12 @@ pt:{sub:"Gestão financeira",title:"Orçamento",
   delAccLbl:"Eliminar conta",delAccSub:"Esta ação é irreversível",delAccConfirm:"Eliminar definitivamente",
   delAccModalTitle:"Confirmar eliminação",delAccModalBody:"Todos os dados serão apagados. Escreva a palavra:",
   delAccWord:"ELIMINAR",budgetLbl:"Orçamento mensal por categoria",budgetTotal:"Total de despesas",
-  budgetOf:"de",budgetUnset:"Sem limite",quickCatLbl:"Mudar categoria",revenuSummary:"Receitas este mês",
-  editInst:"Editar esta instância",editFollow:"Editar esta e as seguintes",
-  delInst:"Eliminar esta instância",delFollow:"Eliminar tudo o que se segue",delBefore:"Eliminar tudo o anterior",delAll:"Eliminar tudo",
+  budgetOf:"de",budgetUnset:"Sem limite",revenuSummary:"Receitas este mês",
+  sectionEdit:"Editar",sectionDelete:"Eliminar",
+  editInst:"Esta instância",editFollow:"Esta instância e as seguintes",editAll:"Toda a série",
+  endAfter:"Terminar após esta data",
+  delInst:"Esta instância",delFollow:"Esta instância e as seguintes",delBefore:"Todas as instâncias anteriores",delAll:"Todas as instâncias",
+  confirmAction:"Confirmar?",hasOverride:"personalizado",
   langOpts:LANG_OPTS,curOpts:CUR_OPTS,
   catNames:{housing:"Habitação",food:"Alimentação",transport:"Transporte",savings:"Poupanças",entertain:"Entretenimento",health:"Saúde",subscript:"Subscrições",shopping:"Compras",education:"Educação",utilities:"Serviços",income:"Receitas",other:"Outro"}},
 
@@ -297,7 +309,7 @@ it:{sub:"Gestione finanziaria",title:"Budget",
   syncAgo:(n,u)=>`Sincronizzato ${n} ${u} fa`,
   syncSec:n=>n>1?"secondi":"secondo",syncMin:n=>n>1?"minuti":"minuto",syncHr:n=>n>1?"ore":"ora",
   syncing:"Sincronizzazione",
-  add:"Aggiungi",noTx:"Nessuna transazione",newTx:"Nuova transazione",editTx:"Modifica transazione",
+  add:"Aggiungi",noTx:"Nessuna transazione",newTx:"Nuova transazione",editTx:"Modifica",
   descLbl:"Descrizione",amtLbl:"Importo",startLbl:"Data di inizio",recurLbl:"Ricorrenza",catLbl:"Categoria",
   cancel:"Annulla",save:"Salva",delBtn:"Elimina",incomeLbl:"Entrata",expenseLbl:"Uscita",
   thisEvt:"Questo evento",thisFollow:"Questo e seguenti",allEvts:"Tutti gli eventi",
@@ -323,9 +335,12 @@ it:{sub:"Gestione finanziaria",title:"Budget",
   delAccLbl:"Elimina account",delAccSub:"Questa azione è irreversibile",delAccConfirm:"Elimina definitivamente",
   delAccModalTitle:"Conferma eliminazione",delAccModalBody:"Tutti i dati verranno eliminati. Scrivi la parola:",
   delAccWord:"ELIMINA",budgetLbl:"Budget mensile per categoria",budgetTotal:"Totale spese",
-  budgetOf:"di",budgetUnset:"Nessun limite",quickCatLbl:"Cambia categoria",revenuSummary:"Entrate questo mese",
-  editInst:"Modifica questa istanza",editFollow:"Modifica questa e le seguenti",
-  delInst:"Elimina questa istanza",delFollow:"Elimina tutto ciò che segue",delBefore:"Elimina tutto il precedente",delAll:"Elimina tutto",
+  budgetOf:"di",budgetUnset:"Nessun limite",revenuSummary:"Entrate questo mese",
+  sectionEdit:"Modifica",sectionDelete:"Elimina",
+  editInst:"Questa istanza",editFollow:"Questa istanza e le seguenti",editAll:"Tutta la serie",
+  endAfter:"Termina dopo questa data",
+  delInst:"Questa istanza",delFollow:"Questa istanza e le seguenti",delBefore:"Tutte le istanze precedenti",delAll:"Tutte le istanze",
+  confirmAction:"Confermare?",hasOverride:"personalizzato",
   langOpts:LANG_OPTS,curOpts:CUR_OPTS,
   catNames:{housing:"Abitazione",food:"Alimentazione",transport:"Trasporti",savings:"Risparmio",entertain:"Intrattenimento",health:"Salute",subscript:"Abbonamenti",shopping:"Shopping",education:"Istruzione",utilities:"Utenze",income:"Entrate",other:"Altro"}},
 
@@ -341,7 +356,7 @@ zh:{sub:"个人财务管理",title:"预算",
   syncAgo:(n,u)=>`${n}${u}前同步`,
   syncSec:_=>"秒",syncMin:_=>"分钟",syncHr:_=>"小时",
   syncing:"同步中",
-  add:"添加",noTx:"无交易记录",newTx:"新建交易",editTx:"编辑交易",
+  add:"添加",noTx:"无交易记录",newTx:"新建交易",editTx:"编辑",
   descLbl:"描述",amtLbl:"金额",startLbl:"开始日期",recurLbl:"重复",catLbl:"分类",
   cancel:"取消",save:"保存",delBtn:"删除",incomeLbl:"收入",expenseLbl:"支出",
   thisEvt:"此事件",thisFollow:"此及以后事件",allEvts:"所有事件",
@@ -367,23 +382,17 @@ zh:{sub:"个人财务管理",title:"预算",
   delAccLbl:"删除账户",delAccSub:"此操作不可撤销",delAccConfirm:"永久删除",
   delAccModalTitle:"确认删除",delAccModalBody:"所有数据将被清除。输入以下文字：",
   delAccWord:"删除账户",budgetLbl:"各类别月度预算",budgetTotal:"总支出",
-  budgetOf:"共",budgetUnset:"不限",quickCatLbl:"更改分类",revenuSummary:"本月收入",
-  editInst:"编辑此实例",editFollow:"编辑此及以后",
-  delInst:"仅删除此实例",delFollow:"删除此后所有",delBefore:"删除此前所有",delAll:"全部删除",
+  budgetOf:"共",budgetUnset:"不限",revenuSummary:"本月收入",
+  sectionEdit:"编辑",sectionDelete:"删除",
+  editInst:"此实例",editFollow:"此实例及以后",editAll:"整个系列",
+  endAfter:"在此日期后结束",
+  delInst:"此实例",delFollow:"此实例及以后",delBefore:"所有之前的实例",delAll:"全部实例",
+  confirmAction:"确认？",hasOverride:"已自定义",
   langOpts:LANG_OPTS,curOpts:CUR_OPTS,
   catNames:{housing:"住房",food:"饮食",transport:"交通",savings:"储蓄",entertain:"娱乐",health:"健康",subscript:"订阅",shopping:"购物",education:"教育",utilities:"公用事业",income:"收入",other:"其他"}},
 };
 
-function relTimeStr(lastSync, t) {
-  if (!lastSync) return t.syncNever;
-  const secs = Math.floor((Date.now() - lastSync.getTime()) / 1000);
-  if (secs < 15) return t.syncJustNow;
-  if (secs < 60) return t.syncAgo(secs, t.syncSec(secs));
-  const mins = Math.floor(secs / 60);
-  if (mins < 60) return t.syncAgo(mins, t.syncMin(mins));
-  const hrs = Math.floor(mins / 60);
-  return t.syncAgo(hrs, t.syncHr(hrs));
-}
+function relTimeStr(lastSync,t){if(!lastSync)return t.syncNever;const secs=Math.floor((Date.now()-lastSync.getTime())/1000);if(secs<15)return t.syncJustNow;if(secs<60)return t.syncAgo(secs,t.syncSec(secs));const mins=Math.floor(secs/60);if(mins<60)return t.syncAgo(mins,t.syncMin(mins));const hrs=Math.floor(mins/60);return t.syncAgo(hrs,t.syncHr(hrs));}
 
 const mkTh=d=>d?{bg:"#0d0d0d",bgSub:"#161616",surface:"#1c1c1c",border:"#252525",inputBorder:"#333",text:"#f0f0f0",sub:"#888",muted:"#444",btnBg:"#efefef",btnText:"#111",togOff:"#3a3a3a",sheetBg:"#161616",danger:"#f87171",cardBg:"#181818"}:{bg:"#fff",bgSub:"#f9fafb",surface:"#f3f4f6",border:"#f0f0f0",inputBorder:"#e5e7eb",text:"#111",sub:"#6b7280",muted:"#9ca3af",btnBg:"#111",btnText:"#fff",togOff:"#d1d5db",sheetBg:"#fff",danger:"#ef4444",cardBg:"#fafafa"};
 
@@ -394,15 +403,30 @@ function getNthWD(date){let c=0;const d=new Date(date.getFullYear(),date.getMont
 function normRec(rec,s){if(rec&&typeof rec==="object")return rec;const wd=s instanceof Date?s.getDay():parseD(String(s||"2024-01-01")).getDay();return({once:{type:"once"},daily:{type:"daily"},weekly:{type:"weekly",weekday:wd},monthly:{type:"monthly_day"},annual:{type:"annually"}})[rec]||{type:"once"};}
 function recLabel(tx,t){const s=parseD(tx.startDate);const r=normRec(tx.recurrence,s);const wd=r.weekday!==undefined?r.weekday:s.getDay();switch(r.type){case"once":return t.recOnce;case"daily":return t.recDaily;case"weekly":return`${t.recWeeklyPre} ${t.days[wd]}`;case"monthly_day":return t.recMonthlyDay;case"monthly_nth_weekday":return`${t.recMonthlyPre} ${t.nth[r.nth]||r.nth} ${t.days[r.weekday]}`;case"annually":return`${t.recAnnuallyPre} ${s.getDate()} ${t.months[s.getMonth()]}`;case"weekdays":return t.recWeekdays;case"custom":{const{interval:iv=1,unit:u="week",weekdays:wds=[]}=r;const ul=t.recUnits.find(x=>x.v===u)?.l||u;let lb=`${t.recEvery} ${iv} ${ul}`;if(u==="week"&&wds.length>0)lb+=" · "+wds.map(w=>t.daysS[w]).join(" ");return lb;}default:return t.recOnce;}}
 function occsInMonth(tx,yr,mo){const ms=new Date(yr,mo,1),me=new Date(yr,mo+1,0);const s=parseD(tx.startDate),e=tx.endDate?parseD(tx.endDate):null;const ex=new Set(tx.exceptions||[]);const r=normRec(tx.recurrence,s);if(s>me||(e&&e<ms))return[];const ok=d=>d>=ms&&d<=me&&d>=s&&(!e||d<=e)&&!ex.has(dStr(d));const snap=d=>new Date(d.getTime());if(r.type==="once")return ok(s)?[s.getDate()]:[];if(r.type==="daily"){const res=[];const d=new Date(s>ms?s:ms);while(d<=me){if(ok(snap(d)))res.push(d.getDate());d.setDate(d.getDate()+1);}return res;}if(r.type==="weekly"){const twd=r.weekday!==undefined?r.weekday:s.getDay();const a=new Date(s);while(a.getDay()!==twd)a.setDate(a.getDate()+1);const res=[];const d=new Date(a);while(d<=me){if(ok(snap(d)))res.push(d.getDate());d.setDate(d.getDate()+7);}return res;}if(r.type==="monthly_day"){const day=s.getDate();if(day>me.getDate())return[];const d=new Date(yr,mo,day);return ok(d)?[day]:[];}if(r.type==="monthly_nth_weekday"){const{nth,weekday:wd2}=r;let c=0;for(let dy=1;dy<=me.getDate();dy++){const d=new Date(yr,mo,dy);if(d.getDay()===wd2){c++;if(c===nth)return ok(d)?[dy]:[];}}return[];}if(r.type==="annually"){if(mo!==s.getMonth()||yr<s.getFullYear())return[];const d=new Date(yr,mo,s.getDate());return ok(d)?[s.getDate()]:[];}if(r.type==="weekdays"){const res=[];const d=new Date(s>ms?s:ms);while(d<=me){const w=d.getDay();if(w>0&&w<6&&ok(snap(d)))res.push(d.getDate());d.setDate(d.getDate()+1);}return res;}if(r.type==="custom"){const{interval:iv=1,unit:u="day",weekdays:wds=[]}=r;const res=[];if(u==="day"){const d=new Date(s>ms?s:ms);while(d<=me){if(Math.round((d-s)/86400000)%iv===0&&ok(snap(d)))res.push(d.getDate());d.setDate(d.getDate()+1);}}else if(u==="week"){const wdSet=new Set(wds.length>0?wds:[s.getDay()]);wdSet.forEach(twd=>{const a=new Date(s);while(a.getDay()!==twd)a.setDate(a.getDate()+1);const d=new Date(a);while(d<=me){if(ok(snap(d)))res.push(d.getDate());d.setDate(d.getDate()+iv*7);}});res.sort((a,b)=>a-b);}else if(u==="month"){const sm=s.getMonth()+s.getFullYear()*12,cm=mo+yr*12;if((cm-sm)<0||(cm-sm)%iv!==0)return[];const d=new Date(yr,mo,s.getDate());if(ok(d))res.push(s.getDate());}else if(u==="year"){if(mo!==s.getMonth()||yr<s.getFullYear())return[];if((yr-s.getFullYear())%iv!==0)return[];const d=new Date(yr,mo,s.getDate());if(ok(d))res.push(s.getDate());}return res;}return[];}
-function countOccs(tx,upTo){const s=parseD(tx.startDate);if(s>upTo)return 0;let count=0,y=s.getFullYear(),m=s.getMonth();const ey=upTo.getFullYear(),em=upTo.getMonth();let its=0;while((y<ey||(y===ey&&m<=em))&&its++<1200){const ocs=occsInMonth(tx,y,m);for(const d of ocs)if(new Date(y,m,d)<=upTo)count++;m++;if(m>11){m=0;y++;}}return count;}
-const balAt=(txs,init,date)=>txs.reduce((b,tx)=>b+(tx.type==="income"?1:-1)*tx.amount*countOccs(tx,date),init);
 
-function fA(n,cur,full=false){
-  const a=Math.abs(n);const jpy=cur==="jpy";let nm;
-  if(full){nm=jpy?Math.round(a).toLocaleString():a.toLocaleString("fr-CA",{minimumFractionDigits:2,maximumFractionDigits:2});}
-  else{if(a>=10000)nm=(jpy?Math.round(a/1000):(a/1000)).toFixed(jpy?0:1)+"k";else if(a>=1000)nm=(a/1000).toFixed(jpy?0:2)+"k";else nm=jpy?Math.round(a).toString():a.toFixed(2);}
-  if(cur==="usd")return"$"+nm;if(cur==="eur")return nm+" €";if(cur==="gbp")return"£"+nm;if(cur==="aud")return"A$"+nm;if(cur==="jpy")return"¥"+nm;if(cur==="chf")return nm+" Fr.";return nm+" $";
+// Override-aware occurrence data
+function getOccsWithAmounts(tx,yr,mo){
+  return occsInMonth(tx,yr,mo).map(day=>{
+    const ds=dStr(new Date(yr,mo,day));
+    const ov=(tx.overrides||[]).find(o=>o.date===ds);
+    return{day,dateStr:ds,description:ov?.description??tx.description,amount:ov?.amount??tx.amount,type:ov?.type??tx.type,category:ov?.category??tx.category,hasOverride:!!ov};
+  });
 }
+
+// Balance calculation accounting for overrides
+function sumOccsUpTo(tx,date){
+  const s=parseD(tx.startDate);if(s>date)return 0;
+  let total=0,y=s.getFullYear(),m=s.getMonth();
+  const ey=date.getFullYear(),em=date.getMonth();let its=0;
+  while((y<ey||(y===ey&&m<=em))&&its++<1200){
+    for(const occ of getOccsWithAmounts(tx,y,m)){if(new Date(y,m,occ.day)<=date)total+=(occ.type==="income"?1:-1)*occ.amount;}
+    m++;if(m>11){m=0;y++;}
+  }
+  return total;
+}
+const balAt=(txs,init,date)=>txs.reduce((b,tx)=>b+sumOccsUpTo(tx,date),init);
+
+function fA(n,cur,full=false){const a=Math.abs(n);const jpy=cur==="jpy";let nm;if(full){nm=jpy?Math.round(a).toLocaleString():a.toLocaleString("fr-CA",{minimumFractionDigits:2,maximumFractionDigits:2});}else{if(a>=10000)nm=(jpy?Math.round(a/1000):(a/1000)).toFixed(jpy?0:1)+"k";else if(a>=1000)nm=(a/1000).toFixed(jpy?0:2)+"k";else nm=jpy?Math.round(a).toString():a.toFixed(2);}if(cur==="usd")return"$"+nm;if(cur==="eur")return nm+" €";if(cur==="gbp")return"£"+nm;if(cur==="aud")return"A$"+nm;if(cur==="jpy")return"¥"+nm;if(cur==="chf")return nm+" Fr.";return nm+" $";}
 
 const Tog=({label,sub,value,onChange,th})=>(<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0",borderBottom:"1px solid "+th.border}}><div><span style={{fontSize:13,color:th.text,display:"block"}}>{label}</span>{sub&&<span style={{fontSize:11,color:th.muted}}>{sub}</span>}</div><button onClick={()=>onChange(!value)} style={{width:36,height:20,borderRadius:10,background:value?th.btnBg:th.togOff,border:"none",cursor:"pointer",position:"relative",flexShrink:0,transition:"background 0.2s"}}><div style={{position:"absolute",top:2,left:value?16:2,width:16,height:16,background:"#fff",borderRadius:"50%",transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.3)"}}/></button></div>);
 const Sel=({label,value,opts,onChange,th})=>(<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0",borderBottom:"1px solid "+th.border}}><span style={{fontSize:13,color:th.text}}>{label}</span><select value={value} onChange={e=>onChange(e.target.value)} style={{fontSize:13,color:th.text,background:th.bg,border:"none",cursor:"pointer",outline:"none"}}>{opts.map(o=><option key={o.v} value={o.v}>{o.l}</option>)}</select></div>);
@@ -413,14 +437,7 @@ const MonthNav=({yr,mo,onPrev,onNext,onDbl,t,th})=>(<div style={{display:"flex",
 function CategoryPicker({value,onChange,th,t}){return(<div><label style={{fontSize:10,color:th.muted,letterSpacing:"0.1em",textTransform:"uppercase"}}>{t.catLbl}</label><div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:6,marginTop:10}}>{CATS.map(c=>{const sel=value===c.id;return(<button key={c.id} onClick={()=>onChange(c.id)} title={t.catNames[c.id]} style={{padding:"10px 4px",borderRadius:10,border:"2px solid "+(sel?c.color:"transparent"),background:sel?c.color+"25":th.surface,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3}}><span style={{fontSize:18,lineHeight:1}}>{c.emoji}</span><span style={{fontSize:9,color:sel?c.color:th.muted,fontWeight:sel?600:400,lineHeight:1.2,textAlign:"center"}}>{t.catNames[c.id].split(" ")[0]}</span></button>);})}</div></div>);}
 function RecurrencePicker({value,onChange,startDate,t,th}){const s=useMemo(()=>parseD(startDate),[startDate]);const wd=s.getDay(),nth=getNthWD(s);const nr=useMemo(()=>normRec(value,s),[value,s]);const isCust=nr.type==="custom";const opts=useMemo(()=>[{rec:{type:"once"},label:t.recOnce},{rec:{type:"daily"},label:t.recDaily},{rec:{type:"weekly",weekday:wd},label:`${t.recWeeklyPre} ${t.days[wd]}`},{rec:{type:"monthly_nth_weekday",nth,weekday:wd},label:`${t.recMonthlyPre} ${t.nth[nth]||nth} ${t.days[wd]}`},{rec:{type:"annually"},label:`${t.recAnnuallyPre} ${s.getDate()} ${t.months[s.getMonth()]}`},{rec:{type:"weekdays"},label:t.recWeekdays},{rec:null,isCustom:true,label:t.recCustom}],[s,wd,nth,t]);const selIdx=useMemo(()=>{if(isCust)return 6;return opts.findIndex(o=>{if(!o.rec)return false;if(o.rec.type!==nr.type)return false;if(o.rec.type==="weekly")return o.rec.weekday===nr.weekday;if(o.rec.type==="monthly_nth_weekday")return o.rec.nth===nr.nth&&o.rec.weekday===nr.weekday;return true;});},[nr,opts,isCust]);return(<div><label style={{fontSize:10,color:th.muted,letterSpacing:"0.1em",textTransform:"uppercase"}}>{t.recurLbl}</label><div style={{marginTop:10,border:"1px solid "+th.border,borderRadius:14,overflow:"hidden"}}>{opts.map((opt,i)=>(<div key={i}><button onClick={()=>{if(opt.isCustom){if(!isCust)onChange({type:"custom",interval:2,unit:"week",weekdays:[wd]});}else onChange(opt.rec);}} style={{width:"100%",display:"flex",alignItems:"center",gap:12,padding:"12px 14px",background:selIdx===i?th.surface:"none",border:"none",borderBottom:i<opts.length-1?"1px solid "+th.border:"none",cursor:"pointer",textAlign:"left"}}><div style={{width:18,height:18,borderRadius:"50%",flexShrink:0,border:selIdx===i?"5px solid "+th.text:"2px solid "+th.muted,background:th.bg,transition:"all 0.15s"}}/><span style={{fontSize:13,color:th.text}}>{opt.label}</span></button>{opt.isCustom&&isCust&&(<div style={{padding:"14px 14px 16px 44px",background:th.surface,borderTop:"1px solid "+th.border}}><div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}><span style={{fontSize:12,color:th.sub}}>{t.recEvery}</span><input type="number" min={1} max={99} value={nr.interval||1} onChange={e=>onChange({...nr,interval:Math.max(1,parseInt(e.target.value)||1)})} style={{width:44,textAlign:"center",fontSize:13,color:th.text,background:th.bg,border:"1px solid "+th.border,borderRadius:7,padding:"5px 4px",outline:"none"}}/><select value={nr.unit||"week"} onChange={e=>onChange({...nr,unit:e.target.value})} style={{fontSize:13,color:th.text,background:th.bg,border:"1px solid "+th.border,borderRadius:7,padding:"5px 8px",outline:"none",cursor:"pointer"}}>{t.recUnits.map(u=><option key={u.v} value={u.v}>{u.l}</option>)}</select></div>{(nr.unit||"week")==="week"&&(<div style={{display:"flex",gap:5,marginTop:12}}>{t.daysS.map((d,di)=>{const wds=nr.weekdays||[wd],on=wds.includes(di);return(<button key={di} onClick={()=>{let nw=on?wds.filter(x=>x!==di):[...wds,di];if(nw.length===0)nw=[di];onChange({...nr,weekdays:nw});}} style={{width:33,height:33,borderRadius:"50%",fontSize:12,fontWeight:500,background:on?th.btnBg:th.bg,color:on?th.btnText:th.sub,border:"1.5px solid "+(on?th.btnBg:th.border),cursor:"pointer",transition:"all 0.15s"}}>{d}</button>);})}</div>)}</div>)}</div>))}</div></div>);}
 
-async function doPushToGitHub(json,token,gistId){
-  const body={files:{"budget.json":{content:json}}};
-  const url=gistId?`https://api.github.com/gists/${gistId}`:"https://api.github.com/gists";
-  const method=gistId?"PATCH":"POST";
-  const res=await fetch(url,{method,headers:{"Authorization":"token "+token,"Content-Type":"application/json"},body:JSON.stringify(gistId?body:{...body,description:"Budget App Data",public:false})});
-  if(!res.ok){let msg="HTTP "+res.status;try{const d=await res.json();msg=d.message||msg;}catch(e){}throw new Error(msg);}
-  return res.json();
-}
+async function doPushToGitHub(json,token,gistId){const body={files:{"budget.json":{content:json}}};const url=gistId?`https://api.github.com/gists/${gistId}`:"https://api.github.com/gists";const method=gistId?"PATCH":"POST";const res=await fetch(url,{method,headers:{"Authorization":"token "+token,"Content-Type":"application/json"},body:JSON.stringify(gistId?body:{...body,description:"Budget App Data",public:false})});if(!res.ok){let msg="HTTP "+res.status;try{const d=await res.json();msg=d.message||msg;}catch(e){}throw new Error(msg);}return res.json();}
 
 function App(){
   const[tab,setTab]=useState("home");
@@ -457,6 +474,7 @@ function App(){
   const[delAccMod,setDelAccMod]=useState(false);
   const[delAccInput,setDelAccInput]=useState("");
   const[expandedTx,setExpandedTx]=useState(null);
+  const[confirmPending,setConfirmPending]=useState(null);
   const[exportMod,setExportMod]=useState(false);
   const[importMod,setImportMod]=useState(false);
   const[importText,setImportText]=useState("");
@@ -484,55 +502,21 @@ function App(){
   const lbl={fontSize:10,color:th.muted,letterSpacing:"0.12em",textTransform:"uppercase"};
 
   const NAV_ITEMS=useMemo(()=>[["home",t.navHome],["transactions",t.navTx],["budget",t.navBudget],["analyse",t.navAnalyse],["settings",t.navSettings]],[t]);
-  const SUB_NAV=useMemo(()=>({
-    transactions:[{id:"historique",label:t.subHistorique},{id:"recurrent",label:t.subRecurrent}],
-    budget:[{id:"categories",label:t.subBudgetCat},{id:"objectifs",label:t.subObjectifs}],
-    analyse:[{id:"statistiques",label:t.subStatistiques},{id:"graphiques",label:t.subGraphiques}]
-  }),[t]);
+  const SUB_NAV=useMemo(()=>({transactions:[{id:"historique",label:t.subHistorique},{id:"recurrent",label:t.subRecurrent}],budget:[{id:"categories",label:t.subBudgetCat},{id:"objectifs",label:t.subObjectifs}],analyse:[{id:"statistiques",label:t.subStatistiques},{id:"graphiques",label:t.subGraphiques}]}),[t]);
   const DEFAULT_SUB={transactions:"historique",budget:"categories",analyse:"statistiques"};
   const curSub=subTab[tab]||(DEFAULT_SUB[tab]||null);
   latestExportRef.current={txs,initBal,lang,cur,disp,darkMode,budgets};
 
   useEffect(()=>{const id=setInterval(()=>setTick(n=>n+1),15000);return()=>clearInterval(id);},[]);
 
-  const processQueue=async()=>{
-    if(isSyncingRef.current||!navigator.onLine)return;
-    if(syncQueueRef.current.length===0)return;
-    isSyncingRef.current=true;setIsSyncing(true);
-    const item=syncQueueRef.current[0];
-    try{
-      const result=await doPushToGitHub(item.json,ghToken,ghGistId);
-      if(result.id){if(result.id!==ghGistId)setGhGistId(result.id);await window.storage.set("bgt9-updated",String(item.ts));}
-      syncQueueRef.current.shift();isSyncingRef.current=false;setIsSyncing(false);
-      clearTimeout(retryTimerRef.current);setLastSync(new Date());
-      if(syncQueueRef.current.length>0)setTimeout(()=>processQueueRef.current?.(),500);
-    }catch(e){
-      isSyncingRef.current=false;
-      item.retries=(item.retries||0)+1;
-      if(item.retries<=5){const delay=Math.min(2000*Math.pow(2,item.retries-1),32000);retryTimerRef.current=setTimeout(()=>processQueueRef.current?.(),delay);}
-      else{syncQueueRef.current.shift();setIsSyncing(false);}
-    }
-  };
+  const processQueue=async()=>{if(isSyncingRef.current||!navigator.onLine)return;if(syncQueueRef.current.length===0)return;isSyncingRef.current=true;setIsSyncing(true);const item=syncQueueRef.current[0];try{const result=await doPushToGitHub(item.json,ghToken,ghGistId);if(result.id){if(result.id!==ghGistId)setGhGistId(result.id);await window.storage.set("bgt9-updated",String(item.ts));}syncQueueRef.current.shift();isSyncingRef.current=false;setIsSyncing(false);clearTimeout(retryTimerRef.current);setLastSync(new Date());if(syncQueueRef.current.length>0)setTimeout(()=>processQueueRef.current?.(),500);}catch(e){isSyncingRef.current=false;item.retries=(item.retries||0)+1;if(item.retries<=5){const delay=Math.min(2000*Math.pow(2,item.retries-1),32000);retryTimerRef.current=setTimeout(()=>processQueueRef.current?.(),delay);}else{syncQueueRef.current.shift();setIsSyncing(false);}}};
   processQueueRef.current=processQueue;
 
-  const enqueuePush=()=>{
-    const snap=latestExportRef.current;if(!snap||!ghToken)return;
-    const ts=Date.now();const json=JSON.stringify({...snap,updated:ts},null,2);
-    const idx=syncQueueRef.current.findIndex(i=>i.type==="push");
-    const entry={type:"push",json,ts,retries:0};
-    if(idx>=0)syncQueueRef.current[idx]=entry;else syncQueueRef.current.push(entry);
-    processQueueRef.current?.();
-  };
-
+  const enqueuePush=()=>{const snap=latestExportRef.current;if(!snap||!ghToken)return;const ts=Date.now();const json=JSON.stringify({...snap,updated:ts},null,2);const idx=syncQueueRef.current.findIndex(i=>i.type==="push");const entry={type:"push",json,ts,retries:0};if(idx>=0)syncQueueRef.current[idx]=entry;else syncQueueRef.current.push(entry);processQueueRef.current?.();};
   const getExportJSON=()=>JSON.stringify({txs,initBal,lang,cur,disp,darkMode,budgets,updated:Date.now()},null,2);
 
   useEffect(()=>{const mq=window.matchMedia("(prefers-color-scheme: dark)");const h=e=>setSysDark(e.matches);mq.addEventListener("change",h);return()=>mq.removeEventListener("change",h);},[]);
-  useEffect(()=>{
-    const goOnline=()=>{setIsOnline(true);if(syncQueueRef.current.length>0)setTimeout(()=>processQueueRef.current?.(),1000);};
-    const goOffline=()=>setIsOnline(false);
-    window.addEventListener("online",goOnline);window.addEventListener("offline",goOffline);
-    return()=>{window.removeEventListener("online",goOnline);window.removeEventListener("offline",goOffline);};
-  },[]);
+  useEffect(()=>{const goOnline=()=>{setIsOnline(true);if(syncQueueRef.current.length>0)setTimeout(()=>processQueueRef.current?.(),1000);};const goOffline=()=>setIsOnline(false);window.addEventListener("online",goOnline);window.addEventListener("offline",goOffline);return()=>{window.removeEventListener("online",goOnline);window.removeEventListener("offline",goOffline);};},[]);
 
   useEffect(()=>{(async()=>{
     try{const r=await window.storage.get("bgt9-tx");if(r)try{setTxs(JSON.parse(r.value));}catch(e){}}catch(e){}
@@ -542,33 +526,14 @@ function App(){
     let sMode="local",ghPull=true,ghTok="",ghGid="";
     try{const r=await window.storage.get("bgt9-cfg");if(r){const c=JSON.parse(r.value);if(c.lang)setLang(c.lang);if(c.cur)setCur(c.cur);if(c.disp)setDisp(c.disp);if(c.darkMode)setDarkMode(c.darkMode);if(c.mode)setMode(c.mode);if(c.saveMode){setSaveMode(c.saveMode);sMode=c.saveMode;}if(c.saveAuto!==undefined)setSaveAuto(c.saveAuto);}}catch(e){}
     try{const r=await window.storage.get("bgt9-gh");if(r){const g=JSON.parse(r.value);if(g.token){setGhToken(g.token);ghTok=g.token;}if(g.gistId){setGhGistId(g.gistId);ghGid=g.gistId;}if(g.pullOnStart!==undefined){setGhPullOnStart(g.pullOnStart);ghPull=g.pullOnStart;}}}catch(e){}
-    if(sMode==="github"&&ghPull&&ghTok&&ghGid){
-      setIsSyncing(true);
-      try{const res=await fetch(`https://api.github.com/gists/${ghGid}`,{headers:{"Authorization":"token "+ghTok}});if(!res.ok)throw new Error();const data=await res.json();const content=data.files?.["budget.json"]?.content;if(content){let d;try{d=JSON.parse(content);}catch(e){throw new Error();}if(Array.isArray(d.txs))setTxs(d.txs);if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.lang)setLang(d.lang);if(d.cur)setCur(d.cur);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.budgets)setBudgets(d.budgets);if(d.updated){lastRemoteTsRef.current=d.updated;await window.storage.set("bgt9-updated",String(d.updated));}setLastSync(new Date());}}catch(e){}finally{setIsSyncing(false);}
-    }
+    if(sMode==="github"&&ghPull&&ghTok&&ghGid){setIsSyncing(true);try{const res=await fetch(`https://api.github.com/gists/${ghGid}`,{headers:{"Authorization":"token "+ghTok}});if(!res.ok)throw new Error();const data=await res.json();const content=data.files?.["budget.json"]?.content;if(content){let d;try{d=JSON.parse(content);}catch(e){throw new Error();}if(Array.isArray(d.txs))setTxs(d.txs);if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.lang)setLang(d.lang);if(d.cur)setCur(d.cur);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.budgets)setBudgets(d.budgets);if(d.updated){lastRemoteTsRef.current=d.updated;await window.storage.set("bgt9-updated",String(d.updated));}setLastSync(new Date());}}catch(e){}finally{setIsSyncing(false);}}
     setLoaded(true);
   })();},[]);
 
   useEffect(()=>{if(!loaded)return;clearTimeout(cfgTimer.current);cfgTimer.current=setTimeout(async()=>{try{await window.storage.set("bgt9-cfg",JSON.stringify({lang,cur,disp,darkMode,mode,saveMode,saveAuto}));await window.storage.set("bgt9-gh",JSON.stringify({token:ghToken,gistId:ghGistId,pullOnStart:ghPullOnStart}));}catch(e){}},400);},[lang,cur,disp,darkMode,mode,saveMode,saveAuto,ghToken,ghGistId,ghPullOnStart,loaded]);
-
-  useEffect(()=>{
-    if(!loaded||!saveAuto)return;setIsSyncing(true);clearTimeout(saveTimer.current);
-    saveTimer.current=setTimeout(async()=>{try{const hash=JSON.stringify({txs,initBal,budgets});if(hash===lastSavedHashRef.current){setIsSyncing(false);return;}lastSavedHashRef.current=hash;await window.storage.set("bgt9-tx",JSON.stringify(txs));await window.storage.set("bgt9-bal",String(initBal));await window.storage.set("bgt9-bud",JSON.stringify(budgets));setLastSync(new Date());}catch(e){}finally{setIsSyncing(false);}},600);
-  },[txs,initBal,budgets,loaded,saveAuto]);
-
-  useEffect(()=>{
-    if(!loaded||!saveAuto||saveMode!=="github"||!ghToken)return;
-    clearTimeout(ghSyncTimerRef.current);
-    ghSyncTimerRef.current=setTimeout(()=>enqueuePush(),8000);
-    return()=>clearTimeout(ghSyncTimerRef.current);
-  },[txs,initBal,budgets,lang,cur,disp,darkMode,loaded,saveAuto,saveMode,ghToken]);
-
-  useEffect(()=>{
-    if(saveMode!=="github"||!ghToken||!ghGistId){clearInterval(periodicCheckRef.current);return;}
-    const check=async()=>{if(!navigator.onLine||isSyncingRef.current)return;try{const res=await fetch(`https://api.github.com/gists/${ghGistId}`,{headers:{"Authorization":"token "+ghToken}});if(!res.ok)return;const g=await res.json();const content=g.files?.["budget.json"]?.content;if(!content)return;let remote;try{remote=JSON.parse(content);}catch(e){return;}const rTs=remote.updated||0;const lRes=await window.storage.get("bgt9-updated");const lTs=parseInt(lRes?.value||"0")||0;if(rTs>lTs&&rTs!==lastRemoteTsRef.current){lastRemoteTsRef.current=rTs;setRemoteData(remote);setUpdateAvailable(true);}}catch(e){}};
-    periodicCheckRef.current=setInterval(check,60000);
-    return()=>clearInterval(periodicCheckRef.current);
-  },[saveMode,ghToken,ghGistId]);
+  useEffect(()=>{if(!loaded||!saveAuto)return;setIsSyncing(true);clearTimeout(saveTimer.current);saveTimer.current=setTimeout(async()=>{try{const hash=JSON.stringify({txs,initBal,budgets});if(hash===lastSavedHashRef.current){setIsSyncing(false);return;}lastSavedHashRef.current=hash;await window.storage.set("bgt9-tx",JSON.stringify(txs));await window.storage.set("bgt9-bal",String(initBal));await window.storage.set("bgt9-bud",JSON.stringify(budgets));setLastSync(new Date());}catch(e){}finally{setIsSyncing(false);}},600);},[txs,initBal,budgets,loaded,saveAuto]);
+  useEffect(()=>{if(!loaded||!saveAuto||saveMode!=="github"||!ghToken)return;clearTimeout(ghSyncTimerRef.current);ghSyncTimerRef.current=setTimeout(()=>enqueuePush(),8000);return()=>clearTimeout(ghSyncTimerRef.current);},[txs,initBal,budgets,lang,cur,disp,darkMode,loaded,saveAuto,saveMode,ghToken]);
+  useEffect(()=>{if(saveMode!=="github"||!ghToken||!ghGistId){clearInterval(periodicCheckRef.current);return;}const check=async()=>{if(!navigator.onLine||isSyncingRef.current)return;try{const res=await fetch(`https://api.github.com/gists/${ghGistId}`,{headers:{"Authorization":"token "+ghToken}});if(!res.ok)return;const g=await res.json();const content=g.files?.["budget.json"]?.content;if(!content)return;let remote;try{remote=JSON.parse(content);}catch(e){return;}const rTs=remote.updated||0;const lRes=await window.storage.get("bgt9-updated");const lTs=parseInt(lRes?.value||"0")||0;if(rTs>lTs&&rTs!==lastRemoteTsRef.current){lastRemoteTsRef.current=rTs;setRemoteData(remote);setUpdateAvailable(true);}}catch(e){}};periodicCheckRef.current=setInterval(check,60000);return()=>clearInterval(periodicCheckRef.current);},[saveMode,ghToken,ghGistId]);
 
   const applyRemoteData=d=>{try{if(Array.isArray(d.txs))setTxs(d.txs);if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.lang)setLang(d.lang);if(d.cur)setCur(d.cur);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.budgets)setBudgets(d.budgets);if(d.updated)window.storage.set("bgt9-updated",String(d.updated));setLastSync(new Date());}catch(e){}};
   const saveLocalNow=async()=>{setIsSyncing(true);try{await window.storage.set("bgt9-tx",JSON.stringify(txs));await window.storage.set("bgt9-bal",String(initBal));await window.storage.set("bgt9-bud",JSON.stringify(budgets));await window.storage.set("bgt9-updated",String(Date.now()));lastSavedHashRef.current=JSON.stringify({txs,initBal,budgets});setLastSync(new Date());}catch(e){}finally{setIsSyncing(false);}};
@@ -576,12 +541,7 @@ function App(){
   const ghPullNow=async()=>{if(!ghToken||!ghGistId)return;setIsSyncing(true);try{const res=await fetch(`https://api.github.com/gists/${ghGistId}`,{headers:{"Authorization":"token "+ghToken}});if(!res.ok)throw new Error();const data=await res.json();const content=data.files?.["budget.json"]?.content;if(!content)throw new Error();let d;try{d=JSON.parse(content);}catch(e){throw new Error();}applyRemoteData(d);if(d.updated){lastRemoteTsRef.current=d.updated;await window.storage.set("bgt9-updated",String(d.updated));}}catch(e){}finally{setIsSyncing(false);}};
   const handleManualSave=()=>{if(saveMode==="local")saveLocalNow();else ghPushNow();};
 
-  const handleTitleClick=e=>{
-    e.stopPropagation();const now=Date.now();
-    if(now-lastTapRef.current<350){setTab("home");setMo(TODAY.getMonth());setYr(TODAY.getFullYear());}
-    lastTapRef.current=now;
-  };
-
+  const handleTitleClick=e=>{e.stopPropagation();const now=Date.now();if(now-lastTapRef.current<350){setTab("home");setMo(TODAY.getMonth());setYr(TODAY.getFullYear());}lastTapRef.current=now;};
   const handleCopy=()=>{if(navigator.clipboard?.writeText){navigator.clipboard.writeText(getExportJSON()).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2500);});}};
   const handleImport=()=>{try{const d=JSON.parse(importText);if(Array.isArray(d.txs))setTxs(d.txs);if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.lang)setLang(d.lang);if(d.cur)setCur(d.cur);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.budgets)setBudgets(d.budgets);setImportMod(false);setImportText("");}catch(e){}};
   const deleteAccount=async()=>{for(const k of["bgt9-tx","bgt9-bal","bgt9-bud","bgt9-cfg","bgt9-gh","bgt9-updated"])try{await window.storage.delete(k);}catch(e){}setTxs([]);setInitBal(1000);setBudgets({});setDisp({endBal:false,revExp:false,net:false});setDarkMode("off");setGhToken("");setGhGistId("");setLastSync(null);};
@@ -589,9 +549,17 @@ function App(){
   const curBalVal=useMemo(()=>balAt(txs,initBal,TODAY),[txs,initBal]);
   const dim=new Date(yr,mo+1,0).getDate();
   const cells=useMemo(()=>{const fd=new Date(yr,mo,1).getDay();return[...Array(fd).fill(null),...Array.from({length:dim},(_,i)=>i+1)];},[yr,mo,dim]);
-  const dayData=useMemo(()=>{const d={};for(let day=1;day<=dim;day++){const dt=txs.filter(tx=>occsInMonth(tx,yr,mo).includes(day));d[day]={net:dt.reduce((s,tx)=>s+(tx.type==="income"?tx.amount:-tx.amount),0),bal:balAt(txs,initBal,new Date(yr,mo,day)),count:dt.length,cats:dt.map(tx=>catById(tx.category||"other"))};}return d;},[txs,yr,mo,dim,initBal]);
-  const monthStats=useMemo(()=>{let inc=0,exp=0;txs.forEach(tx=>{const n=occsInMonth(tx,yr,mo).length;if(tx.type==="income")inc+=tx.amount*n;else exp+=tx.amount*n;});return{inc,exp,net:inc-exp};},[txs,yr,mo]);
-  const catStats=useMemo(()=>{const s={};CATS.forEach(c=>s[c.id]={spent:0,income:0});txs.forEach(tx=>{const cat=tx.category||"other";const n=occsInMonth(tx,yr,mo).length;if(n===0)return;if(tx.type==="income")s[cat].income+=tx.amount*n;else s[cat].spent+=tx.amount*n;});return s;},[txs,yr,mo]);
+
+  // Precompute all occs for the month (override-aware)
+  const monthOccs=useMemo(()=>{
+    const byDay={};
+    txs.forEach(tx=>{getOccsWithAmounts(tx,yr,mo).forEach(occ=>{(byDay[occ.day]=byDay[occ.day]||[]).push(occ);});});
+    return byDay;
+  },[txs,yr,mo]);
+
+  const dayData=useMemo(()=>{const d={};for(let day=1;day<=dim;day++){const occs=monthOccs[day]||[];d[day]={net:occs.reduce((s,o)=>s+(o.type==="income"?o.amount:-o.amount),0),bal:balAt(txs,initBal,new Date(yr,mo,day)),count:occs.length,cats:occs.map(o=>catById(o.category||"other"))};}return d;},[monthOccs,txs,yr,mo,dim,initBal]);
+  const monthStats=useMemo(()=>{let inc=0,exp=0;txs.forEach(tx=>{getOccsWithAmounts(tx,yr,mo).forEach(o=>{if(o.type==="income")inc+=o.amount;else exp+=o.amount;});});return{inc,exp,net:inc-exp};},[txs,yr,mo]);
+  const catStats=useMemo(()=>{const s={};CATS.forEach(c=>s[c.id]={spent:0,income:0});txs.forEach(tx=>{getOccsWithAmounts(tx,yr,mo).forEach(o=>{const cat=o.category||"other";if(o.type==="income")s[cat].income+=o.amount;else s[cat].spent+=o.amount;});});return s;},[txs,yr,mo]);
   const totalBudget=useMemo(()=>CATS.filter(c=>c.id!=="income").reduce((s,c)=>s+(budgets[c.id]||0),0),[budgets]);
   const totalSpent=useMemo(()=>CATS.filter(c=>c.id!=="income").reduce((s,c)=>s+(catStats[c.id]?.spent||0),0),[catStats]);
   const endBalVal=dayData[dim]?.bal??null;
@@ -600,24 +568,26 @@ function App(){
   const nextMo=()=>mo===11?(setMo(0),setYr(y=>y+1)):setMo(m=>m+1);
   const goToday=()=>{setMo(TODAY.getMonth());setYr(TODAY.getFullYear());};
 
+  // Day modal: occurrences with effective (override-aware) values + original tx ref
+  const dayModalOccs=useMemo(()=>{if(!dayMod)return[];return txs.flatMap(tx=>{const match=getOccsWithAmounts(tx,yr,mo).find(o=>o.day===dayMod.day);return match?[{tx,occ:match}]:[];});},[dayMod,txs,yr,mo]);
+  const dayModalDateStr=dayMod?dStr(new Date(yr,mo,dayMod.day)):"";
+
+  const closeDay=()=>{setDayMod(null);setExpandedTx(null);setConfirmPending(null);};
+  const toggleExpanded=(txId)=>{setExpandedTx(p=>p===txId?null:txId);setConfirmPending(null);};
+
   const openForm=(tx=null,prefill=null)=>{const dt=prefill||dStr(TODAY);setFormMod({tx,editScope:null,editDateStr:null,form:tx?{desc:tx.description,amt:String(tx.amount),type:tx.type,rec:normRec(tx.recurrence,parseD(tx.startDate)),date:tx.startDate,cat:tx.category||"other"}:{desc:"",amt:"",type:"expense",rec:{type:"once"},date:dt,cat:"other"}});};
 
   const openEditForm=(tx,scope,dateStr)=>{
-    setDayMod(null);setExpandedTx(null);
+    setDayMod(null);setExpandedTx(null);setConfirmPending(null);
+    if(scope==="all"){openForm(tx);return;}
     const r=normRec(tx.recurrence,parseD(tx.startDate));
-    const isOnce=r.type==="once";
-    setFormMod({
-      tx,
-      editScope:isOnce?null:scope,
-      editDateStr:dateStr,
-      form:{
-        desc:tx.description,amt:String(tx.amount),type:tx.type,
-        rec:scope==="instance"&&!isOnce?{type:"once"}:r,
-        date:scope==="instance"||scope==="follow"?dateStr:tx.startDate,
-        cat:tx.category||"other"
-      }
-    });
+    // Use override values if editing an instance that has one
+    let effDesc=tx.description,effAmt=tx.amount,effType=tx.type,effCat=tx.category||"other";
+    if(scope==="instance"){const ov=(tx.overrides||[]).find(o=>o.date===dateStr);if(ov){effDesc=ov.description??effDesc;effAmt=ov.amount??effAmt;effType=ov.type??effType;effCat=ov.category??effCat;}}
+    setFormMod({tx,editScope:scope,editDateStr:dateStr,form:{desc:effDesc,amt:String(effAmt),type:effType,cat:effCat,rec:scope==="instance"?{type:"once"}:r,date:scope==="follow"?dateStr:tx.startDate}});
   };
+
+  const handleEndAfter=(tx,dateStr)=>{setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,endDate:dateStr}));closeDay();};
 
   const setFF=k=>v=>setFormMod(m=>({...m,form:{...m.form,[k]:v}}));
   const handleTypeChange=v=>setFormMod(m=>({...m,form:{...m.form,type:v,cat:v==="income"?"income":"other"}}));
@@ -625,78 +595,63 @@ function App(){
 
   const saveForm=()=>{
     const{tx,form,editScope,editDateStr}=formMod;
-    const amt=parseFloat(form.amt);
-    if(!form.desc.trim()||isNaN(amt)||amt<=0)return;
+    const amt=parseFloat(form.amt);if(!form.desc.trim()||isNaN(amt)||amt<=0)return;
     const data={description:form.desc,amount:amt,type:form.type,recurrence:form.rec,startDate:form.date,category:form.cat};
     if(tx){
       if(editScope==="instance"&&editDateStr){
-        setTxs(prev=>[
-          ...prev.map(t2=>t2.id===tx.id?{...t2,exceptions:[...(t2.exceptions||[]),editDateStr]}:t2),
-          {id:Date.now().toString(),...data,recurrence:{type:"once"},startDate:editDateStr,exceptions:[]}
-        ]);
+        // Store as override — series stays intact
+        setTxs(prev=>prev.map(t2=>{if(t2.id!==tx.id)return t2;const ovs=(t2.overrides||[]).filter(o=>o.date!==editDateStr);return{...t2,overrides:[...ovs,{date:editDateStr,description:form.desc,amount:amt,type:form.type,category:form.cat}]};}));
       }else if(editScope==="follow"&&editDateStr){
-        const ne=dayBef(editDateStr);
-        const beforeStart=parseD(ne)<parseD(tx.startDate);
-        setTxs(prev=>[
-          ...(beforeStart?prev.filter(t2=>t2.id!==tx.id):prev.map(t2=>t2.id===tx.id?{...t2,endDate:ne}:t2)),
-          {id:Date.now().toString(),...data,exceptions:[]}
-        ]);
+        const ne=dayBef(editDateStr);const beforeStart=parseD(ne)<parseD(tx.startDate);
+        setTxs(prev=>[...(beforeStart?prev.filter(t2=>t2.id!==tx.id):prev.map(t2=>t2.id!==tx.id?t2:{...t2,endDate:ne,overrides:(t2.overrides||[]).filter(o=>o.date<editDateStr),exceptions:(t2.exceptions||[]).filter(e=>e<editDateStr)})),{id:Date.now().toString(),...data,overrides:[],exceptions:[]}]);
       }else{
         setTxs(prev=>prev.map(t2=>t2.id===tx.id?{...t2,...data}:t2));
       }
     }else{
-      setTxs(prev=>[...prev,{id:Date.now().toString(),...data,exceptions:[]}]);
+      setTxs(prev=>[...prev,{id:Date.now().toString(),...data,overrides:[],exceptions:[]}]);
     }
     setFormMod(null);
   };
-
-  const handleDel=scope=>{const{tx,dateStr}=delMod;if(scope==="all"||normRec(tx.recurrence,parseD(tx.startDate)).type==="once"){setTxs(prev=>prev.filter(t2=>t2.id!==tx.id));}else if(scope==="this"){setTxs(prev=>prev.map(t2=>t2.id!==tx.id?t2:{...t2,exceptions:[...(t2.exceptions||[]),dateStr]}));}else if(scope==="follow"){const ne=dayBef(dateStr);if(parseD(ne)<parseD(tx.startDate))setTxs(prev=>prev.filter(t2=>t2.id!==tx.id));else setTxs(prev=>prev.map(t2=>t2.id!==tx.id?t2:{...t2,endDate:ne}));}setDelMod(null);};
 
   const handleDelFromModal=(tx,scope,dateStr)=>{
     const rec=normRec(tx.recurrence,parseD(tx.startDate));
     if(scope==="this"){
       if(rec.type==="once")setTxs(prev=>prev.filter(t=>t.id!==tx.id));
-      else setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,exceptions:[...(t.exceptions||[]),dateStr]}));
+      else setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,exceptions:[...(t.exceptions||[]),dateStr],overrides:(t.overrides||[]).filter(o=>o.date!==dateStr)}));
     }else if(scope==="follow"){
       const ne=dayBef(dateStr);
       if(parseD(ne)<parseD(tx.startDate))setTxs(prev=>prev.filter(t=>t.id!==tx.id));
-      else setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,endDate:ne}));
+      else setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,endDate:ne,overrides:(t.overrides||[]).filter(o=>o.date<dateStr),exceptions:(t.exceptions||[]).filter(e=>e<dateStr)}));
     }else if(scope==="before"){
-      setTxs(prev=>prev.map(t=>{
-        if(t.id!==tx.id)return t;
-        return{...t,startDate:dateStr,exceptions:(t.exceptions||[]).filter(e=>e>=dateStr)};
-      }));
+      // Move start forward — current date is kept as first occurrence
+      setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,startDate:dateStr,overrides:(t.overrides||[]).filter(o=>o.date>=dateStr),exceptions:(t.exceptions||[]).filter(e=>e>=dateStr)}));
     }else if(scope==="all"){
       setTxs(prev=>prev.filter(t=>t.id!==tx.id));
     }
-    setDayMod(null);setExpandedTx(null);
+    closeDay();
   };
+
+  const handleDel=scope=>{const{tx,dateStr}=delMod;if(scope==="all"||normRec(tx.recurrence,parseD(tx.startDate)).type==="once"){setTxs(prev=>prev.filter(t2=>t2.id!==tx.id));}else if(scope==="this"){setTxs(prev=>prev.map(t2=>t2.id!==tx.id?t2:{...t2,exceptions:[...(t2.exceptions||[]),dateStr]}));}else if(scope==="follow"){const ne=dayBef(dateStr);if(parseD(ne)<parseD(tx.startDate))setTxs(prev=>prev.filter(t2=>t2.id!==tx.id));else setTxs(prev=>prev.map(t2=>t2.id!==tx.id?t2:{...t2,endDate:ne}));}setDelMod(null);};
 
   const startEditBal=()=>{setBalInput(String(curBalVal.toFixed(2)));setEditingBal(true);setTimeout(()=>{balInputRef.current?.focus();balInputRef.current?.select();},50)};
   const commitEditBal=()=>{const desired=parseFloat(balInput);if(!isNaN(desired)){const diff=desired-curBalVal;setInitBal(prev=>parseFloat((prev+diff).toFixed(2)));}setEditingBal(false);};
   const startEditBalSett=()=>{setBalInputSett(String(curBalVal.toFixed(2)));setEditingBalSett(true);setTimeout(()=>{balSettRef.current?.focus();balSettRef.current?.select();},50)};
   const commitEditBalSett=()=>{const desired=parseFloat(balInputSett);if(!isNaN(desired)){const diff=desired-curBalVal;setInitBal(prev=>parseFloat((prev+diff).toFixed(2)));}setEditingBalSett(false);};
 
-  const dayModalList=dayMod?txs.filter(tx=>occsInMonth(tx,yr,mo).includes(dayMod.day)):[];
-  const dayModalDateStr=dayMod?`${yr}-${String(mo+1).padStart(2,"0")}-${String(dayMod.day).padStart(2,"0")}`:"";
   const expenseCats=CATS.filter(c=>c.id!=="income");
   const hasSummary=disp.endBal||disp.revExp||disp.net;
   const monthTxs=useMemo(()=>txs.filter(tx=>occsInMonth(tx,yr,mo).length>0).sort((a,b)=>new Date(b.startDate)-new Date(a.startDate)),[txs,yr,mo]);
   const recurTxs=useMemo(()=>txs.filter(tx=>normRec(tx.recurrence,parseD(tx.startDate)).type!=="once").sort((a,b)=>new Date(b.startDate)-new Date(a.startDate)),[txs]);
   const syncText=useMemo(()=>isSyncing?t.syncing:relTimeStr(lastSync,t),[isSyncing,lastSync,t,tick]);
 
+  // Action panel helpers
+  const secLbl={fontSize:9,color:th.muted,letterSpacing:"0.12em",textTransform:"uppercase",margin:"0 0 4px",display:"block"};
+  const actBtn=(label,onClick,color,isPending,isFirst)=>(<button onClick={onClick} style={{display:"block",width:"100%",textAlign:"left",padding:"7px 0",fontSize:12,color:isPending?"#ef4444":color,background:isPending?(isDark?"rgba(239,68,68,0.12)":"#fff5f5"):"none",border:"none",borderTop:isFirst?"none":"1px solid transparent",cursor:"pointer",transition:"color 0.12s",borderRadius:isPending?6:0,fontWeight:isPending?600:400}}>{label}</button>);
+
   return(
     <div style={{minHeight:"100vh",background:th.bg,fontFamily:"system-ui,sans-serif"}}>
 
-      {updateAvailable&&remoteData&&(
-        <div style={{position:"sticky",top:0,zIndex:90,background:"#1d4ed8",color:"#fff",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",animation:"slideDown 0.3s ease",flexWrap:"wrap",gap:8}}>
-          <span style={{fontSize:13}}>📲 {t.importOk}</span>
-          <div style={{display:"flex",gap:8}}>
-            <button onClick={()=>{applyRemoteData(remoteData);setUpdateAvailable(false);setRemoteData(null);}} style={{fontSize:12,padding:"6px 14px",borderRadius:8,border:"none",background:"#fff",color:"#1d4ed8",cursor:"pointer",fontWeight:600}}>{t.importRestore}</button>
-            <button onClick={()=>setUpdateAvailable(false)} style={{fontSize:12,padding:"6px 12px",borderRadius:8,border:"1px solid rgba(255,255,255,0.35)",background:"transparent",color:"#fff",cursor:"pointer"}}>{t.cancel}</button>
-          </div>
-        </div>
-      )}
+      {updateAvailable&&remoteData&&(<div style={{position:"sticky",top:0,zIndex:90,background:"#1d4ed8",color:"#fff",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",animation:"slideDown 0.3s ease",flexWrap:"wrap",gap:8}}><span style={{fontSize:13}}>📲 {t.importOk}</span><div style={{display:"flex",gap:8}}><button onClick={()=>{applyRemoteData(remoteData);setUpdateAvailable(false);setRemoteData(null);}} style={{fontSize:12,padding:"6px 14px",borderRadius:8,border:"none",background:"#fff",color:"#1d4ed8",cursor:"pointer",fontWeight:600}}>{t.importRestore}</button><button onClick={()=>setUpdateAvailable(false)} style={{fontSize:12,padding:"6px 12px",borderRadius:8,border:"1px solid rgba(255,255,255,0.35)",background:"transparent",color:"#fff",cursor:"pointer"}}>{t.cancel}</button></div></div>)}
 
       <div style={{position:"fixed",bottom:16,right:16,zIndex:99}}>
         <button onClick={()=>openForm()} style={{width:48,height:48,borderRadius:"50%",background:th.btnBg,color:th.btnText,border:"none",cursor:"pointer",fontSize:26,fontWeight:300,boxShadow:"0 4px 16px rgba(0,0,0,0.2)",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>+</button>
@@ -704,49 +659,27 @@ function App(){
 
       <div style={{padding:"32px 24px 20px",borderBottom:"1px solid "+th.border}}>
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
-          <div>
-            <p style={{...lbl,marginBottom:4}}>{t.sub}</p>
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <h1 onClick={handleTitleClick} style={{fontSize:20,color:th.text,fontWeight:600,margin:0,cursor:"pointer",userSelect:"none"}}>{t.title}</h1>
-              {!isOnline&&<span style={{fontSize:10,padding:"2px 8px",borderRadius:20,background:"#ef444422",color:"#ef4444",border:"1px solid #ef444440",letterSpacing:"0.05em",fontWeight:500}}>{t.offline}</span>}
-            </div>
-          </div>
+          <div><p style={{...lbl,marginBottom:4}}>{t.sub}</p><div style={{display:"flex",alignItems:"center",gap:8}}><h1 onClick={handleTitleClick} style={{fontSize:20,color:th.text,fontWeight:600,margin:0,cursor:"pointer",userSelect:"none"}}>{t.title}</h1>{!isOnline&&<span style={{fontSize:10,padding:"2px 8px",borderRadius:20,background:"#ef444422",color:"#ef4444",border:"1px solid #ef444440",letterSpacing:"0.05em",fontWeight:500}}>{t.offline}</span>}</div></div>
           <div style={{textAlign:"right",cursor:"pointer"}} onClick={!editingBal?startEditBal:undefined}>
             <p style={{...lbl,margin:"0 0 3px"}}>{t.curBalLbl}</p>
-            {editingBal
-              ?<input ref={balInputRef} type="number" inputMode="decimal" step="0.01" value={balInput} onChange={e=>setBalInput(e.target.value)} onBlur={commitEditBal} onKeyDown={e=>{if(e.key==="Enter")commitEditBal();if(e.key==="Escape")setEditingBal(false);}} style={{width:130,textAlign:"right",fontSize:20,fontWeight:600,color:th.text,background:"transparent",border:"none",borderBottom:"2px solid "+th.text,outline:"none",fontVariantNumeric:"tabular-nums"}}/>
-              :<p style={{fontSize:20,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:curBalVal>=0?"#059669":"#ef4444"}}>{fA(curBalVal,cur,true)}</p>
-            }
+            {editingBal?<input ref={balInputRef} type="number" inputMode="decimal" step="0.01" value={balInput} onChange={e=>setBalInput(e.target.value)} onBlur={commitEditBal} onKeyDown={e=>{if(e.key==="Enter")commitEditBal();if(e.key==="Escape")setEditingBal(false);}} style={{width:130,textAlign:"right",fontSize:20,fontWeight:600,color:th.text,background:"transparent",border:"none",borderBottom:"2px solid "+th.text,outline:"none",fontVariantNumeric:"tabular-nums"}}/>:<p style={{fontSize:20,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:curBalVal>=0?"#059669":"#ef4444"}}>{fA(curBalVal,cur,true)}</p>}
           </div>
         </div>
       </div>
 
       <div style={{padding:"5px 24px",borderBottom:"1px solid "+th.border,display:"flex",alignItems:"center",gap:6,background:th.bg}}>
-        {isSyncing
-          ?<span style={{width:6,height:6,borderRadius:"50%",background:"#f59e0b",display:"inline-block",flexShrink:0,animation:"pulse 1s infinite"}}/>
-          :<span style={{width:6,height:6,borderRadius:"50%",background:"#10b981",display:"inline-block",flexShrink:0,opacity:0.7}}/>
-        }
+        {isSyncing?<span style={{width:6,height:6,borderRadius:"50%",background:"#f59e0b",display:"inline-block",flexShrink:0,animation:"pulse 1s infinite"}}/>:<span style={{width:6,height:6,borderRadius:"50%",background:"#10b981",display:"inline-block",flexShrink:0,opacity:0.7}}/>}
         <span style={{fontSize:10,color:th.muted}}>{syncText}</span>
       </div>
 
       <div style={{padding:"0 24px",borderBottom:"1px solid "+th.border,display:"flex",gap:0,overflowX:"auto"}}>
-        {NAV_ITEMS.map(([k,l])=>(
-          <button key={k} onClick={()=>setTab(k)} style={{fontSize:13,paddingBottom:12,paddingTop:16,paddingLeft:12,paddingRight:12,border:"none",background:"none",cursor:"pointer",borderBottom:tab===k?"2px solid "+th.text:"2px solid transparent",color:tab===k?th.text:th.muted,fontWeight:tab===k?500:400,transition:"color 0.15s",whiteSpace:"nowrap",flexShrink:0}}>{l}</button>
-        ))}
+        {NAV_ITEMS.map(([k,l])=>(<button key={k} onClick={()=>setTab(k)} style={{fontSize:13,paddingBottom:12,paddingTop:16,paddingLeft:12,paddingRight:12,border:"none",background:"none",cursor:"pointer",borderBottom:tab===k?"2px solid "+th.text:"2px solid transparent",color:tab===k?th.text:th.muted,fontWeight:tab===k?500:400,transition:"color 0.15s",whiteSpace:"nowrap",flexShrink:0}}>{l}</button>))}
       </div>
 
-      {SUB_NAV[tab]&&(
-        <div style={{padding:"0 24px",borderBottom:"1px solid "+th.border,display:"flex",gap:0,overflowX:"auto",background:th.bgSub}}>
-          {tab==="transactions"&&(
-            <button onClick={()=>openForm()} style={{fontSize:12,paddingBottom:10,paddingTop:12,paddingLeft:12,paddingRight:16,border:"none",background:"none",cursor:"pointer",borderBottom:"2px solid transparent",color:th.sub,whiteSpace:"nowrap",flexShrink:0,display:"flex",alignItems:"center",gap:4}}>
-              <span style={{fontSize:14,lineHeight:1}}>+</span> {t.add}
-            </button>
-          )}
-          {SUB_NAV[tab].map(s=>(
-            <button key={s.id} onClick={()=>setSubTab(prev=>({...prev,[tab]:s.id}))} style={{fontSize:12,paddingBottom:10,paddingTop:12,paddingLeft:12,paddingRight:12,border:"none",background:"none",cursor:"pointer",borderBottom:curSub===s.id?"2px solid "+th.sub:"2px solid transparent",color:curSub===s.id?th.text:th.sub,fontWeight:curSub===s.id?500:400,whiteSpace:"nowrap",flexShrink:0}}>{s.label}</button>
-          ))}
-        </div>
-      )}
+      {SUB_NAV[tab]&&(<div style={{padding:"0 24px",borderBottom:"1px solid "+th.border,display:"flex",gap:0,overflowX:"auto",background:th.bgSub}}>
+        {tab==="transactions"&&(<button onClick={()=>openForm()} style={{fontSize:12,paddingBottom:10,paddingTop:12,paddingLeft:12,paddingRight:16,border:"none",background:"none",cursor:"pointer",borderBottom:"2px solid transparent",color:th.sub,whiteSpace:"nowrap",flexShrink:0,display:"flex",alignItems:"center",gap:4}}><span style={{fontSize:14,lineHeight:1}}>+</span> {t.add}</button>)}
+        {SUB_NAV[tab].map(s=>(<button key={s.id} onClick={()=>setSubTab(prev=>({...prev,[tab]:s.id}))} style={{fontSize:12,paddingBottom:10,paddingTop:12,paddingLeft:12,paddingRight:12,border:"none",background:"none",cursor:"pointer",borderBottom:curSub===s.id?"2px solid "+th.sub:"2px solid transparent",color:curSub===s.id?th.text:th.sub,fontWeight:curSub===s.id?500:400,whiteSpace:"nowrap",flexShrink:0}}>{s.label}</button>))}
+      </div>)}
 
       <div style={{padding:"24px",paddingBottom:"100px",maxWidth:640}}>
 
@@ -762,40 +695,19 @@ function App(){
           </div>}
           <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",marginBottom:4}}>{t.days.map((d,i)=><div key={i} style={{textAlign:"center",fontSize:11,color:th.muted,padding:"4px 0"}}>{d.slice(0,3)}</div>)}</div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2}}>
-            {cells.map((day,i)=>{
-              if(!day)return<div key={"e"+i} style={{paddingBottom:"100%"}}/>;
-              const data=dayData[day]||{net:0,bal:0,count:0,cats:[]};const tod=isTod(day);const val=mode==="daily"?data.net:data.bal;const pos=val>0,neg=val<0;
-              return(<div key={day} onClick={()=>setDayMod({day})} style={{paddingBottom:"100%",position:"relative",borderRadius:10,cursor:"pointer",background:tod?th.surface:"transparent",border:tod?"1.5px solid "+th.text:"1.5px solid transparent"}}>
-                <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2}}>
-                  <span style={{fontSize:12,fontWeight:tod?600:400,color:tod?th.text:th.sub}}>{day}</span>
-                  {data.count>0&&<span style={{fontSize:10,fontWeight:500,fontVariantNumeric:"tabular-nums",lineHeight:1.2,color:pos?"#059669":neg?"#ef4444":th.muted}}>{mode==="daily"?(val>=0?"+":"−")+fA(val,cur):(val>=0?"":"-")+fA(val,cur)}</span>}
-                  {data.cats.length>0&&<div style={{display:"flex",gap:2,marginTop:1}}>{[...new Set(data.cats.map(c=>c.color))].slice(0,3).map((c,ci)=><div key={ci} style={{width:4,height:4,borderRadius:"50%",background:c}}/>)}</div>}
-                </div>
-              </div>);
-            })}
+            {cells.map((day,i)=>{if(!day)return<div key={"e"+i} style={{paddingBottom:"100%"}}/>;const data=dayData[day]||{net:0,bal:0,count:0,cats:[]};const tod=isTod(day);const val=mode==="daily"?data.net:data.bal;const pos=val>0,neg=val<0;return(<div key={day} onClick={()=>setDayMod({day})} style={{paddingBottom:"100%",position:"relative",borderRadius:10,cursor:"pointer",background:tod?th.surface:"transparent",border:tod?"1.5px solid "+th.text:"1.5px solid transparent"}}><div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2}}><span style={{fontSize:12,fontWeight:tod?600:400,color:tod?th.text:th.sub}}>{day}</span>{data.count>0&&<span style={{fontSize:10,fontWeight:500,fontVariantNumeric:"tabular-nums",lineHeight:1.2,color:pos?"#059669":neg?"#ef4444":th.muted}}>{mode==="daily"?(val>=0?"+":"−")+fA(val,cur):(val>=0?"":"-")+fA(val,cur)}</span>}{data.cats.length>0&&<div style={{display:"flex",gap:2,marginTop:1}}>{[...new Set(data.cats.map(c=>c.color))].slice(0,3).map((c,ci)=><div key={ci} style={{width:4,height:4,borderRadius:"50%",background:c}}/>)}</div>}</div></div>);})}
           </div>
         </div>}
 
         {tab==="transactions"&&curSub==="historique"&&<div>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
-            <MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} t={t} th={th}/>
-            <p style={{...lbl,margin:0}}>{t.txCount(monthTxs.length)}</p>
-          </div>
-          {monthTxs.length===0
-            ?<div style={{textAlign:"center",padding:"60px 0"}}><p style={{fontSize:32,color:th.border,margin:"0 0 8px"}}>◎</p><p style={{fontSize:13,color:th.muted}}>{t.noTx}</p></div>
-            :monthTxs.map(tx=>{const cat=catById(tx.category||"other");const n=occsInMonth(tx,yr,mo).length;const total=tx.amount*n;return(<div key={tx.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderBottom:"1px solid "+th.border}}>
-              <div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:34,height:34,borderRadius:9,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{cat.emoji}</div><div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p><p style={{fontSize:11,color:th.muted,margin:"3px 0 0"}}>{t.catNames[cat.id]} · {recLabel(tx,t)}{n>1?<span style={{color:th.sub}}> ×{n}</span>:null}</p></div></div>
-              <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}><span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:tx.type==="income"?"#059669":"#ef4444"}}>{tx.type==="income"?"+":"−"}{fA(total,cur,true)}</span><button onClick={()=>openForm(tx)} style={{fontSize:13,color:th.muted,background:"none",border:"none",cursor:"pointer",padding:4}}>✎</button></div>
-            </div>);})}
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}><MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} t={t} th={th}/><p style={{...lbl,margin:0}}>{t.txCount(monthTxs.length)}</p></div>
+          {monthTxs.length===0?<div style={{textAlign:"center",padding:"60px 0"}}><p style={{fontSize:32,color:th.border,margin:"0 0 8px"}}>◎</p><p style={{fontSize:13,color:th.muted}}>{t.noTx}</p></div>
+          :monthTxs.map(tx=>{const cat=catById(tx.category||"other");const n=occsInMonth(tx,yr,mo).length;const total=tx.amount*n;return(<div key={tx.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderBottom:"1px solid "+th.border}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:34,height:34,borderRadius:9,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{cat.emoji}</div><div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p><p style={{fontSize:11,color:th.muted,margin:"3px 0 0"}}>{t.catNames[cat.id]} · {recLabel(tx,t)}{n>1?<span style={{color:th.sub}}> ×{n}</span>:null}</p></div></div><div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}><span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:tx.type==="income"?"#059669":"#ef4444"}}>{tx.type==="income"?"+":"−"}{fA(total,cur,true)}</span><button onClick={()=>openForm(tx)} style={{fontSize:13,color:th.muted,background:"none",border:"none",cursor:"pointer",padding:4}}>✎</button></div></div>);})}
         </div>}
 
         {tab==="transactions"&&curSub==="recurrent"&&<div>
-          {recurTxs.length===0
-            ?<div style={{textAlign:"center",padding:"60px 0"}}><p style={{fontSize:32,color:th.border,margin:"0 0 8px"}}>◎</p><p style={{fontSize:13,color:th.muted}}>{t.noRecurTx}</p></div>
-            :recurTxs.map(tx=>{const cat=catById(tx.category||"other");return(<div key={tx.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderBottom:"1px solid "+th.border}}>
-              <div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:34,height:34,borderRadius:9,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{cat.emoji}</div><div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p><p style={{fontSize:11,color:th.muted,margin:"3px 0 0"}}>{t.catNames[cat.id]} · {recLabel(tx,t)}</p></div></div>
-              <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}><span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:tx.type==="income"?"#059669":"#ef4444"}}>{tx.type==="income"?"+":"−"}{fA(tx.amount,cur,true)}</span><button onClick={()=>openForm(tx)} style={{fontSize:13,color:th.muted,background:"none",border:"none",cursor:"pointer",padding:4}}>✎</button></div>
-            </div>);})}
+          {recurTxs.length===0?<div style={{textAlign:"center",padding:"60px 0"}}><p style={{fontSize:32,color:th.border,margin:"0 0 8px"}}>◎</p><p style={{fontSize:13,color:th.muted}}>{t.noRecurTx}</p></div>
+          :recurTxs.map(tx=>{const cat=catById(tx.category||"other");return(<div key={tx.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderBottom:"1px solid "+th.border}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:34,height:34,borderRadius:9,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{cat.emoji}</div><div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p><p style={{fontSize:11,color:th.muted,margin:"3px 0 0"}}>{t.catNames[cat.id]} · {recLabel(tx,t)}</p></div></div><div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}><span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:tx.type==="income"?"#059669":"#ef4444"}}>{tx.type==="income"?"+":"−"}{fA(tx.amount,cur,true)}</span><button onClick={()=>openForm(tx)} style={{fontSize:13,color:th.muted,background:"none",border:"none",cursor:"pointer",padding:4}}>✎</button></div></div>);})}
         </div>}
 
         {tab==="budget"&&curSub==="categories"&&<div>
@@ -812,15 +724,7 @@ function App(){
 
         {tab==="settings"&&<div>
           <p style={{...lbl,marginBottom:8}}>{t.navSettings}</p>
-          <div style={{padding:"12px 0",borderBottom:"1px solid "+th.border,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{t.initBalLbl}</p><p style={{fontSize:11,color:th.muted,margin:"3px 0 0"}}>{t.initBalSub}</p></div>
-            <div style={{cursor:"pointer"}} onClick={!editingBalSett?startEditBalSett:undefined}>
-              {editingBalSett
-                ?<input ref={balSettRef} type="number" inputMode="decimal" step="0.01" value={balInputSett} onChange={e=>setBalInputSett(e.target.value)} onBlur={commitEditBalSett} onKeyDown={e=>{if(e.key==="Enter")commitEditBalSett();if(e.key==="Escape")setEditingBalSett(false);}} style={{width:110,textAlign:"right",fontSize:13,fontWeight:600,color:th.text,background:"transparent",border:"none",borderBottom:"2px solid "+th.text,outline:"none",fontVariantNumeric:"tabular-nums"}}/>
-                :<span style={{fontSize:13,fontWeight:600,fontVariantNumeric:"tabular-nums",color:curBalVal>=0?"#059669":"#ef4444"}}>{fA(curBalVal,cur,true)}</span>
-              }
-            </div>
-          </div>
+          <div style={{padding:"12px 0",borderBottom:"1px solid "+th.border,display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{t.initBalLbl}</p><p style={{fontSize:11,color:th.muted,margin:"3px 0 0"}}>{t.initBalSub}</p></div><div style={{cursor:"pointer"}} onClick={!editingBalSett?startEditBalSett:undefined}>{editingBalSett?<input ref={balSettRef} type="number" inputMode="decimal" step="0.01" value={balInputSett} onChange={e=>setBalInputSett(e.target.value)} onBlur={commitEditBalSett} onKeyDown={e=>{if(e.key==="Enter")commitEditBalSett();if(e.key==="Escape")setEditingBalSett(false);}} style={{width:110,textAlign:"right",fontSize:13,fontWeight:600,color:th.text,background:"transparent",border:"none",borderBottom:"2px solid "+th.text,outline:"none",fontVariantNumeric:"tabular-nums"}}/>:<span style={{fontSize:13,fontWeight:600,fontVariantNumeric:"tabular-nums",color:curBalVal>=0?"#059669":"#ef4444"}}>{fA(curBalVal,cur,true)}</span>}</div></div>
           <Sel label={t.langLbl} value={lang} opts={t.langOpts} onChange={setLang} th={th}/>
           <Sel label={t.curLbl} value={cur} opts={t.curOpts} onChange={setCur} th={th}/>
           <p style={{...lbl,margin:"24px 0 4px"}}>{t.dispLbl}</p>
@@ -847,59 +751,70 @@ function App(){
             <button onClick={()=>setExportMod(true)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:10,background:"none",color:th.text,cursor:"pointer"}}>↑ {t.exportBtn}</button>
             <button onClick={()=>{setImportText("");setImportMod(true);}} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:10,background:"none",color:th.text,cursor:"pointer"}}>↓ {t.importBtn}</button>
           </div>
-          <div style={{marginTop:20,padding:"16px",background:isDark?"rgba(239,68,68,0.07)":"#fff5f5",border:"1px solid "+th.danger+"44",borderRadius:14}}>
-            <p style={{fontSize:13,color:th.danger,margin:"0 0 2px",fontWeight:600}}>{t.delAccLbl}</p>
-            <p style={{fontSize:11,color:th.muted,margin:"0 0 12px"}}>{t.delAccSub}</p>
-            <button onClick={()=>{setDelAccMod(true);setDelAccInput("");}} style={{fontSize:13,color:th.danger,background:"none",border:"1px solid "+th.danger,borderRadius:10,padding:"8px 16px",cursor:"pointer"}}>{t.delAccLbl} →</button>
-          </div>
-          <div style={{marginTop:32,paddingTop:20,borderTop:"1px solid "+th.border,textAlign:"center"}}>
-            <p style={{fontSize:11,color:th.muted,letterSpacing:"0.1em"}}>v0.022</p>
-          </div>
+          <div style={{marginTop:20,padding:"16px",background:isDark?"rgba(239,68,68,0.07)":"#fff5f5",border:"1px solid "+th.danger+"44",borderRadius:14}}><p style={{fontSize:13,color:th.danger,margin:"0 0 2px",fontWeight:600}}>{t.delAccLbl}</p><p style={{fontSize:11,color:th.muted,margin:"0 0 12px"}}>{t.delAccSub}</p><button onClick={()=>{setDelAccMod(true);setDelAccInput("");}} style={{fontSize:13,color:th.danger,background:"none",border:"1px solid "+th.danger,borderRadius:10,padding:"8px 16px",cursor:"pointer"}}>{t.delAccLbl} →</button></div>
+          <div style={{marginTop:32,paddingTop:20,borderTop:"1px solid "+th.border,textAlign:"center"}}><p style={{fontSize:11,color:th.muted,letterSpacing:"0.1em"}}>v0.023</p></div>
         </div>}
       </div>
 
-      {/* Modals */}
+      {/* === MODALS === */}
       {exportMod&&<Sheet onClose={()=>setExportMod(false)} th={th}><SheetHead title={t.exportModalTitle} onClose={()=>setExportMod(false)} th={th}/><p style={{fontSize:12,color:th.sub,marginBottom:12}}>{t.exportInstr}</p><textarea readOnly value={getExportJSON()} style={{width:"100%",height:180,padding:"10px 12px",fontSize:11,fontFamily:"monospace",color:th.sub,background:th.surface,border:"1px solid "+th.border,borderRadius:10,resize:"none",boxSizing:"border-box",lineHeight:1.5}}/><div style={{display:"flex",gap:8,marginTop:12}}><button onClick={()=>setExportMod(false)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>{t.exportClose}</button><button onClick={handleCopy} style={{flex:2,padding:"11px 0",fontSize:13,border:"none",borderRadius:12,background:copied?"#059669":th.btnBg,color:copied?"#fff":th.btnText,cursor:"pointer",fontWeight:500,transition:"background 0.2s"}}>{copied?t.exportCopied:t.exportCopy}</button></div></Sheet>}
       {importMod&&<Sheet onClose={()=>setImportMod(false)} th={th}><SheetHead title={t.importModalTitle} onClose={()=>setImportMod(false)} th={th}/><p style={{fontSize:12,color:th.sub,marginBottom:12}}>{t.importInstr}</p><textarea value={importText} onChange={e=>setImportText(e.target.value)} placeholder={t.importPaste} style={{width:"100%",height:200,padding:"10px 12px",fontSize:11,fontFamily:"monospace",color:th.text,background:th.surface,border:"1px solid "+th.border,borderRadius:10,resize:"none",boxSizing:"border-box",lineHeight:1.5}}/><div style={{display:"flex",gap:8,marginTop:12}}><button onClick={()=>setImportMod(false)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>{t.cancel}</button><button onClick={handleImport} disabled={!importText.trim()} style={{flex:2,padding:"11px 0",fontSize:13,border:"none",borderRadius:12,background:importText.trim()?th.btnBg:th.surface,color:importText.trim()?th.btnText:th.muted,cursor:importText.trim()?"pointer":"default",fontWeight:500}}>{t.importRestore}</button></div></Sheet>}
 
-      {dayMod&&<Sheet onClose={()=>{setDayMod(null);setExpandedTx(null);}} th={th}>
-        <SheetHead title={t.months[mo]+" "+dayMod.day} onClose={()=>{setDayMod(null);setExpandedTx(null);}} th={th} right={<button onClick={()=>{setDayMod(null);openForm(null,dayModalDateStr);}} style={{fontSize:12,color:th.sub,background:"none",border:"1px solid "+th.border,borderRadius:8,padding:"5px 11px",cursor:"pointer"}}>+ {t.add}</button>}/>
-        {dayModalList.length===0
+      {/* Day modal */}
+      {dayMod&&<Sheet onClose={closeDay} th={th}>
+        <SheetHead title={t.months[mo]+" "+dayMod.day} onClose={closeDay} th={th} right={<button onClick={()=>{closeDay();openForm(null,dayModalDateStr);}} style={{fontSize:12,color:th.sub,background:"none",border:"1px solid "+th.border,borderRadius:8,padding:"5px 11px",cursor:"pointer"}}>+ {t.add}</button>}/>
+        {dayModalOccs.length===0
           ?<div style={{textAlign:"center",padding:"32px 0"}}><p style={{fontSize:13,color:th.muted}}>{t.emptyDay}</p></div>
-          :dayModalList.map(tx=>{
-            const cat=catById(tx.category||"other");
+          :dayModalOccs.map(({tx,occ})=>{
+            const cat=catById(occ.category||"other");
             const isExp=expandedTx===tx.id;
+            const isOnce=normRec(tx.recurrence,parseD(tx.startDate)).type==="once";
             return(
               <div key={tx.id}>
-                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 0",borderBottom:isExp?"none":"1px solid "+th.border}}>
-                  <div style={{display:"flex",alignItems:"center",gap:10,flex:1,cursor:"pointer"}} onClick={()=>setExpandedTx(isExp?null:tx.id)}>
+                {/* Transaction row */}
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 0",borderBottom:isExp?"none":"1px solid "+th.border,cursor:"pointer"}} onClick={()=>toggleExpanded(tx.id)}>
+                  <div style={{display:"flex",alignItems:"center",gap:10,flex:1}}>
                     <div style={{width:36,height:36,borderRadius:10,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0,border:"2px solid "+(isExp?cat.color:"transparent"),transition:"border-color 0.15s"}}>{cat.emoji}</div>
                     <div>
-                      <p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p>
-                      <p style={{fontSize:11,margin:"2px 0 0",color:cat.color,fontWeight:500}}>{t.catNames[cat.id]} · {tx.type==="income"?t.incomeLbl:t.expenseLbl}</p>
+                      <div style={{display:"flex",alignItems:"center",gap:5}}>
+                        <p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{occ.description}</p>
+                        {occ.hasOverride&&<span style={{fontSize:9,color:"#2563eb",background:"#2563eb18",borderRadius:4,padding:"1px 5px",letterSpacing:"0.04em"}}>{t.hasOverride}</span>}
+                      </div>
+                      <p style={{fontSize:11,margin:"2px 0 0",color:cat.color,fontWeight:500}}>{t.catNames[cat.id]} · {occ.type==="income"?t.incomeLbl:t.expenseLbl}</p>
                     </div>
                   </div>
-                  <div style={{display:"flex",alignItems:"center",flexShrink:0}}>
-                    <span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:tx.type==="income"?"#059669":"#ef4444"}}>{tx.type==="income"?"+":"−"}{fA(tx.amount,cur,true)}</span>
+                  <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+                    <span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:occ.type==="income"?"#059669":"#ef4444"}}>{occ.type==="income"?"+":"−"}{fA(occ.amount,cur,true)}</span>
+                    <span style={{fontSize:11,color:th.muted,transition:"transform 0.15s",display:"inline-block",transform:isExp?"rotate(180deg)":"rotate(0deg)"}}>›</span>
                   </div>
                 </div>
+
+                {/* Expanded action panel */}
                 {isExp&&(
                   <div style={{borderBottom:"1px solid "+th.border,animation:"fadeSlideIn 0.15s ease"}}>
-                    {/* Modifier */}
-                    <div style={{padding:"4px 0 4px 46px"}}>
-                      {[["instance",t.editInst],["follow",t.editFollow]].map(([sc,lb],i,arr)=>(
-                        <button key={sc} onClick={()=>openEditForm(tx,sc,dayModalDateStr)} style={{display:"block",width:"100%",textAlign:"left",padding:"9px 0",fontSize:13,color:th.text,background:"none",border:"none",borderBottom:i<arr.length-1?"1px solid "+th.border:"none",cursor:"pointer"}}>
-                          {lb}
-                        </button>
-                      ))}
+                    {/* EDIT section */}
+                    <div style={{padding:"10px 0 8px 46px"}}>
+                      <span style={secLbl}>{t.sectionEdit}</span>
+                      {isOnce
+                        ?actBtn("✎  "+t.editAll,()=>openEditForm(tx,"all",dayModalDateStr),th.text,false,true)
+                        :(<>
+                          {actBtn("✎  "+t.editInst,()=>openEditForm(tx,"instance",dayModalDateStr),th.text,false,true)}
+                          {actBtn("✎→ "+t.editFollow,()=>openEditForm(tx,"follow",dayModalDateStr),th.text,false,false)}
+                          {actBtn("✎∞ "+t.editAll,()=>openEditForm(tx,"all",dayModalDateStr),th.text,false,false)}
+                          {actBtn("▪  "+t.endAfter,()=>handleEndAfter(tx,dayModalDateStr),th.sub,false,false)}
+                        </>)
+                      }
                     </div>
-                    {/* Supprimer */}
-                    <div style={{padding:"4px 0 12px 46px",borderTop:"1px solid "+th.border}}>
-                      {[["this",t.delInst,th.muted],["follow",t.delFollow,th.muted],["before",t.delBefore,th.muted],["all",t.delAll,"#ef4444"]].map(([sc,lb,clr])=>(
-                        <button key={sc} onClick={()=>handleDelFromModal(tx,sc,dayModalDateStr)} style={{display:"block",width:"100%",textAlign:"left",padding:"9px 0",fontSize:13,color:clr,background:"none",border:"none",cursor:"pointer"}}>
-                          {lb}
-                        </button>
-                      ))}
+                    {/* DELETE section */}
+                    <div style={{padding:"8px 0 12px 46px",borderTop:"1px solid "+th.border}}>
+                      <span style={secLbl}>{t.sectionDelete}</span>
+                      {isOnce
+                        ?(()=>{const pend=confirmPending?.txId===tx.id&&confirmPending?.scope==="all";return actBtn(pend?"→ "+t.confirmAction:"×∞ "+t.delAll,()=>{if(pend)handleDelFromModal(tx,"all",dayModalDateStr);else setConfirmPending({txId:tx.id,scope:"all"});},th.danger,pend,true);})()
+                        :(<>
+                          {actBtn("×  "+t.delInst,()=>handleDelFromModal(tx,"this",dayModalDateStr),th.sub,false,true)}
+                          {[["follow","×→ "+t.delFollow,th.sub],["before","×← "+t.delBefore,th.sub],["all","×∞ "+t.delAll,th.danger]].map(([sc,lb,clr])=>{const pend=confirmPending?.txId===tx.id&&confirmPending?.scope===sc;return actBtn(pend?"→ "+t.confirmAction:lb,()=>{if(pend)handleDelFromModal(tx,sc,dayModalDateStr);else setConfirmPending({txId:tx.id,scope:sc});},clr,pend,false);})}
+                        </>)
+                      }
                     </div>
                   </div>
                 )}
@@ -911,7 +826,26 @@ function App(){
 
       {delMod&&<Sheet onClose={()=>setDelMod(null)} th={th}><h3 style={{fontSize:15,color:th.text,fontWeight:600,margin:"0 0 4px"}}>{t.delTitle}</h3><p style={{fontSize:12,color:th.muted,margin:"0 0 20px"}}>{delMod.tx.description}</p><div style={{display:"flex",flexDirection:"column",gap:8}}>{normRec(delMod.tx.recurrence,parseD(delMod.tx.startDate)).type==="once"?<button onClick={()=>handleDel("all")} style={{padding:"13px 16px",textAlign:"left",fontSize:14,color:"#ef4444",background:isDark?"rgba(239,68,68,0.1)":"#fff5f5",border:"none",borderRadius:12,cursor:"pointer",fontWeight:500}}>{t.allEvts}</button>:[["this",t.thisEvt],["follow",t.thisFollow],["all",t.allEvts]].map(([sc,lb])=>(<button key={sc} onClick={()=>handleDel(sc)} style={{padding:"13px 16px",textAlign:"left",fontSize:14,color:sc==="all"?"#ef4444":th.text,background:sc==="all"?(isDark?"rgba(239,68,68,0.1)":"#fff5f5"):th.surface,border:"none",borderRadius:12,cursor:"pointer",fontWeight:sc==="all"?500:400}}>{lb}</button>))}</div><button onClick={()=>setDelMod(null)} style={{width:"100%",marginTop:12,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>{t.cancel}</button></Sheet>}
       {delAccMod&&<Sheet onClose={()=>{setDelAccMod(false);setDelAccInput("");}} th={th}><div style={{textAlign:"center",marginBottom:20}}><div style={{fontSize:40,marginBottom:12}}>⚠️</div><h3 style={{fontSize:16,color:th.text,fontWeight:700,margin:"0 0 8px"}}>{t.delAccModalTitle}</h3><p style={{fontSize:13,color:th.sub,margin:0,lineHeight:1.6}}>{t.delAccModalBody}</p></div><div style={{background:th.surface,borderRadius:10,padding:"10px 14px",textAlign:"center",marginBottom:16}}><span style={{fontSize:16,fontWeight:700,letterSpacing:"0.1em",color:th.danger}}>{t.delAccWord}</span></div><input type="text" value={delAccInput} onChange={e=>setDelAccInput(e.target.value)} placeholder={t.delAccWord} style={{...iSt,textAlign:"center",fontSize:15,fontWeight:600,letterSpacing:"0.05em",borderColor:delAccInput===t.delAccWord?"#059669":th.inputBorder,color:delAccInput===t.delAccWord?"#059669":th.text,marginBottom:16}}/><div style={{display:"flex",gap:8}}><button onClick={()=>{setDelAccMod(false);setDelAccInput("");}} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>{t.cancel}</button><button onClick={()=>{if(delAccInput===t.delAccWord){deleteAccount();setDelAccMod(false);}}} disabled={delAccInput!==t.delAccWord} style={{flex:2,padding:"11px 0",fontSize:13,border:"none",borderRadius:12,background:delAccInput===t.delAccWord?"#ef4444":th.surface,color:delAccInput===t.delAccWord?"#fff":th.muted,cursor:delAccInput===t.delAccWord?"pointer":"default",fontWeight:500}}>{t.delAccConfirm}</button></div></Sheet>}
-      {formMod&&<Sheet onClose={()=>setFormMod(null)} th={th}><SheetHead title={formMod.tx?t.editTx:t.newTx} onClose={()=>setFormMod(null)} th={th}/><div style={{display:"flex",gap:8,marginBottom:20}}>{[["expense",t.expenseLbl],["income",t.incomeLbl]].map(([v,l])=>(<button key={v} onClick={()=>handleTypeChange(v)} style={{flex:1,padding:"9px 0",fontSize:13,borderRadius:10,border:"none",cursor:"pointer",fontWeight:500,transition:"all 0.15s",background:formMod.form.type===v?(v==="income"?(isDark?"rgba(16,185,129,0.15)":"#ecfdf5"):(isDark?"rgba(239,68,68,0.12)":"#fff5f5")):th.surface,color:formMod.form.type===v?(v==="income"?"#059669":"#ef4444"):th.muted}}>{l}</button>))}</div><div style={{display:"flex",flexDirection:"column",gap:16}}><div><label style={lbl}>{t.descLbl}</label><input type="text" value={formMod.form.desc} onChange={e=>setFF("desc")(e.target.value)} style={iSt}/></div><div><label style={lbl}>{t.amtLbl}</label><input type="number" value={formMod.form.amt} step="0.01" placeholder="0.00" onChange={e=>setFF("amt")(e.target.value)} style={iSt}/></div><div><label style={lbl}>{t.startLbl}</label><input type="date" value={formMod.form.date} onChange={e=>handleDateChange(e.target.value)} style={iSt}/></div><CategoryPicker value={formMod.form.cat} onChange={v=>setFF("cat")(v)} th={th} t={t}/><RecurrencePicker value={formMod.form.rec} onChange={v=>setFF("rec")(v)} startDate={formMod.form.date} t={t} th={th}/></div><div style={{display:"flex",gap:8,marginTop:24,alignItems:"center"}}>{formMod.tx&&<button onClick={()=>{setDelMod({tx:formMod.tx,dateStr:formMod.tx.startDate});setFormMod(null);}} style={{fontSize:13,color:"#f87171",background:"none",border:"none",cursor:"pointer",padding:"4px 8px"}}>{t.delBtn}</button>}<button onClick={()=>setFormMod(null)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>{t.cancel}</button><button onClick={saveForm} style={{flex:2,padding:"11px 0",fontSize:13,border:"none",borderRadius:12,background:th.btnBg,color:th.btnText,cursor:"pointer",fontWeight:500}}>{formMod.tx?t.save:t.add}</button></div></Sheet>}
+
+      {formMod&&<Sheet onClose={()=>setFormMod(null)} th={th}>
+        <SheetHead title={formMod.tx?t.editTx:t.newTx} onClose={()=>setFormMod(null)} th={th}/>
+        {formMod.editScope==="instance"&&<p style={{fontSize:11,color:th.muted,marginTop:-14,marginBottom:16}}>{formMod.editDateStr}</p>}
+        <div style={{display:"flex",gap:8,marginBottom:20}}>{[["expense",t.expenseLbl],["income",t.incomeLbl]].map(([v,l])=>(<button key={v} onClick={()=>handleTypeChange(v)} style={{flex:1,padding:"9px 0",fontSize:13,borderRadius:10,border:"none",cursor:"pointer",fontWeight:500,transition:"all 0.15s",background:formMod.form.type===v?(v==="income"?(isDark?"rgba(16,185,129,0.15)":"#ecfdf5"):(isDark?"rgba(239,68,68,0.12)":"#fff5f5")):th.surface,color:formMod.form.type===v?(v==="income"?"#059669":"#ef4444"):th.muted}}>{l}</button>))}</div>
+        <div style={{display:"flex",flexDirection:"column",gap:16}}>
+          <div><label style={lbl}>{t.descLbl}</label><input type="text" value={formMod.form.desc} onChange={e=>setFF("desc")(e.target.value)} style={iSt}/></div>
+          <div><label style={lbl}>{t.amtLbl}</label><input type="number" value={formMod.form.amt} step="0.01" placeholder="0.00" onChange={e=>setFF("amt")(e.target.value)} style={iSt}/></div>
+          {/* Date field: hidden for instance override (date is fixed) */}
+          {formMod.editScope!=="instance"&&<div><label style={lbl}>{t.startLbl}</label><input type="date" value={formMod.form.date} onChange={e=>handleDateChange(e.target.value)} style={iSt}/></div>}
+          <CategoryPicker value={formMod.form.cat} onChange={v=>setFF("cat")(v)} th={th} t={t}/>
+          {/* Recurrence: hidden for instance override */}
+          {formMod.editScope!=="instance"&&<RecurrencePicker value={formMod.form.rec} onChange={v=>setFF("rec")(v)} startDate={formMod.form.date} t={t} th={th}/>}
+        </div>
+        <div style={{display:"flex",gap:8,marginTop:24,alignItems:"center"}}>
+          {formMod.tx&&!formMod.editScope&&<button onClick={()=>{setDelMod({tx:formMod.tx,dateStr:formMod.tx.startDate});setFormMod(null);}} style={{fontSize:13,color:"#f87171",background:"none",border:"none",cursor:"pointer",padding:"4px 8px"}}>{t.delBtn}</button>}
+          <button onClick={()=>setFormMod(null)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>{t.cancel}</button>
+          <button onClick={saveForm} style={{flex:2,padding:"11px 0",fontSize:13,border:"none",borderRadius:12,background:th.btnBg,color:th.btnText,cursor:"pointer",fontWeight:500}}>{formMod.tx?t.save:t.add}</button>
+        </div>
+      </Sheet>}
     </div>
   );
 }
