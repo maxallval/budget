@@ -33,18 +33,57 @@
 })();
 (function registerSW(){
   if(!('serviceWorker' in navigator))return;
-  const sw=`const CACHE='budget-v0024';const CDN=['https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js','https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js','https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js'];self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CDN)).then(()=>self.skipWaiting()).catch(()=>self.skipWaiting()));});self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});self.addEventListener('fetch',e=>{if(e.request.method!=='GET'||!e.request.url.includes('cdnjs'))return;e.respondWith(caches.match(e.request).then(c=>{if(c)return c;return fetch(e.request).then(r=>{if(r.ok)caches.open(CACHE).then(ch=>ch.put(e.request,r.clone()));return r;}).catch(()=>c);}));});`;
+  const sw=`const CACHE='budget-v0024';const CDN=['https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js','https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom/production.min.js','https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js'];self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CDN)).then(()=>self.skipWaiting()).catch(()=>self.skipWaiting()));});self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});self.addEventListener('fetch',e=>{if(e.request.method!=='GET'||!e.request.url.includes('cdnjs'))return;e.respondWith(caches.match(e.request).then(c=>{if(c)return c;return fetch(e.request).then(r=>{if(r.ok)caches.open(CACHE).then(ch=>ch.put(e.request,r.clone()));return r;}).catch(()=>c);}));});`;
   try{const b=new Blob([sw],{type:"application/javascript"});navigator.serviceWorker.register(URL.createObjectURL(b)).catch(()=>{});}catch(e){}
 })();
-</script>
-<script type="text/babel" data-presets="react">
+
+// Fonction principale React
 window.storage={
   get:async k=>{try{const v=localStorage.getItem(k);return v!==null?{value:v}:null;}catch(e){return null;}},
   set:async(k,v)=>{try{localStorage.setItem(k,String(v));return{key:k,value:v};}catch(e){return null;}},
   delete:async k=>{try{localStorage.removeItem(k);return{key:k,deleted:true};}catch(e){return null;}}
 };
 
-const{useState,useEffect,useMemo,useRef}=React;
+// Fonction modifiée pour la synchronisation avec GitHub Gist
+async function doPushToGitHub(json, token, gistId) {
+  const body = { files: { "budget.json": { content: json } } };
+  const url = gistId ? `https://api.github.com/gists/${gistId}` : "https://api.github.com/gists";
+  const method = gistId ? "PATCH" : "POST";
+
+  // Contrôleur pour gérer le timeout de 10 secondes
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 secondes
+
+  try {
+    const res = await fetch(url, {
+      method,
+      headers: {
+        "Authorization": "Bearer " + token,
+        "Content-Type": "application/json",
+        "Accept": "application/vnd.github+json"
+      },
+      body: JSON.stringify(gistId ? body : { ...body, description: "Budget App Data", public: false }),
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+
+    if (!res.ok) {
+      let msg = "HTTP " + res.status;
+      try {
+        const d = await res.json();
+        msg = d.message || msg;
+      } catch (e) {}
+      throw new Error(msg);
+    }
+    return await res.json();
+  } catch (e) {
+    clearTimeout(timeoutId);
+    // Propager l'erreur pour gestion ultérieure
+    throw e;
+  }
+}
+
+const {useState,useEffect,useMemo,useRef}=React;
 const TODAY=new Date();TODAY.setHours(0,0,0,0);
 const AVAIL_LANGS=["fr","en","es","de","pt","it","zh"];
 const detectLang=()=>{const n=(navigator.language||"fr").slice(0,2).toLowerCase();return AVAIL_LANGS.includes(n)?n:"fr";};
