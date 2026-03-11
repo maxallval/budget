@@ -71,7 +71,7 @@ fr:{sub:"Gestion financière",title:"Budget",
   subHistorique:"Historique",subRecurrent:"Récurrent",subBudgetCat:"Budget par catégorie",subObjectifs:"Objectifs",subStatistiques:"Statistiques",subGraphiques:"Graphiques",
   noRecurTx:"Aucune transaction récurrente",
   saveLbl:"Sauvegarde",saveDestLbl:"Destination",triggerLbl:"Déclenchement",
-  ghLoadOnStart:"Charger au démarrage",ghLoadOnStartSub:"Pull automatique depuis GitHub à l'ouverture",
+  ghLoadOnStart:"Charger au démarrage",  ghLoadOnStartSub:"Appliquer automatiquement si plus récent",
   ghRestoreBtn:"↓ Restaurer depuis GitHub",ghPrivateNote:"Gist privé. Token : permission gist seulement.",
   saveManualBtn:"↑ Sauvegarder maintenant",offline:"HORS LIGNE",
   syncNever:"Jamais synchronisé",syncJustNow:"Synchronisé à l'instant",
@@ -387,9 +387,32 @@ function App(){
     let sMode="local",ghPull=true,ghTok="",ghGid="";
     try{const r=await window.storage.get("bgt9-cfg");if(r){const c=JSON.parse(r.value);if(c.lang)setLang(c.lang);if(c.cur)setCur(c.cur);if(c.disp)setDisp(c.disp);if(c.darkMode)setDarkMode(c.darkMode);if(c.mode)setMode(c.mode);if(c.saveMode){setSaveMode(c.saveMode);sMode=c.saveMode;}if(c.saveAuto!==undefined)setSaveAuto(c.saveAuto);if(c.showSyncBar!==undefined)setShowSyncBar(c.showSyncBar);}}catch(e){}
     try{const r=await window.storage.get("bgt9-gh");if(r){const g=JSON.parse(r.value);if(g.token){setGhToken(g.token);ghTok=g.token;}if(g.gistId){setGhGistId(g.gistId);ghGid=g.gistId;}if(g.pullOnStart!==undefined){setGhPullOnStart(g.pullOnStart);ghPull=g.pullOnStart;}}}catch(e){}
-    if(sMode==="github"&&ghPull&&ghTok&&ghGid){
+    if(sMode==="github"&&ghTok&&ghGid){
       setIsSyncing(true);
-      try{const res=await fetch(`https://api.github.com/gists/${ghGid}`,{headers:{"Authorization":"token "+ghTok}});if(!res.ok)throw new Error();const data=await res.json();const content=data.files?.["budget.json"]?.content;if(content){let d;try{d=JSON.parse(content);}catch(e){throw new Error();}if(Array.isArray(d.txs))setTxs(d.txs);if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.lang)setLang(d.lang);if(d.cur)setCur(d.cur);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.budgets)setBudgets(d.budgets);if(d.updated){lastRemoteTsRef.current=d.updated;await window.storage.set("bgt9-updated",String(d.updated));}setLastSync(new Date());}}catch(e){}finally{setIsSyncing(false);}
+      try{
+        const res=await fetch(`https://api.github.com/gists/${ghGid}`,{headers:{"Authorization":"token "+ghTok}});
+        if(!res.ok)throw new Error();
+        const data=await res.json();
+        const content=data.files?.["budget.json"]?.content;
+        if(content){
+          let d;try{d=JSON.parse(content);}catch(e){throw new Error();}
+          const rTs=d.updated||0;
+          const lTs=lastRemoteTsRef.current;
+          if(rTs>lTs){
+            if(ghPull){
+              if(Array.isArray(d.txs))setTxs(d.txs);
+              if(typeof d.initBal==="number")setInitBal(d.initBal);
+              if(d.lang)setLang(d.lang);if(d.cur)setCur(d.cur);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.budgets)setBudgets(d.budgets);
+              if(d.updated){lastRemoteTsRef.current=d.updated;await window.storage.set("bgt9-updated",String(d.updated));}
+              setLastSync(new Date());
+            } else {
+              lastRemoteTsRef.current=rTs;
+              setRemoteData(d);
+              setUpdateAvailable(true);
+            }
+          }
+        }
+      }catch(e){}finally{setIsSyncing(false);}
     }
     setLoaded(true);
   })();},[]);
