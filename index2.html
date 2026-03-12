@@ -20,7 +20,6 @@
     button:focus,input:focus,select:focus,textarea:focus{outline:none}
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
     @keyframes slideDown{from{transform:translateY(-100%)}to{transform:translateY(0)}}
-    @keyframes fadeSlideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
     @keyframes fullPageIn{from{opacity:0;transform:translateY(100%)}to{opacity:1;transform:translateY(0)}}
   </style>
 </head>
@@ -50,7 +49,6 @@ window.storage={
 
 const{useState,useEffect,useMemo,useRef}=React;
 const TODAY=new Date();TODAY.setHours(0,0,0,0);
-const AVAIL_LANGS=["fr"];
 const detectLang=()=>"fr";
 
 const CATS=[
@@ -62,16 +60,86 @@ const CATS=[
   {id:"income",emoji:"💰",color:"#22c55e"},{id:"other",emoji:"📦",color:"#9ca3af"},
 ];
 const catById=id=>CATS.find(c=>c.id===id)||CATS[CATS.length-1];
+
+const SUBCATS=[
+  {id:"loyer",label:"Loyer",category:"housing",group:"essentiel"},
+  {id:"hypotheque",label:"Hypothèque",category:"housing",group:"essentiel"},
+  {id:"assurance_hab",label:"Assurance habitation",category:"housing",group:"essentiel"},
+  {id:"taxes_mun",label:"Taxes municipales",category:"housing",group:"essentiel"},
+  {id:"frais_condo",label:"Frais de condo",category:"housing",group:"essentiel"},
+  {id:"reparations",label:"Réparations",category:"housing",group:"flexible"},
+  {id:"ameublement",label:"Ameublement",category:"housing",group:"lifestyle"},
+  {id:"epicerie",label:"Épicerie",category:"food",group:"flexible"},
+  {id:"restaurant",label:"Restaurant",category:"food",group:"lifestyle"},
+  {id:"livraison_repas",label:"Livraison repas",category:"food",group:"lifestyle"},
+  {id:"cafe",label:"Café",category:"food",group:"lifestyle"},
+  {id:"traiteur",label:"Traiteur",category:"food",group:"lifestyle"},
+  {id:"essence",label:"Essence",category:"transport",group:"flexible"},
+  {id:"assurance_auto",label:"Assurance auto",category:"transport",group:"essentiel"},
+  {id:"paiement_auto",label:"Paiement auto",category:"transport",group:"essentiel"},
+  {id:"transport_commun",label:"Transport en commun",category:"transport",group:"flexible"},
+  {id:"stationnement",label:"Stationnement",category:"transport",group:"flexible"},
+  {id:"entretien_auto",label:"Entretien véhicule",category:"transport",group:"flexible"},
+  {id:"taxi_uber",label:"Taxi / Uber",category:"transport",group:"lifestyle"},
+  {id:"retraite",label:"Retraite",category:"savings",group:"essentiel"},
+  {id:"fonds_urgence",label:"Fonds d'urgence",category:"savings",group:"essentiel"},
+  {id:"investissement",label:"Investissement",category:"savings",group:"essentiel"},
+  {id:"epargne_projet",label:"Projet",category:"savings",group:"flexible"},
+  {id:"sorties",label:"Sorties",category:"entertain",group:"lifestyle"},
+  {id:"sport",label:"Sport / Gym",category:"entertain",group:"lifestyle"},
+  {id:"voyage",label:"Voyage",category:"entertain",group:"lifestyle"},
+  {id:"jeux",label:"Jeux",category:"entertain",group:"lifestyle"},
+  {id:"livres_loisir",label:"Livres / Médias",category:"entertain",group:"lifestyle"},
+  {id:"medicaments",label:"Médicaments",category:"health",group:"essentiel"},
+  {id:"medecin",label:"Médecin",category:"health",group:"essentiel"},
+  {id:"dentiste",label:"Dentiste",category:"health",group:"flexible"},
+  {id:"pharmacie",label:"Pharmacie",category:"health",group:"flexible"},
+  {id:"assurance_sante",label:"Assurance santé",category:"health",group:"essentiel"},
+  {id:"therapeute",label:"Thérapeute",category:"health",group:"flexible"},
+  {id:"internet",label:"Internet",category:"subscript",group:"essentiel"},
+  {id:"telephone",label:"Téléphone",category:"subscript",group:"essentiel"},
+  {id:"streaming_abo",label:"Streaming",category:"subscript",group:"lifestyle"},
+  {id:"logiciels",label:"Logiciels",category:"subscript",group:"flexible"},
+  {id:"gym_abo",label:"Gym",category:"subscript",group:"lifestyle"},
+  {id:"journaux",label:"Journaux / Magazines",category:"subscript",group:"lifestyle"},
+  {id:"vetements",label:"Vêtements",category:"shopping",group:"lifestyle"},
+  {id:"electronique",label:"Électronique",category:"shopping",group:"lifestyle"},
+  {id:"maison_art",label:"Articles maison",category:"shopping",group:"flexible"},
+  {id:"cadeaux",label:"Cadeaux",category:"shopping",group:"lifestyle"},
+  {id:"beaute",label:"Beauté / Soins",category:"shopping",group:"lifestyle"},
+  {id:"frais_scol",label:"Frais scolaires",category:"education",group:"essentiel"},
+  {id:"livres_edu",label:"Livres / Matériel",category:"education",group:"flexible"},
+  {id:"cours",label:"Cours / Formation",category:"education",group:"flexible"},
+  {id:"garde",label:"Service de garde",category:"education",group:"essentiel"},
+  {id:"electricite",label:"Électricité",category:"utilities",group:"essentiel"},
+  {id:"chauffage",label:"Chauffage",category:"utilities",group:"essentiel"},
+  {id:"eau",label:"Eau",category:"utilities",group:"essentiel"},
+  {id:"collectes",label:"Collectes / Déchets",category:"utilities",group:"essentiel"},
+  {id:"salaire",label:"Salaire",category:"income",group:null},
+  {id:"freelance",label:"Freelance",category:"income",group:null},
+  {id:"remboursement",label:"Remboursement",category:"income",group:null},
+  {id:"allocation",label:"Allocation",category:"income",group:null},
+  {id:"rev_invest",label:"Revenus investissement",category:"income",group:null},
+];
+const subcatById=id=>SUBCATS.find(s=>s.id===id)||null;
+const subcatsByCat=cat=>SUBCATS.filter(s=>s.category===cat);
+
+const SUBCAT_GROUPS=[
+  {id:"essentiel",label:"Essentiel",desc:"Obligatoire · Fixe · Besoins",color:"#3b82f6"},
+  {id:"flexible",label:"Flexible",desc:"Variable · Ajustable · À surveiller",color:"#f59e0b"},
+  {id:"lifestyle",label:"Lifestyle",desc:"Discrétionnaire · Loisir · Envie",color:"#8b5cf6"},
+];
+
 const LANG_OPTS=[{v:"fr",l:"Français"}];
 const CUR_OPTS=[{v:"cad",l:"CAD $"}];
 
-const TR={
-fr:{sub:"Gestion financière",title:"Budget",
+const TR={fr:{
+  sub:"Gestion financière",title:"Budget",
   navHome:"Accueil",navTx:"Transactions",navBudget:"Budget",navAnalyse:"Analyse",navSettings:"Paramètres",navConnexions:"Connexions",
-  subHistorique:"Historique",subRecurrent:"Récurrent",subBudgetCat:"Budget par catégorie",subObjectifs:"Objectifs",subStatistiques:"Statistiques",subGraphiques:"Graphiques",
+  subHistorique:"Historique",subRecurrent:"Récurrent",subBudgetCat:"Budget par catégorie",subObjectifs:"Objectifs",subStatistiques:"Statistiques",subGraphiques:"Graphiques",subControle:"Contrôle des coûts",
   noRecurTx:"Aucune transaction récurrente",
   saveLbl:"Sauvegarde",saveDestLbl:"Destination",triggerLbl:"Déclenchement",
-  ghLoadOnStart:"Charger au démarrage",  ghLoadOnStartSub:"Appliquer automatiquement si plus récent",
+  ghLoadOnStart:"Appliquer automatiquement si plus récent",ghLoadOnStartSub:"Applique la version GitHub sans confirmation",
   ghRestoreBtn:"↓ Restaurer depuis GitHub",ghPrivateNote:"Gist privé. Token : permission gist seulement.",
   saveManualBtn:"↑ Sauvegarder maintenant",offline:"HORS LIGNE",
   syncNever:"Jamais synchronisé",syncJustNow:"Synchronisé à l'instant",
@@ -79,7 +147,7 @@ fr:{sub:"Gestion financière",title:"Budget",
   syncSec:n=>n>1?"secondes":"seconde",syncMin:n=>n>1?"minutes":"minute",syncHr:n=>n>1?"heures":"heure",
   syncing:"Synchronisation",showSyncBarLbl:"Afficher l'état de sync",
   add:"Ajouter",noTx:"Aucune transaction",newTx:"Nouvelle transaction",editTx:"Modifier la transaction",
-  descLbl:"Description",amtLbl:"Montant",startLbl:"Date de début",recurLbl:"Récurrence",catLbl:"Catégorie",
+  descLbl:"Description",amtLbl:"Montant",startLbl:"Date de début",recurLbl:"Récurrence",catLbl:"Catégorie",subcatLbl:"Sous-catégorie",
   cancel:"Annuler",save:"Enregistrer",delBtn:"Supprimer",incomeLbl:"Revenu",expenseLbl:"Dépense",
   thisEvt:"Cet événement",thisFollow:"Cet événement et ceux qui suivront",allEvts:"Tous les événements",
   delTitle:"Supprimer la transaction",modDay:"Journée",modBal:"Solde",
@@ -96,21 +164,20 @@ fr:{sub:"Gestion financière",title:"Budget",
   revLbl:"Revenus",expLbl:"Dépenses",netLbl:"Net",curBalLbl:"Solde actuel",endBalLbl:"Fin du mois",
   emptyDay:"Aucune transaction ce jour",txCount:n=>`${n} transaction${n!==1?"s":""}`,
   exportLbl:"Données",exportBtn:"Exporter",importBtn:"Importer",importOk:"Données restaurées",importErr:"JSON invalide",
-  exportModalTitle:"Exporter les données",exportCopy:"Copier",exportCopied:"Copié ✓",exportClose:"Fermer",
-  exportInstr:"Copiez ce JSON et conservez-le en lieu sûr.",
-  importModalTitle:"Importer les données",importPaste:"Collez votre JSON ici…",importRestore:"Restaurer",
-  importInstr:"Collez un JSON exporté précédemment.",
+  exportModalTitle:"Exporter les données",exportCopy:"Copier",exportCopied:"Copié ✓",exportClose:"Fermer",exportInstr:"Copiez ce JSON et conservez-le en lieu sûr.",
+  importModalTitle:"Importer les données",importPaste:"Collez votre JSON ici…",importRestore:"Restaurer",importInstr:"Collez un JSON exporté précédemment.",
   darkLbl:"Mode nuit",darkOff:"Désactivé",darkOn:"Activé",darkAuto:"Automatique",
   delAccLbl:"Supprimer le compte",delAccSub:"Cette action est irréversible",delAccConfirm:"Supprimer définitivement",
   delAccModalTitle:"Confirmer la suppression",delAccModalBody:"Toutes vos données seront effacées. Tapez le mot ci-dessous :",
   delAccWord:"SUPPRIMER",budgetLbl:"Budget mensuel par catégorie",budgetTotal:"Total dépenses",
-  budgetOf:"sur",budgetUnset:"Illimité",quickCatLbl:"Changer la catégorie",revenuSummary:"Revenus ce mois",
+  budgetOf:"sur",budgetUnset:"Illimité",revenuSummary:"Revenus ce mois",
   statsTauxEpargne:"Taux d'épargne",statsMoyDep:"Moy. dépenses / mois",statsAbonnements:"Abonnements actifs",statsNetMoyen:"Net mensuel moyen",
   statsEvolutionSolde:"Évolution du solde",statsRevDep:"Revenus vs Dépenses",statsTopCats:"Top catégories",statsLast12:"12 derniers mois",
   statsPasDonnees:"Pas encore assez de données",
+  controleNonClass:"Non classé",
   langOpts:LANG_OPTS,curOpts:CUR_OPTS,
-  catNames:{housing:"Logement",food:"Alimentation",transport:"Transport",savings:"Épargne",entertain:"Loisirs",health:"Santé",subscript:"Abonnements",shopping:"Magasinage",education:"Éducation",utilities:"Services",income:"Revenus",other:"Autre"}},
-};
+  catNames:{housing:"Logement",food:"Alimentation",transport:"Transport",savings:"Épargne",entertain:"Loisirs",health:"Santé",subscript:"Abonnements",shopping:"Magasinage",education:"Éducation",utilities:"Services",income:"Revenus",other:"Autre"},
+}};
 
 function relTimeStr(lastSync,t){
   if(!lastSync)return t.syncNever;
@@ -130,29 +197,62 @@ const dStr=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${St
 const dayBef=s=>{const d=parseD(s);d.setDate(d.getDate()-1);return dStr(d);};
 function getNthWD(date){let c=0;const d=new Date(date.getFullYear(),date.getMonth(),1);while(d<=date){if(d.getDay()===date.getDay())c++;d.setDate(d.getDate()+1);}return c;}
 function normRec(rec,s){if(rec&&typeof rec==="object")return rec;const wd=s instanceof Date?s.getDay():parseD(String(s||"2024-01-01")).getDay();return({once:{type:"once"},daily:{type:"daily"},weekly:{type:"weekly",weekday:wd},monthly:{type:"monthly_day"},annual:{type:"annually"}})[rec]||{type:"once"};}
-function recLabel(tx,t){const s=parseD(tx.startDate);const r=normRec(tx.recurrence,s);const wd=r.weekday!==undefined?r.weekday:s.getDay();switch(r.type){case"once":return t.recOnce;case"daily":return t.recDaily;case"weekly":return`${t.recWeeklyPre} ${t.days[wd]}`;case"monthly_day":return t.recMonthlyDay;case"monthly_nth_weekday":return`${t.recMonthlyPre} ${t.nth[r.nth]||r.nth} ${t.days[r.weekday]}`;case"annually":return`${t.recAnnuallyPre} ${s.getDate()} ${t.months[s.getMonth()]}`;case"weekdays":return t.recWeekdays;case"custom":{const{interval:iv=1,unit:u="week",weekdays:wds=[]}=r;const ul=t.recUnits.find(x=>x.v===u)?.l||u;let lb=`${t.recEvery} ${ul}`;if(u==="week"&&wds.length>0)lb+=" · "+wds.map(w=>t.daysS[w]).join(" ");return lb;}default:return t.recOnce;}}
+function recLabel(tx,t){const s=parseD(tx.startDate);const r=normRec(tx.recurrence,s);const wd=r.weekday!==undefined?r.weekday:s.getDay();switch(r.type){case"once":return t.recOnce;case"daily":return t.recDaily;case"weekly":return`${t.recWeeklyPre} ${t.days[wd]}`;case"monthly_day":return t.recMonthlyDay;case"monthly_nth_weekday":return`${t.recMonthlyPre} ${t.nth[r.nth]||r.nth} ${t.days[r.weekday]}`;case"annually":return`${t.recAnnuallyPre} ${s.getDate()} ${t.months[s.getMonth()]}`;case"weekdays":return t.recWeekdays;case"custom":{const{unit:u="week",weekdays:wds=[]}=r;const ul=t.recUnits.find(x=>x.v===u)?.l||u;let lb=`${t.recEvery} ${ul}`;if(u==="week"&&wds.length>0)lb+=" · "+wds.map(w=>t.daysS[w]).join(" ");return lb;}default:return t.recOnce;}}
 function occsInMonth(tx,yr,mo){const ms=new Date(yr,mo,1),me=new Date(yr,mo+1,0);const s=parseD(tx.startDate),e=tx.endDate?parseD(tx.endDate):null;const ex=new Set(tx.exceptions||[]);const r=normRec(tx.recurrence,s);if(s>me||(e&&e<ms))return[];const ok=d=>d>=ms&&d<=me&&d>=s&&(!e||d<=e)&&!ex.has(dStr(d));const snap=d=>new Date(d.getTime());if(r.type==="once")return ok(s)?[s.getDate()]:[];if(r.type==="daily"){const res=[];const d=new Date(s>ms?s:ms);while(d<=me){if(ok(snap(d)))res.push(d.getDate());d.setDate(d.getDate()+1);}return res;}if(r.type==="weekly"){const twd=r.weekday!==undefined?r.weekday:s.getDay();const a=new Date(s);while(a.getDay()!==twd)a.setDate(a.getDate()+1);const res=[];const d=new Date(a);while(d<=me){if(ok(snap(d)))res.push(d.getDate());d.setDate(d.getDate()+7);}return res;}if(r.type==="monthly_day"){const day=s.getDate();if(day>me.getDate())return[];const d=new Date(yr,mo,day);return ok(d)?[day]:[];}if(r.type==="monthly_nth_weekday"){const{nth,weekday:wd2}=r;let c=0;for(let dy=1;dy<=me.getDate();dy++){const d=new Date(yr,mo,dy);if(d.getDay()===wd2){c++;if(c===nth)return ok(d)?[dy]:[];}}return[];}if(r.type==="annually"){if(mo!==s.getMonth()||yr<s.getFullYear())return[];const d=new Date(yr,mo,s.getDate());return ok(d)?[s.getDate()]:[];}if(r.type==="weekdays"){const res=[];const d=new Date(s>ms?s:ms);while(d<=me){const w=d.getDay();if(w>0&&w<6&&ok(snap(d)))res.push(d.getDate());d.setDate(d.getDate()+1);}return res;}if(r.type==="custom"){const{interval:iv=1,unit:u="day",weekdays:wds=[]}=r;const res=[];if(u==="day"){const d=new Date(s>ms?s:ms);while(d<=me){if(Math.round((d-s)/86400000)%iv===0&&ok(snap(d)))res.push(d.getDate());d.setDate(d.getDate()+1);}}else if(u==="week"){const wdSet=new Set(wds.length>0?wds:[s.getDay()]);wdSet.forEach(twd=>{const a=new Date(s);while(a.getDay()!==twd)a.setDate(a.getDate()+1);const d=new Date(a);while(d<=me){if(ok(snap(d)))res.push(d.getDate());d.setDate(d.getDate()+iv*7);}});res.sort((a,b)=>a-b);}else if(u==="month"){const sm=s.getMonth()+s.getFullYear()*12,cm=mo+yr*12;if((cm-sm)<0||(cm-sm)%iv!==0)return[];const d=new Date(yr,mo,s.getDate());if(ok(d))res.push(s.getDate());}else if(u==="year"){if(mo!==s.getMonth()||yr<s.getFullYear())return[];if((yr-s.getFullYear())%iv!==0)return[];const d=new Date(yr,mo,s.getDate());if(ok(d))res.push(s.getDate());}return res;}return[];}
 function countOccs(tx,upTo){const s=parseD(tx.startDate);if(s>upTo)return 0;let count=0,y=s.getFullYear(),m=s.getMonth();const ey=upTo.getFullYear(),em=upTo.getMonth();let its=0;while((y<ey||(y===ey&&m<=em))&&its++<1200){const ocs=occsInMonth(tx,y,m);for(const d of ocs)if(new Date(y,m,d)<=upTo)count++;m++;if(m>11){m=0;y++;}}return count;}
 const balAt=(txs,init,date)=>txs.reduce((b,tx)=>b+(tx.type==="income"?1:-1)*tx.amount*countOccs(tx,date),init);
 
+function cleanTxs(txs){
+  return txs.filter(tx=>{
+    const r=normRec(tx.recurrence,parseD(tx.startDate));
+    if(r.type==="once"){const ex=new Set(tx.exceptions||[]);if(ex.has(tx.startDate))return false;}
+    return true;
+  });
+}
+
 function fA(n,cur,full=false){
-  const a=Math.abs(n);const jpy=cur==="jpy";let nm;
-  if(full){nm=jpy?Math.round(a).toLocaleString():a.toLocaleString("fr-CA",{minimumFractionDigits:2,maximumFractionDigits:2});}
-  else{if(a>=10000)nm=(jpy?Math.round(a/1000):(a/1000)).toFixed(jpy?0:1)+"k";else if(a>=1000)nm=(a/1000).toFixed(jpy?0:2)+"k";else nm=jpy?Math.round(a).toString():a.toFixed(2);}
-  if(cur==="usd")return"$"+nm;if(cur==="eur")return nm+" €";if(cur==="gbp")return"£"+nm;if(cur==="aud")return"A$"+nm;if(cur==="jpy")return"¥"+nm;if(cur==="chf")return nm+" Fr.";return nm+" $";
+  const a=Math.abs(n);let nm;
+  if(full){nm=a.toLocaleString("fr-CA",{minimumFractionDigits:2,maximumFractionDigits:2});}
+  else{if(a>=10000)nm=(a/1000).toFixed(1)+"k";else if(a>=1000)nm=(a/1000).toFixed(2)+"k";else nm=a.toFixed(2);}
+  return nm+" $";
 }
 
 const Tog=({label,sub,value,onChange,th})=>(<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0",borderBottom:"1px solid "+th.border}}><div><span style={{fontSize:13,color:th.text,display:"block"}}>{label}</span>{sub&&<span style={{fontSize:11,color:th.muted}}>{sub}</span>}</div><button onClick={()=>onChange(!value)} style={{width:36,height:20,borderRadius:10,background:value?th.btnBg:th.togOff,border:"none",cursor:"pointer",position:"relative",flexShrink:0,transition:"background 0.2s"}}><div style={{position:"absolute",top:2,left:value?16:2,width:16,height:16,background:"#fff",borderRadius:"50%",transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.3)"}}/></button></div>);
 const Sel=({label,value,opts,onChange,th})=>(<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0",borderBottom:"1px solid "+th.border}}><span style={{fontSize:13,color:th.text}}>{label}</span><select value={value} onChange={e=>onChange(e.target.value)} style={{fontSize:13,color:th.text,background:th.bg,border:"none",cursor:"pointer",outline:"none"}}>{opts.map(o=><option key={o.v} value={o.v}>{o.l}</option>)}</select></div>);
 const SegCtrl=({options,value,onChange,th})=>(<div style={{display:"flex",background:th.surface,borderRadius:10,padding:3,gap:2}}>{options.map(([v,l])=>(<button key={v} onClick={()=>onChange(v)} style={{flex:1,fontSize:12,padding:"6px 10px",borderRadius:8,border:"none",cursor:"pointer",background:value===v?th.bg:"transparent",color:value===v?th.text:th.muted,boxShadow:value===v?"0 1px 4px rgba(0,0,0,0.12)":"none",fontWeight:value===v?500:400,transition:"all 0.15s",whiteSpace:"nowrap"}}>{l}</button>))}</div>);
-
 const Sheet=({onClose,children,th})=>(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.35)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:150,padding:16}} onClick={onClose}><div style={{background:th.sheetBg,width:"100%",maxWidth:480,borderRadius:20,padding:24,paddingBottom:88,boxShadow:"0 -4px 40px rgba(0,0,0,0.2)",maxHeight:"90vh",overflow:"auto"}} onClick={e=>e.stopPropagation()}>{children}</div></div>);
 const FullSheet=({onClose,children,th})=>(<div style={{position:"fixed",inset:0,background:th.sheetBg,zIndex:200,overflowY:"auto",display:"flex",flexDirection:"column",animation:"fullPageIn 0.28s cubic-bezier(0.32,0.72,0,1)"}}><div style={{flex:1,padding:"0 24px 100px",maxWidth:640,width:"100%",margin:"0 auto"}}>{children}</div></div>);
 const SheetHead=({title,onClose,right,th})=>(<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}><h3 style={{fontSize:15,color:th.text,fontWeight:600,margin:0}}>{title}</h3><div style={{display:"flex",gap:8,alignItems:"center"}}>{right}<button onClick={onClose} style={{fontSize:18,color:th.muted,background:"none",border:"none",cursor:"pointer",lineHeight:1}}>✕</button></div></div>);
 const FullSheetHead=({title,onClose,right,th})=>(<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"20px 0 20px",borderBottom:"1px solid "+th.border,marginBottom:24,position:"sticky",top:0,background:th.sheetBg,zIndex:10}}><button onClick={onClose} style={{fontSize:13,color:th.sub,background:"none",border:"1px solid "+th.border,borderRadius:8,padding:"6px 12px",cursor:"pointer",display:"flex",alignItems:"center",gap:4}}><span style={{fontSize:16,lineHeight:1}}>‹</span> {title}</button><div style={{display:"flex",gap:8,alignItems:"center"}}>{right}</div></div>);
 const MonthNav=({yr,mo,onPrev,onNext,onDbl,t,th})=>(<div style={{display:"flex",alignItems:"center",gap:4}}><button onClick={onPrev} style={{width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:"none",border:"none",cursor:"pointer",fontSize:20,color:th.muted,borderRadius:8}}>‹</button><span onDoubleClick={onDbl} style={{fontSize:15,color:th.text,fontWeight:500,minWidth:164,textAlign:"center",cursor:"default",userSelect:"none"}}>{t.months[mo]} {yr}</span><button onClick={onNext} style={{width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:"none",border:"none",cursor:"pointer",fontSize:20,color:th.muted,borderRadius:8}}>›</button></div>);
 
-function CategoryPicker({value,onChange,th,t}){return(<div><label style={{fontSize:10,color:th.muted,letterSpacing:"0.1em",textTransform:"uppercase"}}>{t.catLbl}</label><div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:6,marginTop:10}}>{CATS.map(c=>{const sel=value===c.id;return(<button key={c.id} onClick={()=>onChange(c.id)} title={t.catNames[c.id]} style={{padding:"10px 4px",borderRadius:10,border:"2px solid "+(sel?c.color:"transparent"),background:sel?c.color+"25":th.surface,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3}}><span style={{fontSize:18,lineHeight:1}}>{c.emoji}</span><span style={{fontSize:9,color:sel?c.color:th.muted,fontWeight:sel?600:400,lineHeight:1.2,textAlign:"center"}}>{t.catNames[c.id].split(" ")[0]}</span></button>);})}</div></div>);}
+function CategoryPicker({value,onChange,th,t}){
+  return(<div><label style={{fontSize:10,color:th.muted,letterSpacing:"0.1em",textTransform:"uppercase"}}>{t.catLbl}</label><div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:6,marginTop:10}}>{CATS.map(c=>{const sel=value===c.id;return(<button key={c.id} onClick={()=>onChange(c.id)} title={t.catNames[c.id]} style={{padding:"10px 4px",borderRadius:10,border:"2px solid "+(sel?c.color:"transparent"),background:sel?c.color+"25":th.surface,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3}}><span style={{fontSize:18,lineHeight:1}}>{c.emoji}</span><span style={{fontSize:9,color:sel?c.color:th.muted,fontWeight:sel?600:400,lineHeight:1.2,textAlign:"center"}}>{t.catNames[c.id].split(" ")[0]}</span></button>);})}</div></div>);
+}
+
+function SubCategoryPicker({category,value,onChange,th,t}){
+  const opts=useMemo(()=>subcatsByCat(category),[category]);
+  if(opts.length===0)return null;
+  return(
+    <div>
+      <label style={{fontSize:10,color:th.muted,letterSpacing:"0.1em",textTransform:"uppercase"}}>{t.subcatLbl}</label>
+      <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:10}}>
+        {value&&<button onClick={()=>onChange(null)} style={{padding:"6px 12px",borderRadius:20,fontSize:12,border:"1px solid "+th.inputBorder,background:"none",color:th.muted,cursor:"pointer"}}>✕ Retirer</button>}
+        {opts.map(sc=>{
+          const sel=value===sc.id;
+          const grp=SUBCAT_GROUPS.find(g=>g.id===sc.group);
+          const col=grp?.color||th.muted;
+          return(
+            <button key={sc.id} onClick={()=>onChange(sel?null:sc.id)}
+              style={{padding:"6px 12px",borderRadius:20,fontSize:12,border:"1.5px solid "+(sel?col:th.border),background:sel?col+"18":"none",color:sel?col:th.sub,cursor:"pointer",fontWeight:sel?600:400,transition:"all 0.15s"}}>
+              {sc.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function RecurrencePicker({value,onChange,startDate,t,th}){
   const s=useMemo(()=>parseD(startDate),[startDate]);
@@ -207,7 +307,7 @@ function LineChart({data,color,th,height=120}){
   const vals=data.map(d=>d.y);const mn=Math.min(...vals),mx=Math.max(...vals);const rng=mx-mn||1;
   const px=i=>pad.l+(i/(data.length-1))*(W-pad.l-pad.r);
   const py=v=>pad.t+(1-(v-mn)/rng)*(H-pad.t-pad.b);
-  const pts=data.map((d,i)=>({x:px(i),y:py(d.y),label:d.label,val:d.y}));
+  const pts=data.map((d,i)=>({x:px(i),y:py(d.y),label:d.label}));
   const pathD="M"+pts.map(p=>`${p.x.toFixed(1)},${p.y.toFixed(1)}`).join("L");
   const areaD=pathD+`L${pts[pts.length-1].x.toFixed(1)},${(H-pad.b).toFixed(1)}L${pts[0].x.toFixed(1)},${(H-pad.b).toFixed(1)}Z`;
   const gradId="lg_"+color.replace("#","");
@@ -216,8 +316,7 @@ function LineChart({data,color,th,height=120}){
     <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height,display:"block",overflow:"visible"}}>
       <defs><linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.18"/><stop offset="100%" stopColor={color} stopOpacity="0.01"/></linearGradient></defs>
       {yTicks.map((v,i)=><line key={i} x1={pad.l} x2={W-pad.r} y1={py(v)} y2={py(v)} stroke={th.border} strokeWidth="1"/>)}
-      <path d={areaD} fill={`url(#${gradId})`}/>
-      <path d={pathD} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d={areaD} fill={`url(#${gradId})`}/><path d={pathD} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
       {pts.map((p,i)=><circle key={i} cx={p.x} cy={p.y} r="3" fill={color} stroke={th.sheetBg} strokeWidth="1.5"/>)}
       {pts.filter((_,i)=>i%2===0||data.length<=7).map((p,i)=>(<text key={i} x={p.x} y={H-6} textAnchor="middle" fontSize="9" fill={th.muted}>{p.label}</text>))}
       {yTicks.map((v,i)=>(<text key={i} x={pad.l-4} y={py(v)+3.5} textAnchor="end" fontSize="9" fill={th.muted}>{v>=1000?(v/1000).toFixed(1)+"k":v.toFixed(0)}</text>))}
@@ -229,9 +328,8 @@ function BarChart2({data,th,height=140}){
   if(!data||data.length===0)return null;
   const W=560,H=height,pad={t:8,b:28,l:4,r:4};
   const maxV=Math.max(...data.map(d=>Math.max(d.inc,d.exp)),1);
-  const barW=((W-pad.l-pad.r)/data.length)*0.7;
-  const gap=((W-pad.l-pad.r)/data.length)*0.15;
   const slotW=(W-pad.l-pad.r)/data.length;
+  const barW=slotW*0.7,gap=slotW*0.15;
   const bh=v=>((v/maxV)*(H-pad.t-pad.b));
   return(
     <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height,display:"block",overflow:"visible"}}>
@@ -243,17 +341,6 @@ function BarChart2({data,th,height=140}){
 
 function StatCard({label,value,sub,color,th}){
   return(<div style={{flex:"1 1 140px",background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:"14px 16px",minWidth:0}}><p style={{fontSize:10,color:th.muted,letterSpacing:"0.1em",textTransform:"uppercase",margin:"0 0 8px"}}>{label}</p><p style={{fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",color:color||th.text,margin:"0 0 2px",lineHeight:1}}>{value}</p>{sub&&<p style={{fontSize:11,color:th.muted,margin:0}}>{sub}</p>}</div>);
-}
-
-function cleanTxs(txs){
-  return txs.filter(tx=>{
-    const r=normRec(tx.recurrence,parseD(tx.startDate));
-    if(r.type==="once"){
-      const ex=new Set(tx.exceptions||[]);
-      if(ex.has(tx.startDate))return false;
-    }
-    return true;
-  });
 }
 
 async function doPushToGitHub(json,token,gistId){
@@ -277,8 +364,8 @@ function App(){
   const[initBal,setInitBal]=useState(1000);
   const[budgets,setBudgets]=useState({});
   const[loaded,setLoaded]=useState(false);
-  const[lang,setLang]=useState(detectLang);
-  const[cur,setCur]=useState("cad");
+  const[lang]=useState(detectLang);
+  const[cur]=useState("cad");
   const[disp,setDisp]=useState({endBal:false,revExp:false,net:false});
   const[showSyncBar,setShowSyncBar]=useState(true);
   const[darkMode,setDarkMode]=useState("off");
@@ -307,6 +394,8 @@ function App(){
   const[copied,setCopied]=useState(false);
   const[showToken,setShowToken]=useState(false);
   const[connStatus,setConnStatus]=useState({localRead:null,localWrite:null});
+  // ── NOUVEAU : recherche de transactions
+  const[searchQuery,setSearchQuery]=useState("");
 
   const balInputRef=useRef(null);
   const balSettRef=useRef(null);
@@ -330,17 +419,13 @@ function App(){
   const lbl={fontSize:10,color:th.muted,letterSpacing:"0.12em",textTransform:"uppercase"};
 
   const NAV_ITEMS=useMemo(()=>[
-    ["home",t.navHome],
-    ["transactions",t.navTx],
-    ["budget",t.navBudget],
-    ["analyse",t.navAnalyse],
-    ["connexions",t.navConnexions],
-    ["settings",t.navSettings]
+    ["home",t.navHome],["transactions",t.navTx],["budget",t.navBudget],
+    ["analyse",t.navAnalyse],["connexions",t.navConnexions],["settings",t.navSettings]
   ],[t]);
   const SUB_NAV=useMemo(()=>({
     transactions:[{id:"historique",label:t.subHistorique},{id:"recurrent",label:t.subRecurrent}],
     budget:[{id:"categories",label:t.subBudgetCat},{id:"objectifs",label:t.subObjectifs}],
-    analyse:[{id:"statistiques",label:t.subStatistiques},{id:"graphiques",label:t.subGraphiques}]
+    analyse:[{id:"statistiques",label:t.subStatistiques},{id:"graphiques",label:t.subGraphiques},{id:"controle",label:t.subControle}]
   }),[t]);
   const DEFAULT_SUB={transactions:"historique",budget:"categories",analyse:"statistiques"};
   const curSub=subTab[tab]||(DEFAULT_SUB[tab]||null);
@@ -360,8 +445,7 @@ function App(){
       clearTimeout(retryTimerRef.current);setLastSync(new Date());
       if(syncQueueRef.current.length>0)setTimeout(()=>processQueueRef.current?.(),500);
     }catch(e){
-      isSyncingRef.current=false;
-      item.retries=(item.retries||0)+1;
+      isSyncingRef.current=false;item.retries=(item.retries||0)+1;
       if(item.retries<=5){const delay=Math.min(2000*Math.pow(2,item.retries-1),32000);retryTimerRef.current=setTimeout(()=>processQueueRef.current?.(),delay);}
       else{syncQueueRef.current.shift();setIsSyncing(false);}
     }
@@ -396,30 +480,26 @@ function App(){
     try{const r=await window.storage.get("bgt9-bud");if(r)try{setBudgets(JSON.parse(r.value));}catch(e){}}catch(e){}
     try{const r=await window.storage.get("bgt9-updated");if(r)lastRemoteTsRef.current=parseInt(r.value)||0;}catch(e){}
     let sMode="local",ghPull=true,ghTok="",ghGid="";
-    try{const r=await window.storage.get("bgt9-cfg");if(r){const c=JSON.parse(r.value);if(c.lang)setLang(c.lang);if(c.cur)setCur(c.cur);if(c.disp)setDisp(c.disp);if(c.darkMode)setDarkMode(c.darkMode);if(c.mode)setMode(c.mode);if(c.saveMode){setSaveMode(c.saveMode);sMode=c.saveMode;}if(c.saveAuto!==undefined)setSaveAuto(c.saveAuto);if(c.showSyncBar!==undefined)setShowSyncBar(c.showSyncBar);}}catch(e){}
+    try{const r=await window.storage.get("bgt9-cfg");if(r){const c=JSON.parse(r.value);if(c.disp)setDisp(c.disp);if(c.darkMode)setDarkMode(c.darkMode);if(c.mode)setMode(c.mode);if(c.saveMode){setSaveMode(c.saveMode);sMode=c.saveMode;}if(c.saveAuto!==undefined)setSaveAuto(c.saveAuto);if(c.showSyncBar!==undefined)setShowSyncBar(c.showSyncBar);}}catch(e){}
     try{const r=await window.storage.get("bgt9-gh");if(r){const g=JSON.parse(r.value);if(g.token){setGhToken(g.token);ghTok=g.token;}if(g.gistId){setGhGistId(g.gistId);ghGid=g.gistId;}if(g.pullOnStart!==undefined){setGhPullOnStart(g.pullOnStart);ghPull=g.pullOnStart;}}}catch(e){}
     if(sMode==="github"&&ghTok&&ghGid){
       setIsSyncing(true);
       try{
         const res=await fetch(`https://api.github.com/gists/${ghGid}`,{headers:{"Authorization":"token "+ghTok}});
         if(!res.ok)throw new Error();
-        const data=await res.json();
-        const content=data.files?.["budget.json"]?.content;
+        const data=await res.json();const content=data.files?.["budget.json"]?.content;
         if(content){
           let d;try{d=JSON.parse(content);}catch(e){throw new Error();}
-          const rTs=d.updated||0;
-          const lTs=lastRemoteTsRef.current;
+          const rTs=d.updated||0,lTs=lastRemoteTsRef.current;
           if(rTs>lTs){
             if(ghPull){
               if(Array.isArray(d.txs))setTxs(cleanTxs(d.txs));
               if(typeof d.initBal==="number")setInitBal(d.initBal);
-              if(d.lang)setLang(d.lang);if(d.cur)setCur(d.cur);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.budgets)setBudgets(d.budgets);
+              if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.budgets)setBudgets(d.budgets);
               if(d.updated){lastRemoteTsRef.current=d.updated;await window.storage.set("bgt9-updated",String(d.updated));}
               setLastSync(new Date());
             } else {
-              lastRemoteTsRef.current=rTs;
-              setRemoteData(d);
-              setUpdateAvailable(true);
+              lastRemoteTsRef.current=rTs;setRemoteData(d);setUpdateAvailable(true);
             }
           }
         }
@@ -437,32 +517,25 @@ function App(){
 
   useEffect(()=>{
     if(!loaded||!saveAuto||saveMode!=="github"||!ghToken)return;
-    clearTimeout(ghSyncTimerRef.current);
-    ghSyncTimerRef.current=setTimeout(()=>enqueuePush(),8000);
+    clearTimeout(ghSyncTimerRef.current);ghSyncTimerRef.current=setTimeout(()=>enqueuePush(),8000);
     return()=>clearTimeout(ghSyncTimerRef.current);
   },[txs,initBal,budgets,lang,cur,disp,darkMode,loaded,saveAuto,saveMode,ghToken]);
 
   useEffect(()=>{
     if(saveMode!=="github"||!ghToken||!ghGistId){clearInterval(periodicCheckRef.current);return;}
     const check=async()=>{if(!navigator.onLine||isSyncingRef.current)return;try{const res=await fetch(`https://api.github.com/gists/${ghGistId}`,{headers:{"Authorization":"token "+ghToken}});if(!res.ok)return;const g=await res.json();const content=g.files?.["budget.json"]?.content;if(!content)return;let remote;try{remote=JSON.parse(content);}catch(e){return;}const rTs=remote.updated||0;const lRes=await window.storage.get("bgt9-updated");const lTs=parseInt(lRes?.value||"0")||0;if(rTs>lTs&&rTs!==lastRemoteTsRef.current){lastRemoteTsRef.current=rTs;setRemoteData(remote);setUpdateAvailable(true);}}catch(e){}};
-    periodicCheckRef.current=setInterval(check,60000);
-    return()=>clearInterval(periodicCheckRef.current);
+    periodicCheckRef.current=setInterval(check,60000);return()=>clearInterval(periodicCheckRef.current);
   },[saveMode,ghToken,ghGistId]);
 
-  const applyRemoteData=d=>{try{if(Array.isArray(d.txs))setTxs(cleanTxs(d.txs));if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.lang)setLang(d.lang);if(d.cur)setCur(d.cur);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.budgets)setBudgets(d.budgets);if(d.updated)window.storage.set("bgt9-updated",String(d.updated));setLastSync(new Date());}catch(e){}};
+  const applyRemoteData=d=>{try{if(Array.isArray(d.txs))setTxs(cleanTxs(d.txs));if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.budgets)setBudgets(d.budgets);if(d.updated)window.storage.set("bgt9-updated",String(d.updated));setLastSync(new Date());}catch(e){}};
   const saveLocalNow=async()=>{setIsSyncing(true);try{await window.storage.set("bgt9-tx",JSON.stringify(txs));await window.storage.set("bgt9-bal",String(initBal));await window.storage.set("bgt9-bud",JSON.stringify(budgets));await window.storage.set("bgt9-updated",String(Date.now()));lastSavedHashRef.current=JSON.stringify({txs,initBal,budgets});setLastSync(new Date());}catch(e){}finally{setIsSyncing(false);}};
   const ghPushNow=async()=>{if(!ghToken)return;setIsSyncing(true);try{const r=await doPushToGitHub(getExportJSON(),ghToken,ghGistId);if(r.id){setGhGistId(r.id);await window.storage.set("bgt9-updated",String(Date.now()));setLastSync(new Date());}}catch(e){}finally{setIsSyncing(false);}};
   const ghPullNow=async()=>{if(!ghToken||!ghGistId)return;setIsSyncing(true);try{const res=await fetch(`https://api.github.com/gists/${ghGistId}`,{headers:{"Authorization":"token "+ghToken}});if(!res.ok)throw new Error();const data=await res.json();const content=data.files?.["budget.json"]?.content;if(!content)throw new Error();let d;try{d=JSON.parse(content);}catch(e){throw new Error();}applyRemoteData(d);if(d.updated){lastRemoteTsRef.current=d.updated;await window.storage.set("bgt9-updated",String(d.updated));}}catch(e){}finally{setIsSyncing(false);}};
   const handleManualSave=()=>{if(saveMode==="local")saveLocalNow();else ghPushNow();};
 
-  const handleTitleClick=e=>{
-    e.stopPropagation();const now=Date.now();
-    if(now-lastTapRef.current<350){setTab("home");setMo(TODAY.getMonth());setYr(TODAY.getFullYear());}
-    lastTapRef.current=now;
-  };
-
+  const handleTitleClick=e=>{e.stopPropagation();const now=Date.now();if(now-lastTapRef.current<350){setTab("home");setMo(TODAY.getMonth());setYr(TODAY.getFullYear());}lastTapRef.current=now;};
   const handleCopy=()=>{if(navigator.clipboard?.writeText){navigator.clipboard.writeText(getExportJSON()).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2500);});}};
-  const handleImport=()=>{try{const d=JSON.parse(importText);if(Array.isArray(d.txs))setTxs(cleanTxs(d.txs));if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.lang)setLang(d.lang);if(d.cur)setCur(d.cur);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.budgets)setBudgets(d.budgets);setImportMod(false);setImportText("");}catch(e){}};
+  const handleImport=()=>{try{const d=JSON.parse(importText);if(Array.isArray(d.txs))setTxs(cleanTxs(d.txs));if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.budgets)setBudgets(d.budgets);setImportMod(false);setImportText("");}catch(e){}};
   const deleteAccount=async()=>{for(const k of["bgt9-tx","bgt9-bal","bgt9-bud","bgt9-cfg","bgt9-gh","bgt9-updated"])try{await window.storage.delete(k);}catch(e){}setTxs([]);setInitBal(1000);setBudgets({});setDisp({endBal:false,revExp:false,net:false});setDarkMode("off");setGhToken("");setGhGistId("");setLastSync(null);};
 
   const curBalVal=useMemo(()=>balAt(txs,initBal,TODAY),[txs,initBal]);
@@ -479,86 +552,55 @@ function App(){
   const nextMo=()=>mo===11?(setMo(0),setYr(y=>y+1)):setMo(m=>m+1);
   const goToday=()=>{setMo(TODAY.getMonth());setYr(TODAY.getFullYear());};
 
+  // ── NOUVEAU : taux d'épargne mensuel
+  const savingsRate=monthStats.inc>0?Math.round(monthStats.net/monthStats.inc*100):null;
+
   const openForm=(tx=null,prefill=null)=>{
     const dt=prefill||dStr(TODAY);
     setFormMod({
       tx,editScope:null,editDateStr:null,
-      form:tx?{desc:tx.description,amt:String(tx.amount),type:tx.type,rec:normRec(tx.recurrence,parseD(tx.startDate)),date:tx.startDate,cat:tx.category||"other"}
-            :{desc:"",amt:"",type:"expense",rec:{type:"once"},date:dt,cat:"other"}
+      form:tx?{desc:tx.description,amt:String(tx.amount),type:tx.type,rec:normRec(tx.recurrence,parseD(tx.startDate)),date:tx.startDate,cat:tx.category||"other",subCat:tx.subCategory||null}
+            :{desc:"",amt:"",type:"expense",rec:{type:"once"},date:dt,cat:"other",subCat:null}
     });
   };
 
   const setFF=k=>v=>setFormMod(m=>({...m,form:{...m.form,[k]:v}}));
-  const handleTypeChange=v=>setFormMod(m=>({...m,form:{...m.form,type:v,cat:v==="income"?"income":"other"}}));
+  const handleTypeChange=v=>setFormMod(m=>({...m,form:{...m.form,type:v,cat:v==="income"?"income":"other",subCat:null}}));
+  const handleCatChange=v=>setFormMod(m=>({...m,form:{...m.form,cat:v,subCat:null}}));
   const handleDateChange=nd=>{const ns=parseD(nd);const rec=formMod.form.rec;let nr=rec;if(rec.type==="weekly")nr={...rec,weekday:ns.getDay()};else if(rec.type==="monthly_nth_weekday")nr={...rec,nth:getNthWD(ns),weekday:ns.getDay()};setFormMod(m=>({...m,form:{...m.form,date:nd,rec:nr}}));};
 
   const saveForm=()=>{
     const{tx,form,editScope,editDateStr}=formMod;
     const amt=parseFloat(form.amt);
     if(!form.desc.trim()||isNaN(amt)||amt<=0)return;
-    const data={description:form.desc,amount:amt,type:form.type,recurrence:form.rec,startDate:form.date,category:form.cat};
-    if(!tx){
-      setTxs(prev=>[...prev,{id:Date.now().toString(),...data,exceptions:[]}]);
-    } else if(editScope==="this"){
-      setTxs(prev=>{
-        const updated=prev.map(t2=>t2.id!==tx.id?t2:{...t2,exceptions:[...(t2.exceptions||[]),editDateStr]});
-        return[...updated,{id:Date.now().toString(),...data,startDate:editDateStr,recurrence:{type:"once"},exceptions:[]}];
-      });
+    const data={description:form.desc,amount:amt,type:form.type,recurrence:form.rec,startDate:form.date,category:form.cat,subCategory:form.subCat||undefined};
+    if(!tx){setTxs(prev=>[...prev,{id:Date.now().toString(),...data,exceptions:[]}]);}
+    else if(editScope==="this"){
+      setTxs(prev=>{const updated=prev.map(t2=>t2.id!==tx.id?t2:{...t2,exceptions:[...(t2.exceptions||[]),editDateStr]});return[...updated,{id:Date.now().toString(),...data,startDate:editDateStr,recurrence:{type:"once"},exceptions:[]}];});
     } else if(editScope==="follow"){
       const ne=dayBef(editDateStr);
-      setTxs(prev=>{
-        const orig=prev.find(t2=>t2.id===tx.id);
-        const tooEarly=orig&&parseD(ne)<parseD(orig.startDate);
-        const base=tooEarly?prev.filter(t2=>t2.id!==tx.id):prev.map(t2=>t2.id!==tx.id?t2:{...t2,endDate:ne});
-        return[...base,{id:Date.now().toString(),...data,startDate:editDateStr,exceptions:[]}];
-      });
-    } else {
-      setTxs(prev=>prev.map(t2=>t2.id===tx.id?{...t2,...data}:t2));
-    }
+      setTxs(prev=>{const orig=prev.find(t2=>t2.id===tx.id);const tooEarly=orig&&parseD(ne)<parseD(orig.startDate);const base=tooEarly?prev.filter(t2=>t2.id!==tx.id):prev.map(t2=>t2.id!==tx.id?t2:{...t2,endDate:ne});return[...base,{id:Date.now().toString(),...data,startDate:editDateStr,exceptions:[]}];});
+    } else {setTxs(prev=>prev.map(t2=>t2.id===tx.id?{...t2,...data}:t2));}
     setFormMod(null);
   };
 
   const openDel=(tx,dateStr)=>{setDelMod({tx,dateStr});setDayMod(null);};
-  const handleDel=scope=>{
-    const{tx,dateStr}=delMod;
-    if(scope==="all"||normRec(tx.recurrence,parseD(tx.startDate)).type==="once"){setTxs(prev=>prev.filter(t2=>t2.id!==tx.id));}
-    else if(scope==="this"){setTxs(prev=>prev.map(t2=>t2.id!==tx.id?t2:{...t2,exceptions:[...(t2.exceptions||[]),dateStr]}));}
-    else if(scope==="follow"){const ne=dayBef(dateStr);if(parseD(ne)<parseD(tx.startDate))setTxs(prev=>prev.filter(t2=>t2.id!==tx.id));else setTxs(prev=>prev.map(t2=>t2.id!==tx.id?t2:{...t2,endDate:ne}));}
-    setDelMod(null);
-  };
+  const handleDel=scope=>{const{tx,dateStr}=delMod;if(scope==="all"||normRec(tx.recurrence,parseD(tx.startDate)).type==="once"){setTxs(prev=>prev.filter(t2=>t2.id!==tx.id));}else if(scope==="this"){setTxs(prev=>prev.map(t2=>t2.id!==tx.id?t2:{...t2,exceptions:[...(t2.exceptions||[]),dateStr]}));}else if(scope==="follow"){const ne=dayBef(dateStr);if(parseD(ne)<parseD(tx.startDate))setTxs(prev=>prev.filter(t2=>t2.id!==tx.id));else setTxs(prev=>prev.map(t2=>t2.id!==tx.id?t2:{...t2,endDate:ne}));}setDelMod(null);};
 
-  // Direct actions from day modal expanded view
   const handleDirectMod=(tx,dateStr,scope)=>{
     setExpandedTx(null);
-    if(scope==="this"){
-      setDayMod(null);
-      setFormMod({tx,editScope:"this",editDateStr:dateStr,form:{desc:tx.description,amt:String(tx.amount),type:tx.type,rec:{type:"once"},date:dateStr,cat:tx.category||"other"}});
-    } else if(scope==="follow"){
-      setDayMod(null);
-      setFormMod({tx,editScope:"follow",editDateStr:dateStr,form:{desc:tx.description,amt:String(tx.amount),type:tx.type,rec:normRec(tx.recurrence,parseD(tx.startDate)),date:dateStr,cat:tx.category||"other"}});
-    } else if(scope==="all"){
-      setDayMod(null);
-      openForm(tx);
-    } else if(scope==="terminate"){
-      setTxs(prev=>prev.map(t2=>t2.id!==tx.id?t2:{...t2,endDate:dateStr}));
-    }
+    if(scope==="this"){setDayMod(null);setFormMod({tx,editScope:"this",editDateStr:dateStr,form:{desc:tx.description,amt:String(tx.amount),type:tx.type,rec:{type:"once"},date:dateStr,cat:tx.category||"other",subCat:tx.subCategory||null}});}
+    else if(scope==="follow"){setDayMod(null);setFormMod({tx,editScope:"follow",editDateStr:dateStr,form:{desc:tx.description,amt:String(tx.amount),type:tx.type,rec:normRec(tx.recurrence,parseD(tx.startDate)),date:dateStr,cat:tx.category||"other",subCat:tx.subCategory||null}});}
+    else if(scope==="all"){setDayMod(null);openForm(tx);}
+    else if(scope==="terminate"){setTxs(prev=>prev.map(t2=>t2.id!==tx.id?t2:{...t2,endDate:dateStr}));}
   };
 
   const handleDirectDel=(tx,dateStr,scope)=>{
     const isOnce=normRec(tx.recurrence,parseD(tx.startDate)).type==="once";
-    if(scope==="this"){
-      if(isOnce)setTxs(prev=>prev.filter(t2=>t2.id!==tx.id));
-      else setTxs(prev=>prev.map(t2=>t2.id!==tx.id?t2:{...t2,exceptions:[...(t2.exceptions||[]),dateStr]}));
-    } else if(scope==="follow"){
-      const ne=dayBef(dateStr);
-      if(isOnce||parseD(ne)<parseD(tx.startDate))setTxs(prev=>prev.filter(t2=>t2.id!==tx.id));
-      else setTxs(prev=>prev.map(t2=>t2.id!==tx.id?t2:{...t2,endDate:ne}));
-    } else if(scope==="anterior"){
-      if(isOnce)setTxs(prev=>prev.filter(t2=>t2.id!==tx.id));
-      else setTxs(prev=>prev.map(t2=>t2.id!==tx.id?t2:{...t2,startDate:dateStr,exceptions:(t2.exceptions||[]).filter(e=>e>=dateStr)}));
-    } else if(scope==="all"){
-      setTxs(prev=>prev.filter(t2=>t2.id!==tx.id));
-    }
+    if(scope==="this"){if(isOnce)setTxs(prev=>prev.filter(t2=>t2.id!==tx.id));else setTxs(prev=>prev.map(t2=>t2.id!==tx.id?t2:{...t2,exceptions:[...(t2.exceptions||[]),dateStr]}));}
+    else if(scope==="follow"){const ne=dayBef(dateStr);if(isOnce||parseD(ne)<parseD(tx.startDate))setTxs(prev=>prev.filter(t2=>t2.id!==tx.id));else setTxs(prev=>prev.map(t2=>t2.id!==tx.id?t2:{...t2,endDate:ne}));}
+    else if(scope==="anterior"){if(isOnce)setTxs(prev=>prev.filter(t2=>t2.id!==tx.id));else setTxs(prev=>prev.map(t2=>t2.id!==tx.id?t2:{...t2,startDate:dateStr,exceptions:(t2.exceptions||[]).filter(e=>e>=dateStr)}));}
+    else if(scope==="all"){setTxs(prev=>prev.filter(t2=>t2.id!==tx.id));}
     setExpandedTx(null);
   };
 
@@ -571,18 +613,23 @@ function App(){
   const dayModalDateStr=dayMod?`${yr}-${String(mo+1).padStart(2,"0")}-${String(dayMod.day).padStart(2,"0")}`:"";
   const expenseCats=CATS.filter(c=>c.id!=="income");
   const hasSummary=disp.endBal||disp.revExp||disp.net;
-  const monthTxs=useMemo(()=>txs.filter(tx=>occsInMonth(tx,yr,mo).length>0).sort((a,b)=>new Date(b.startDate)-new Date(a.startDate)),[txs,yr,mo]);
+
+  // ── NOUVEAU : monthTxs filtrées par recherche
+  const monthTxs=useMemo(()=>{
+    const q=searchQuery.toLowerCase().trim();
+    return txs
+      .filter(tx=>occsInMonth(tx,yr,mo).length>0&&(!q||tx.description.toLowerCase().includes(q)||(t.catNames[tx.category||"other"]||"").toLowerCase().includes(q)))
+      .sort((a,b)=>new Date(b.startDate)-new Date(a.startDate));
+  },[txs,yr,mo,searchQuery,t]);
+
   const recurTxs=useMemo(()=>txs.filter(tx=>normRec(tx.recurrence,parseD(tx.startDate)).type!=="once").sort((a,b)=>new Date(b.startDate)-new Date(a.startDate)),[txs]);
   const syncText=useMemo(()=>isSyncing?t.syncing:relTimeStr(lastSync,t),[isSyncing,lastSync,t,tick]);
 
   const last12=useMemo(()=>{
     const ms=[];
     for(let i=11;i>=0;i--){
-      let y2=yr,m2=mo-i;
-      while(m2<0){m2+=12;y2--;}
-      while(m2>11){m2-=12;y2++;}
-      const lastDay=new Date(y2,m2+1,0);
-      let inc=0,exp=0;
+      let y2=yr,m2=mo-i;while(m2<0){m2+=12;y2--;}while(m2>11){m2-=12;y2++;}
+      const lastDay=new Date(y2,m2+1,0);let inc=0,exp=0;
       txs.forEach(tx=>{const n=occsInMonth(tx,y2,m2).length;if(tx.type==="income")inc+=tx.amount*n;else exp+=tx.amount*n;});
       ms.push({y:y2,m:m2,label:t.months[m2].slice(0,3),inc,exp,net:inc-exp,endBal:balAt(txs,initBal,lastDay)});
     }
@@ -591,8 +638,7 @@ function App(){
 
   const statsKPIs=useMemo(()=>{
     const savingsRate=monthStats.inc>0?Math.round(monthStats.net/monthStats.inc*100):null;
-    const last3=last12.slice(-3);
-    const avgExp3=last3.length>0?last3.reduce((s,m)=>s+m.exp,0)/last3.length:0;
+    const last3=last12.slice(-3);const avgExp3=last3.length>0?last3.reduce((s,m)=>s+m.exp,0)/last3.length:0;
     const subscCost=txs.filter(tx=>tx.type!=="income"&&(tx.category==="subscript"||normRec(tx.recurrence,parseD(tx.startDate)).type!=="once")).reduce((s,tx)=>{const n=occsInMonth(tx,yr,mo).length;return s+tx.amount*n;},0);
     const withData=last12.filter(m=>m.inc>0||m.exp>0);
     const avgNet12=withData.length>0?withData.reduce((s,m)=>s+m.net,0)/withData.length:0;
@@ -600,18 +646,31 @@ function App(){
   },[monthStats,last12,txs,yr,mo]);
 
   const topCats=useMemo(()=>CATS.filter(c=>c.id!=="income").map(c=>({...c,spent:catStats[c.id]?.spent||0})).filter(c=>c.spent>0).sort((a,b)=>b.spent-a.spent).slice(0,5),[catStats]);
-  const hasTxData=txs.length>0;
 
-  // Connexions helpers
+  const controleData=useMemo(()=>{
+    const groups={essentiel:0,flexible:0,lifestyle:0,nonclasse:0};
+    const details={essentiel:[],flexible:[],lifestyle:[],nonclasse:[]};
+    txs.forEach(tx=>{
+      if(tx.type==="income")return;
+      const n=occsInMonth(tx,yr,mo).length;if(n===0)return;
+      const total=tx.amount*n;
+      const sc=tx.subCategory?subcatById(tx.subCategory):null;
+      const grp=sc?.group||"nonclasse";
+      groups[grp]=(groups[grp]||0)+total;
+      const bucket=details[grp]||(details[grp]=[]);
+      const existing=bucket.find(d=>d.subcatId===(sc?.id||null)&&d.label===(sc?.label||t.controleNonClass));
+      if(existing)existing.total+=total;
+      else bucket.push({subcatId:sc?.id||null,label:sc?.label||(tx.subCategory?"?":t.controleNonClass),total});
+    });
+    Object.values(details).forEach(arr=>arr.sort((a,b)=>b.total-a.total));
+    return{groups,details};
+  },[txs,yr,mo,t]);
+
+  const hasTxData=txs.length>0;
   const ghConnected=saveMode==="github"&&!!ghToken;
   const ghReadOk=ghConnected&&!!ghGistId;
-  const ghWriteOk=ghConnected;
   const maskedToken=ghToken?ghToken.slice(0,4)+"••••••••"+ghToken.slice(-4):"";
-
-  const StatusDot=({ok,na})=>{
-    if(na)return<span style={{fontSize:12,color:th.muted}}>—</span>;
-    return<span style={{fontSize:12,color:ok?"#10b981":"#ef4444",fontWeight:500}}>{ok?"✓ OK":"✗ Non"}</span>;
-  };
+  const StatusDot=({ok,na})=>na?<span style={{fontSize:12,color:th.muted}}>—</span>:<span style={{fontSize:12,color:ok?"#10b981":"#ef4444",fontWeight:500}}>{ok?"✓ OK":"✗ Non"}</span>;
 
   return(
     <div style={{minHeight:"100vh",background:th.bg,fontFamily:"system-ui,sans-serif"}}>
@@ -664,11 +723,7 @@ function App(){
 
       {SUB_NAV[tab]&&(
         <div style={{padding:"0 24px",borderBottom:"1px solid "+th.border,display:"flex",gap:0,overflowX:"auto",background:th.bgSub}}>
-          {tab==="transactions"&&(
-            <button onClick={()=>openForm()} style={{fontSize:12,paddingBottom:10,paddingTop:12,paddingLeft:12,paddingRight:16,border:"none",background:"none",cursor:"pointer",borderBottom:"2px solid transparent",color:th.sub,whiteSpace:"nowrap",flexShrink:0,display:"flex",alignItems:"center",gap:4}}>
-              <span style={{fontSize:14,lineHeight:1}}>+</span> {t.add}
-            </button>
-          )}
+          {tab==="transactions"&&<button onClick={()=>openForm()} style={{fontSize:12,paddingBottom:10,paddingTop:12,paddingLeft:12,paddingRight:16,border:"none",background:"none",cursor:"pointer",borderBottom:"2px solid transparent",color:th.sub,whiteSpace:"nowrap",flexShrink:0,display:"flex",alignItems:"center",gap:4}}><span style={{fontSize:14,lineHeight:1}}>+</span> {t.add}</button>}
           {SUB_NAV[tab].map(s=>(
             <button key={s.id} onClick={()=>setSubTab(prev=>({...prev,[tab]:s.id}))} style={{fontSize:12,paddingBottom:10,paddingTop:12,paddingLeft:12,paddingRight:12,border:"none",background:"none",cursor:"pointer",borderBottom:curSub===s.id?"2px solid "+th.sub:"2px solid transparent",color:curSub===s.id?th.text:th.sub,fontWeight:curSub===s.id?500:400,whiteSpace:"nowrap",flexShrink:0}}>{s.label}</button>
           ))}
@@ -678,9 +733,17 @@ function App(){
       <div style={{padding:"24px",paddingBottom:"100px",maxWidth:640}}>
 
         {tab==="home"&&<div>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:hasSummary?16:20}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
             <MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} t={t} th={th}/>
             <SegCtrl options={[["daily",t.modDay],["balance",t.modBal]]} value={mode} onChange={setMode} th={th}/>
+          </div>
+          {/* ── NOUVEAU : taux d'épargne ── */}
+          <div style={{display:"flex",justifyContent:"flex-end",marginBottom:hasSummary?12:16,minHeight:20}}>
+            {savingsRate!==null&&(
+              <span style={{fontSize:11,padding:"3px 10px",borderRadius:20,background:savingsRate>=0?"rgba(5,150,105,0.1)":"rgba(239,68,68,0.1)",color:savingsRate>=0?"#059669":"#ef4444",fontWeight:500,letterSpacing:"0.02em"}}>
+                {savingsRate>=0?"+":""}{savingsRate}% épargne
+              </span>
+            )}
           </div>
           {hasSummary&&<div style={{marginBottom:20,paddingBottom:20,borderBottom:"1px solid "+th.border,display:"flex",flexWrap:"wrap",gap:"16px 28px"}}>
             {disp.endBal&&endBalVal!==null&&<div><p style={{...lbl,margin:"0 0 4px"}}>{t.endBalLbl}</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:endBalVal>=0?"#059669":"#ef4444"}}>{fA(endBalVal,cur,true)}</p></div>}
@@ -692,7 +755,9 @@ function App(){
             {cells.map((day,i)=>{
               if(!day)return<div key={"e"+i} style={{paddingBottom:"100%"}}/>;
               const data=dayData[day]||{net:0,bal:0,count:0,cats:[]};const tod=isTod(day);const val=mode==="daily"?data.net:data.bal;const pos=val>0,neg=val<0;
-              return(<div key={day} onClick={()=>setDayMod({day})} style={{paddingBottom:"100%",position:"relative",borderRadius:10,cursor:"pointer",background:tod?th.surface:"transparent",border:tod?"1.5px solid "+th.text:"1.5px solid transparent"}}>
+              // ── NOUVEAU : teinte de fond indicateur ──
+              const cellBg=tod?th.surface:data.count>0?(data.net>0?"rgba(5,150,105,0.07)":data.net<0?"rgba(239,68,68,0.07)":"transparent"):"transparent";
+              return(<div key={day} onClick={()=>setDayMod({day})} style={{paddingBottom:"100%",position:"relative",borderRadius:10,cursor:"pointer",background:cellBg,border:tod?"1.5px solid "+th.text:"1.5px solid transparent"}}>
                 <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2}}>
                   <span style={{fontSize:12,fontWeight:tod?600:400,color:tod?th.text:th.sub}}>{day}</span>
                   {data.count>0&&<span style={{fontSize:10,fontWeight:500,fontVariantNumeric:"tabular-nums",lineHeight:1.2,color:pos?"#059669":neg?"#ef4444":th.muted}}>{mode==="daily"?(val>=0?"+":"−")+fA(val,cur):(val>=0?"":"-")+fA(val,cur)}</span>}
@@ -704,14 +769,26 @@ function App(){
         </div>}
 
         {tab==="transactions"&&curSub==="historique"&&<div>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
             <MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} t={t} th={th}/>
             <p style={{...lbl,margin:0}}>{t.txCount(monthTxs.length)}</p>
           </div>
+          {/* ── NOUVEAU : champ de recherche ── */}
+          <div style={{position:"relative",marginBottom:16}}>
+            <span style={{position:"absolute",left:11,top:"50%",transform:"translateY(-50%)",fontSize:14,color:th.muted,pointerEvents:"none",lineHeight:1}}>🔍</span>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e=>setSearchQuery(e.target.value)}
+              placeholder="Rechercher…"
+              style={{display:"block",width:"100%",padding:"9px 36px",fontSize:13,color:th.text,background:th.surface,border:"1px solid "+th.border,borderRadius:10,outline:"none",boxSizing:"border-box"}}
+            />
+            {searchQuery&&<button onClick={()=>setSearchQuery("")} style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",fontSize:13,color:th.muted,background:"none",border:"none",cursor:"pointer",padding:4,lineHeight:1}}>✕</button>}
+          </div>
           {monthTxs.length===0
-            ?<div style={{textAlign:"center",padding:"60px 0"}}><p style={{fontSize:32,color:th.border,margin:"0 0 8px"}}>◎</p><p style={{fontSize:13,color:th.muted}}>{t.noTx}</p></div>
-            :monthTxs.map(tx=>{const cat=catById(tx.category||"other");const n=occsInMonth(tx,yr,mo).length;const total=tx.amount*n;return(<div key={tx.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderBottom:"1px solid "+th.border}}>
-              <div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:34,height:34,borderRadius:9,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{cat.emoji}</div><div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p><p style={{fontSize:11,color:th.muted,margin:"3px 0 0"}}>{t.catNames[cat.id]} · {recLabel(tx,t)}{n>1?<span style={{color:th.sub}}> ×{n}</span>:null}</p></div></div>
+            ?<div style={{textAlign:"center",padding:"60px 0"}}><p style={{fontSize:32,color:th.border,margin:"0 0 8px"}}>◎</p><p style={{fontSize:13,color:th.muted}}>{searchQuery?"Aucun résultat":t.noTx}</p></div>
+            :monthTxs.map(tx=>{const cat=catById(tx.category||"other");const n=occsInMonth(tx,yr,mo).length;const total=tx.amount*n;const sc=tx.subCategory?subcatById(tx.subCategory):null;return(<div key={tx.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderBottom:"1px solid "+th.border}}>
+              <div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:34,height:34,borderRadius:9,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{cat.emoji}</div><div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p><p style={{fontSize:11,color:th.muted,margin:"3px 0 0"}}>{t.catNames[cat.id]}{sc?<span style={{color:th.sub}}> · {sc.label}</span>:null} · {recLabel(tx,t)}{n>1?<span style={{color:th.sub}}> ×{n}</span>:null}</p></div></div>
               <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}><span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:tx.type==="income"?"#059669":"#ef4444"}}>{tx.type==="income"?"+":"−"}{fA(total,cur,true)}</span><button onClick={()=>openForm(tx)} style={{fontSize:13,color:th.muted,background:"none",border:"none",cursor:"pointer",padding:4}}>✎</button></div>
             </div>);})}
         </div>}
@@ -719,8 +796,8 @@ function App(){
         {tab==="transactions"&&curSub==="recurrent"&&<div>
           {recurTxs.length===0
             ?<div style={{textAlign:"center",padding:"60px 0"}}><p style={{fontSize:32,color:th.border,margin:"0 0 8px"}}>◎</p><p style={{fontSize:13,color:th.muted}}>{t.noRecurTx}</p></div>
-            :recurTxs.map(tx=>{const cat=catById(tx.category||"other");return(<div key={tx.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderBottom:"1px solid "+th.border}}>
-              <div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:34,height:34,borderRadius:9,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{cat.emoji}</div><div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p><p style={{fontSize:11,color:th.muted,margin:"3px 0 0"}}>{t.catNames[cat.id]} · {recLabel(tx,t)}</p></div></div>
+            :recurTxs.map(tx=>{const cat=catById(tx.category||"other");const sc=tx.subCategory?subcatById(tx.subCategory):null;return(<div key={tx.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderBottom:"1px solid "+th.border}}>
+              <div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:34,height:34,borderRadius:9,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{cat.emoji}</div><div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p><p style={{fontSize:11,color:th.muted,margin:"3px 0 0"}}>{t.catNames[cat.id]}{sc?<span style={{color:th.sub}}> · {sc.label}</span>:null} · {recLabel(tx,t)}</p></div></div>
               <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}><span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:tx.type==="income"?"#059669":"#ef4444"}}>{tx.type==="income"?"+":"−"}{fA(tx.amount,cur,true)}</span><button onClick={()=>openForm(tx)} style={{fontSize:13,color:th.muted,background:"none",border:"none",cursor:"pointer",padding:4}}>✎</button></div>
             </div>);})}
         </div>}
@@ -743,7 +820,6 @@ function App(){
               <div style={{display:"flex",flexWrap:"wrap",gap:10}}>
                 <StatCard label={t.statsTauxEpargne} value={statsKPIs.savingsRate!==null?statsKPIs.savingsRate+"%":"—"} sub={t.months[mo]} color={statsKPIs.savingsRate===null?th.muted:statsKPIs.savingsRate>=0?"#059669":"#ef4444"} th={th}/>
                 <StatCard label={t.statsMoyDep} value={fA(statsKPIs.avgExp3,cur)} sub="3 mois" color="#ef4444" th={th}/>
-                <StatCard label={t.statsAbonnements} value={fA(statsKPIs.subscCost,cur)} sub={t.months[mo]} color="#06b6d4" th={th}/>
                 <StatCard label={t.statsNetMoyen} value={(statsKPIs.avgNet12>=0?"+":"")+fA(statsKPIs.avgNet12,cur)} sub={t.statsLast12} color={statsKPIs.avgNet12>=0?"#059669":"#ef4444"} th={th}/>
               </div>
               <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}>
@@ -758,7 +834,7 @@ function App(){
                 <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:16}}><p style={{fontSize:13,fontWeight:600,color:th.text,margin:0}}>{t.statsTopCats}</p><p style={{fontSize:11,color:th.muted,margin:0}}>{t.months[mo]}</p></div>
                   <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                    {topCats.map((cat)=>{const pct=topCats[0].spent>0?cat.spent/topCats[0].spent*100:0;return(<div key={cat.id}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:5}}><div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:16}}>{cat.emoji}</span><span style={{fontSize:13,color:th.text}}>{t.catNames[cat.id]}</span></div><span style={{fontSize:13,fontVariantNumeric:"tabular-nums",fontWeight:500,color:th.text}}>{fA(cat.spent,cur,true)}</span></div><div style={{height:6,background:th.surface,borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",width:pct+"%",background:cat.color,borderRadius:3,transition:"width 0.5s",opacity:0.85}}/></div></div>);})}
+                    {topCats.map(cat=>{const pct=topCats[0].spent>0?cat.spent/topCats[0].spent*100:0;return(<div key={cat.id}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:5}}><div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:16}}>{cat.emoji}</span><span style={{fontSize:13,color:th.text}}>{t.catNames[cat.id]}</span></div><span style={{fontSize:13,fontVariantNumeric:"tabular-nums",fontWeight:500,color:th.text}}>{fA(cat.spent,cur,true)}</span></div><div style={{height:6,background:th.surface,borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",width:pct+"%",background:cat.color,borderRadius:3,transition:"width 0.5s",opacity:0.85}}/></div></div>);})}
                   </div>
                 </div>
               )}
@@ -768,117 +844,109 @@ function App(){
 
         {tab==="analyse"&&curSub==="graphiques"&&<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"100px 0"}}><p style={{fontSize:22,color:th.muted,fontWeight:300}}>{t.subGraphiques}</p></div>}
 
-        {/* ── CONNEXIONS ── */}
-        {tab==="connexions"&&<div>
-          <p style={{...lbl,marginBottom:20}}>{t.navConnexions}</p>
-          <div style={{display:"flex",flexDirection:"column",gap:14}}>
-
-            {/* Stockage local */}
-            <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-                <div style={{display:"flex",alignItems:"center",gap:10}}>
-                  <div style={{width:36,height:36,borderRadius:10,background:"#10b98120",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>💾</div>
-                  <span style={{fontSize:14,fontWeight:600,color:th.text}}>Stockage local</span>
-                </div>
-                <span style={{fontSize:11,padding:"3px 10px",borderRadius:20,background:"#10b98118",color:"#10b981",fontWeight:500}}>Actif</span>
-              </div>
-              <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingBottom:8,borderBottom:"1px solid "+th.border}}>
-                  <span style={{fontSize:12,color:th.sub}}>Lecture</span>
-                  <StatusDot ok={connStatus.localRead} na={connStatus.localRead===null}/>
-                </div>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingBottom:8,borderBottom:"1px solid "+th.border}}>
-                  <span style={{fontSize:12,color:th.sub}}>Écriture</span>
-                  <StatusDot ok={connStatus.localWrite} na={connStatus.localWrite===null}/>
-                </div>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <span style={{fontSize:12,color:th.sub}}>Dernière sauvegarde</span>
-                  <span style={{fontSize:12,color:th.text}}>{isSyncing?"En cours…":lastSync?lastSync.toLocaleTimeString("fr-CA",{hour:"2-digit",minute:"2-digit",second:"2-digit"}):"Jamais"}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* GitHub Gist */}
-            <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-                <div style={{display:"flex",alignItems:"center",gap:10}}>
-                  <div style={{width:36,height:36,borderRadius:10,background:"#6366f120",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>☁️</div>
-                  <span style={{fontSize:14,fontWeight:600,color:th.text}}>GitHub Gist</span>
-                </div>
-                <span style={{fontSize:11,padding:"3px 10px",borderRadius:20,fontWeight:500,...(ghConnected?{background:"#10b98118",color:"#10b981"}:{background:th.surface,color:th.muted})}}>
-                  {ghConnected?"Actif":"Inactif"}
-                </span>
-              </div>
-              <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingBottom:8,borderBottom:"1px solid "+th.border}}>
-                  <span style={{fontSize:12,color:th.sub}}>Mode sauvegarde</span>
-                  <span style={{fontSize:12,color:th.text,fontWeight:500}}>{saveMode==="github"?"GitHub Gist":"Local"}</span>
-                </div>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingBottom:8,borderBottom:"1px solid "+th.border}}>
-                  <span style={{fontSize:12,color:th.sub}}>Token</span>
-                  <div style={{display:"flex",alignItems:"center",gap:8}}>
-                    <span style={{fontSize:11,fontFamily:"monospace",color:ghToken?th.text:th.muted}}>
-                      {ghToken?(showToken?ghToken:maskedToken):"Non configuré"}
-                    </span>
-                    {ghToken&&<button onClick={()=>setShowToken(v=>!v)} style={{fontSize:11,color:"#2563eb",background:"none",border:"none",cursor:"pointer",padding:"2px 6px",borderRadius:4}}>
-                      {showToken?"Masquer":"Afficher"}
-                    </button>}
+        {tab==="analyse"&&curSub==="controle"&&<div>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
+            <MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} t={t} th={th}/>
+          </div>
+          {!hasTxData?(
+            <div style={{textAlign:"center",padding:"80px 0"}}><p style={{fontSize:40,marginBottom:12}}>📊</p><p style={{fontSize:14,color:th.muted}}>{t.statsPasDonnees}</p></div>
+          ):(
+            <div style={{display:"flex",flexDirection:"column",gap:14}}>
+              {SUBCAT_GROUPS.map(grp=>{
+                const total=controleData.groups[grp.id]||0;
+                const items=controleData.details[grp.id]||[];
+                const totalAll=Object.values(controleData.groups).reduce((s,v)=>s+v,0);
+                const pct=totalAll>0?total/totalAll*100:0;
+                return(
+                  <div key={grp.id} style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"16px 16px",borderLeft:"3px solid "+grp.color}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                      <div>
+                        <p style={{fontSize:14,fontWeight:600,color:grp.color,margin:"0 0 2px"}}>{grp.label}</p>
+                        <p style={{fontSize:11,color:th.muted,margin:0}}>{grp.desc}</p>
+                      </div>
+                      <div style={{textAlign:"right"}}>
+                        <p style={{fontSize:16,fontWeight:700,fontVariantNumeric:"tabular-nums",color:th.text,margin:"0 0 1px"}}>{fA(total,cur,true)}</p>
+                        <p style={{fontSize:11,color:th.muted,margin:0}}>{pct.toFixed(0)}% des dépenses</p>
+                      </div>
+                    </div>
+                    <div style={{height:4,background:th.surface,borderRadius:2,overflow:"hidden",marginBottom:items.length>0?14:0}}>
+                      <div style={{height:"100%",width:pct+"%",background:grp.color,borderRadius:2,opacity:0.7,transition:"width 0.4s"}}/>
+                    </div>
+                    {items.length>0&&(
+                      <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                        {items.map((item,i)=>(
+                          <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:6,borderTop:"1px solid "+th.border}}>
+                            <span style={{fontSize:12,color:th.sub}}>{item.label}</span>
+                            <span style={{fontSize:12,fontVariantNumeric:"tabular-nums",color:th.text,fontWeight:500}}>{fA(item.total,cur,true)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {items.length===0&&<p style={{fontSize:12,color:th.muted,margin:0,textAlign:"center",paddingTop:4}}>Aucune transaction classifiée ce mois</p>}
                   </div>
-                </div>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingBottom:8,borderBottom:"1px solid "+th.border}}>
-                  <span style={{fontSize:12,color:th.sub}}>Gist ID</span>
-                  <span style={{fontSize:11,fontFamily:"monospace",color:ghGistId?th.text:th.muted,maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ghGistId||"Non créé"}</span>
-                </div>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingBottom:8,borderBottom:"1px solid "+th.border}}>
-                  <span style={{fontSize:12,color:th.sub}}>Lecture</span>
-                  <StatusDot ok={ghReadOk} na={!ghConnected}/>
-                </div>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingBottom:8,borderBottom:"1px solid "+th.border}}>
-                  <span style={{fontSize:12,color:th.sub}}>Écriture</span>
-                  <StatusDot ok={ghWriteOk} na={!ghConnected}/>
-                </div>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingBottom:8,borderBottom:"1px solid "+th.border}}>
-                  <span style={{fontSize:12,color:th.sub}}>Réseau</span>
-                  <span style={{fontSize:12,color:isOnline?"#10b981":"#ef4444",fontWeight:500}}>{isOnline?"✓ En ligne":"✗ Hors ligne"}</span>
-                </div>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <span style={{fontSize:12,color:th.sub}}>File de sync</span>
-                  <span style={{fontSize:12,color:syncQueueRef.current.length>0?"#f59e0b":th.muted}}>{syncQueueRef.current.length} en attente</span>
-                </div>
-              </div>
-              {ghConnected&&(
-                <div style={{display:"flex",gap:8,marginTop:14,paddingTop:14,borderTop:"1px solid "+th.border}}>
-                  <button onClick={ghPullNow} disabled={isSyncing||!isOnline||!ghGistId} style={{flex:1,padding:"9px 0",fontSize:12,border:"1px solid "+th.border,borderRadius:10,background:"none",color:isSyncing||!isOnline||!ghGistId?th.muted:th.text,cursor:isSyncing||!isOnline||!ghGistId?"default":"pointer"}}>↓ Pull</button>
-                  <button onClick={ghPushNow} disabled={isSyncing||!isOnline} style={{flex:1,padding:"9px 0",fontSize:12,border:"none",borderRadius:10,background:isSyncing||!isOnline?th.surface:th.btnBg,color:isSyncing||!isOnline?th.muted:th.btnText,cursor:isSyncing||!isOnline?"default":"pointer",fontWeight:500}}>↑ Push</button>
+                );
+              })}
+              {controleData.groups.nonclasse>0&&(
+                <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"16px 16px",borderLeft:"3px solid "+th.muted}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                    <div>
+                      <p style={{fontSize:14,fontWeight:600,color:th.sub,margin:"0 0 2px"}}>{t.controleNonClass}</p>
+                      <p style={{fontSize:11,color:th.muted,margin:0}}>Sans sous-catégorie assignée</p>
+                    </div>
+                    <p style={{fontSize:16,fontWeight:700,fontVariantNumeric:"tabular-nums",color:th.text,margin:0}}>{fA(controleData.groups.nonclasse,cur,true)}</p>
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                    {(controleData.details.nonclasse||[]).map((item,i)=>(
+                      <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:6,borderTop:"1px solid "+th.border}}>
+                        <span style={{fontSize:12,color:th.sub}}>{item.label}</span>
+                        <span style={{fontSize:12,fontVariantNumeric:"tabular-nums",color:th.text,fontWeight:500}}>{fA(item.total,cur,true)}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
+          )}
+        </div>}
 
-            {/* État de sync */}
+        {tab==="connexions"&&<div>
+          <p style={{...lbl,marginBottom:20}}>{t.navConnexions}</p>
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
             <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}>
-              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
-                <div style={{width:36,height:36,borderRadius:10,background:"#f59e0b20",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>🔄</div>
-                <span style={{fontSize:14,fontWeight:600,color:th.text}}>État de synchronisation</span>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+                <div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:36,height:36,borderRadius:10,background:"#10b98120",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>💾</div><span style={{fontSize:14,fontWeight:600,color:th.text}}>Stockage local</span></div>
+                <span style={{fontSize:11,padding:"3px 10px",borderRadius:20,background:"#10b98118",color:"#10b981",fontWeight:500}}>Actif</span>
               </div>
               <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingBottom:8,borderBottom:"1px solid "+th.border}}>
-                  <span style={{fontSize:12,color:th.sub}}>Statut</span>
-                  <div style={{display:"flex",alignItems:"center",gap:6}}>
-                    {isSyncing&&<span style={{width:6,height:6,borderRadius:"50%",background:"#f59e0b",display:"inline-block",animation:"pulse 1s infinite"}}/>}
-                    <span style={{fontSize:12,color:isSyncing?"#f59e0b":th.text}}>{syncText}</span>
-                  </div>
-                </div>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingBottom:8,borderBottom:"1px solid "+th.border}}>
-                  <span style={{fontSize:12,color:th.sub}}>Destination</span>
-                  <span style={{fontSize:12,color:th.text}}>{saveMode==="github"?"GitHub Gist":"Local"}</span>
-                </div>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <span style={{fontSize:12,color:th.sub}}>Déclenchement</span>
-                  <span style={{fontSize:12,color:th.text}}>{saveAuto?"Automatique (8s)":"Manuel"}</span>
-                </div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingBottom:8,borderBottom:"1px solid "+th.border}}><span style={{fontSize:12,color:th.sub}}>Lecture</span><StatusDot ok={connStatus.localRead} na={connStatus.localRead===null}/></div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingBottom:8,borderBottom:"1px solid "+th.border}}><span style={{fontSize:12,color:th.sub}}>Écriture</span><StatusDot ok={connStatus.localWrite} na={connStatus.localWrite===null}/></div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:12,color:th.sub}}>Dernière sauvegarde</span><span style={{fontSize:12,color:th.text}}>{isSyncing?"En cours…":lastSync?lastSync.toLocaleTimeString("fr-CA",{hour:"2-digit",minute:"2-digit",second:"2-digit"}):"Jamais"}</span></div>
               </div>
             </div>
-
+            <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+                <div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:36,height:36,borderRadius:10,background:"#6366f120",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>☁️</div><span style={{fontSize:14,fontWeight:600,color:th.text}}>GitHub Gist</span></div>
+                <span style={{fontSize:11,padding:"3px 10px",borderRadius:20,fontWeight:500,...(ghConnected?{background:"#10b98118",color:"#10b981"}:{background:th.surface,color:th.muted})}}>{ghConnected?"Actif":"Inactif"}</span>
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingBottom:8,borderBottom:"1px solid "+th.border}}><span style={{fontSize:12,color:th.sub}}>Mode sauvegarde</span><span style={{fontSize:12,color:th.text,fontWeight:500}}>{saveMode==="github"?"GitHub Gist":"Local"}</span></div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingBottom:8,borderBottom:"1px solid "+th.border}}><span style={{fontSize:12,color:th.sub}}>Token</span><div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:11,fontFamily:"monospace",color:ghToken?th.text:th.muted}}>{ghToken?(showToken?ghToken:maskedToken):"Non configuré"}</span>{ghToken&&<button onClick={()=>setShowToken(v=>!v)} style={{fontSize:11,color:"#2563eb",background:"none",border:"none",cursor:"pointer",padding:"2px 6px",borderRadius:4}}>{showToken?"Masquer":"Afficher"}</button>}</div></div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingBottom:8,borderBottom:"1px solid "+th.border}}><span style={{fontSize:12,color:th.sub}}>Gist ID</span><span style={{fontSize:11,fontFamily:"monospace",color:ghGistId?th.text:th.muted,maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ghGistId||"Non créé"}</span></div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingBottom:8,borderBottom:"1px solid "+th.border}}><span style={{fontSize:12,color:th.sub}}>Lecture</span><StatusDot ok={ghReadOk} na={!ghConnected}/></div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingBottom:8,borderBottom:"1px solid "+th.border}}><span style={{fontSize:12,color:th.sub}}>Écriture</span><StatusDot ok={ghConnected} na={!ghConnected}/></div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingBottom:8,borderBottom:"1px solid "+th.border}}><span style={{fontSize:12,color:th.sub}}>Réseau</span><span style={{fontSize:12,color:isOnline?"#10b981":"#ef4444",fontWeight:500}}>{isOnline?"✓ En ligne":"✗ Hors ligne"}</span></div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:12,color:th.sub}}>File de sync</span><span style={{fontSize:12,color:syncQueueRef.current.length>0?"#f59e0b":th.muted}}>{syncQueueRef.current.length} en attente</span></div>
+              </div>
+              {ghConnected&&<div style={{display:"flex",gap:8,marginTop:14,paddingTop:14,borderTop:"1px solid "+th.border}}><button onClick={ghPullNow} disabled={isSyncing||!isOnline||!ghGistId} style={{flex:1,padding:"9px 0",fontSize:12,border:"1px solid "+th.border,borderRadius:10,background:"none",color:isSyncing||!isOnline||!ghGistId?th.muted:th.text,cursor:isSyncing||!isOnline||!ghGistId?"default":"pointer"}}>↓ Pull</button><button onClick={ghPushNow} disabled={isSyncing||!isOnline} style={{flex:1,padding:"9px 0",fontSize:12,border:"none",borderRadius:10,background:isSyncing||!isOnline?th.surface:th.btnBg,color:isSyncing||!isOnline?th.muted:th.btnText,cursor:isSyncing||!isOnline?"default":"pointer",fontWeight:500}}>↑ Push</button></div>}
+            </div>
+            <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}><div style={{width:36,height:36,borderRadius:10,background:"#f59e0b20",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>🔄</div><span style={{fontSize:14,fontWeight:600,color:th.text}}>État de synchronisation</span></div>
+              <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingBottom:8,borderBottom:"1px solid "+th.border}}><span style={{fontSize:12,color:th.sub}}>Statut</span><div style={{display:"flex",alignItems:"center",gap:6}}>{isSyncing&&<span style={{width:6,height:6,borderRadius:"50%",background:"#f59e0b",display:"inline-block",animation:"pulse 1s infinite"}}/>}<span style={{fontSize:12,color:isSyncing?"#f59e0b":th.text}}>{syncText}</span></div></div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingBottom:8,borderBottom:"1px solid "+th.border}}><span style={{fontSize:12,color:th.sub}}>Destination</span><span style={{fontSize:12,color:th.text}}>{saveMode==="github"?"GitHub Gist":"Local"}</span></div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:12,color:th.sub}}>Déclenchement</span><span style={{fontSize:12,color:th.text}}>{saveAuto?"Automatique (8s)":"Manuel"}</span></div>
+              </div>
+            </div>
           </div>
         </div>}
 
@@ -887,14 +955,11 @@ function App(){
           <div style={{padding:"12px 0",borderBottom:"1px solid "+th.border,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{t.initBalLbl}</p><p style={{fontSize:11,color:th.muted,margin:"3px 0 0"}}>{t.initBalSub}</p></div>
             <div style={{cursor:"pointer"}} onClick={!editingBalSett?startEditBalSett:undefined}>
-              {editingBalSett
-                ?<input ref={balSettRef} type="number" inputMode="decimal" step="0.01" value={balInputSett} onChange={e=>setBalInputSett(e.target.value)} onBlur={commitEditBalSett} onKeyDown={e=>{if(e.key==="Enter")commitEditBalSett();if(e.key==="Escape")setEditingBalSett(false);}} style={{width:110,textAlign:"right",fontSize:13,fontWeight:600,color:th.text,background:"transparent",border:"none",borderBottom:"2px solid "+th.text,outline:"none",fontVariantNumeric:"tabular-nums"}}/>
-                :<span style={{fontSize:13,fontWeight:600,fontVariantNumeric:"tabular-nums",color:curBalVal>=0?"#059669":"#ef4444"}}>{fA(curBalVal,cur,true)}</span>
-              }
+              {editingBalSett?<input ref={balSettRef} type="number" inputMode="decimal" step="0.01" value={balInputSett} onChange={e=>setBalInputSett(e.target.value)} onBlur={commitEditBalSett} onKeyDown={e=>{if(e.key==="Enter")commitEditBalSett();if(e.key==="Escape")setEditingBalSett(false);}} style={{width:110,textAlign:"right",fontSize:13,fontWeight:600,color:th.text,background:"transparent",border:"none",borderBottom:"2px solid "+th.text,outline:"none",fontVariantNumeric:"tabular-nums"}}/>:<span style={{fontSize:13,fontWeight:600,fontVariantNumeric:"tabular-nums",color:curBalVal>=0?"#059669":"#ef4444"}}>{fA(curBalVal,cur,true)}</span>}
             </div>
           </div>
-          <Sel label={t.langLbl} value={lang} opts={t.langOpts} onChange={setLang} th={th}/>
-          <Sel label={t.curLbl} value={cur} opts={t.curOpts} onChange={setCur} th={th}/>
+          <Sel label={t.langLbl} value={lang} opts={t.langOpts} onChange={()=>{}} th={th}/>
+          <Sel label={t.curLbl} value={cur} opts={t.curOpts} onChange={()=>{}} th={th}/>
           <p style={{...lbl,margin:"24px 0 4px"}}>{t.dispLbl}</p>
           <Tog label={t.showEndBal} value={disp.endBal} onChange={v=>setDisp(d=>({...d,endBal:v}))} th={th}/>
           <Tog label={t.showRevExp} value={disp.revExp} onChange={v=>setDisp(d=>({...d,revExp:v}))} th={th}/>
@@ -925,79 +990,55 @@ function App(){
             <p style={{fontSize:11,color:th.muted,margin:"0 0 12px"}}>{t.delAccSub}</p>
             <button onClick={()=>{setDelAccMod(true);setDelAccInput("");}} style={{fontSize:13,color:th.danger,background:"none",border:"1px solid "+th.danger,borderRadius:10,padding:"8px 16px",cursor:"pointer"}}>{t.delAccLbl} →</button>
           </div>
-          <div style={{marginTop:32,paddingTop:20,borderTop:"1px solid "+th.border,textAlign:"center"}}>
-            <p style={{fontSize:11,color:th.muted,letterSpacing:"0.1em"}}>v0.022</p>
-          </div>
+          <div style={{marginTop:32,paddingTop:20,borderTop:"1px solid "+th.border,textAlign:"center"}}><p style={{fontSize:11,color:th.muted,letterSpacing:"0.1em"}}>v0.022</p></div>
         </div>}
       </div>
 
-      {/* ── MODALES ── */}
       {exportMod&&<Sheet onClose={()=>setExportMod(false)} th={th}><SheetHead title={t.exportModalTitle} onClose={()=>setExportMod(false)} th={th}/><p style={{fontSize:12,color:th.sub,marginBottom:12}}>{t.exportInstr}</p><textarea readOnly value={getExportJSON()} style={{width:"100%",height:180,padding:"10px 12px",fontSize:11,fontFamily:"monospace",color:th.sub,background:th.surface,border:"1px solid "+th.border,borderRadius:10,resize:"none",boxSizing:"border-box",lineHeight:1.5}}/><div style={{display:"flex",gap:8,marginTop:12}}><button onClick={()=>setExportMod(false)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>{t.exportClose}</button><button onClick={handleCopy} style={{flex:2,padding:"11px 0",fontSize:13,border:"none",borderRadius:12,background:copied?"#059669":th.btnBg,color:copied?"#fff":th.btnText,cursor:"pointer",fontWeight:500,transition:"background 0.2s"}}>{copied?t.exportCopied:t.exportCopy}</button></div></Sheet>}
       {importMod&&<Sheet onClose={()=>setImportMod(false)} th={th}><SheetHead title={t.importModalTitle} onClose={()=>setImportMod(false)} th={th}/><p style={{fontSize:12,color:th.sub,marginBottom:12}}>{t.importInstr}</p><textarea value={importText} onChange={e=>setImportText(e.target.value)} placeholder={t.importPaste} style={{width:"100%",height:200,padding:"10px 12px",fontSize:11,fontFamily:"monospace",color:th.text,background:th.surface,border:"1px solid "+th.border,borderRadius:10,resize:"none",boxSizing:"border-box",lineHeight:1.5}}/><div style={{display:"flex",gap:8,marginTop:12}}><button onClick={()=>setImportMod(false)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>{t.cancel}</button><button onClick={handleImport} disabled={!importText.trim()} style={{flex:2,padding:"11px 0",fontSize:13,border:"none",borderRadius:12,background:importText.trim()?th.btnBg:th.surface,color:importText.trim()?th.btnText:th.muted,cursor:importText.trim()?"pointer":"default",fontWeight:500}}>{t.importRestore}</button></div></Sheet>}
 
-      {/* Day modal */}
       {dayMod&&<Sheet onClose={()=>{setDayMod(null);setExpandedTx(null);}} th={th}>
         <SheetHead title={t.months[mo]+" "+dayMod.day} onClose={()=>{setDayMod(null);setExpandedTx(null);}} th={th}
           right={<button onClick={()=>{setDayMod(null);openForm(null,dayModalDateStr);}} style={{fontSize:12,color:th.sub,background:"none",border:"1px solid "+th.border,borderRadius:8,padding:"5px 11px",cursor:"pointer"}}>+ {t.add}</button>}
         />
-        {dayModalList.length===0
-          ?<div style={{textAlign:"center",padding:"32px 0"}}><p style={{fontSize:13,color:th.muted}}>{t.emptyDay}</p></div>
-          :dayModalList.map(tx=>{
-            const cat=catById(tx.category||"other");
-            const isExp=expandedTx===tx.id;
-            return(
-              <div key={tx.id}>
-                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 0",borderBottom:isExp?"none":"1px solid "+th.border,cursor:"pointer"}} onClick={()=>setExpandedTx(isExp?null:tx.id)}>
-                  <div style={{display:"flex",alignItems:"center",gap:10,flex:1}}>
-                    <div style={{width:36,height:36,borderRadius:10,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0,border:"2px solid "+(isExp?cat.color:"transparent"),transition:"border 0.15s"}}>{cat.emoji}</div>
-                    <div>
-                      <p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p>
-                      <p style={{fontSize:11,margin:"2px 0 0",color:cat.color,fontWeight:500}}>{t.catNames[cat.id]} · {tx.type==="income"?t.incomeLbl:t.expenseLbl}</p>
-                    </div>
-                  </div>
-                  <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
-                    <span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:tx.type==="income"?"#059669":"#ef4444"}}>{tx.type==="income"?"+":"−"}{fA(tx.amount,cur,true)}</span>
-                    <span style={{fontSize:11,color:th.muted,display:"inline-block",transform:isExp?"rotate(180deg)":"none",transition:"transform 0.15s",lineHeight:1}}>▾</span>
+        {dayModalList.length===0?<div style={{textAlign:"center",padding:"32px 0"}}><p style={{fontSize:13,color:th.muted}}>{t.emptyDay}</p></div>
+        :dayModalList.map(tx=>{
+          const cat=catById(tx.category||"other");const isExp=expandedTx===tx.id;
+          const sc=tx.subCategory?subcatById(tx.subCategory):null;
+          return(
+            <div key={tx.id}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 0",borderBottom:isExp?"none":"1px solid "+th.border,cursor:"pointer"}} onClick={()=>setExpandedTx(isExp?null:tx.id)}>
+                <div style={{display:"flex",alignItems:"center",gap:10,flex:1}}>
+                  <div style={{width:36,height:36,borderRadius:10,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0,border:"2px solid "+(isExp?cat.color:"transparent"),transition:"border 0.15s"}}>{cat.emoji}</div>
+                  <div>
+                    <p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p>
+                    <p style={{fontSize:11,margin:"2px 0 0",color:cat.color,fontWeight:500}}>{t.catNames[cat.id]}{sc?<span style={{color:th.muted,fontWeight:400}}> · {sc.label}</span>:null}</p>
                   </div>
                 </div>
-                {isExp&&(
-                  <div style={{padding:"12px 0 16px",borderBottom:"1px solid "+th.border}}>
-                    {/* Modifier */}
-                    <p style={{fontSize:10,color:th.muted,letterSpacing:"0.1em",textTransform:"uppercase",margin:"0 0 6px",paddingLeft:2}}>Modifier</p>
-                    <div style={{display:"flex",flexDirection:"column",gap:3,marginBottom:14}}>
-                      {[
-                        ["this","Cette occurrence"],
-                        ["follow","Cette occurrence et les suivantes"],
-                        ["all","Toute la série"],
-                        ["terminate","Terminé après cette date"],
-                      ].map(([sc,lb])=>(
-                        <button key={sc} onClick={()=>handleDirectMod(tx,dayModalDateStr,sc)}
-                          style={{textAlign:"left",padding:"9px 12px",fontSize:13,color:th.text,background:th.surface,border:"none",borderRadius:9,cursor:"pointer",lineHeight:1.3}}>
-                          {lb}
-                        </button>
-                      ))}
-                    </div>
-                    {/* Supprimer */}
-                    <p style={{fontSize:10,color:"#ef4444",letterSpacing:"0.1em",textTransform:"uppercase",margin:"0 0 6px",paddingLeft:2,opacity:0.8}}>Supprimer</p>
-                    <div style={{display:"flex",flexDirection:"column",gap:3}}>
-                      {[
-                        ["this","Cette occurrence"],
-                        ["follow","Cette occurrence et les suivantes"],
-                        ["anterior","Toutes les occurrences antérieures"],
-                        ["all","Toutes les occurrences"],
-                      ].map(([sc,lb])=>(
-                        <button key={sc} onClick={()=>handleDirectDel(tx,dayModalDateStr,sc)}
-                          style={{textAlign:"left",padding:"9px 12px",fontSize:13,color:sc==="all"?"#ef4444":th.text,background:sc==="all"?(isDark?"rgba(239,68,68,0.1)":"#fff5f5"):th.surface,border:"none",borderRadius:9,cursor:"pointer",lineHeight:1.3}}>
-                          {lb}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
+                  <span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:tx.type==="income"?"#059669":"#ef4444"}}>{tx.type==="income"?"+":"−"}{fA(tx.amount,cur,true)}</span>
+                  <span style={{fontSize:11,color:th.muted,display:"inline-block",transform:isExp?"rotate(180deg)":"none",transition:"transform 0.15s",lineHeight:1}}>▾</span>
+                </div>
               </div>
-            );
-          })
-        }
+              {isExp&&(
+                <div style={{padding:"12px 0 16px",borderBottom:"1px solid "+th.border}}>
+                  <p style={{fontSize:10,color:th.muted,letterSpacing:"0.1em",textTransform:"uppercase",margin:"0 0 6px",paddingLeft:2}}>Modifier</p>
+                  <div style={{display:"flex",flexDirection:"column",gap:3,marginBottom:14}}>
+                    {[["this","Cette occurrence"],["follow","Cette occurrence et les suivantes"],["all","Toute la série"],["terminate","Terminé après cette date"]].map(([sc2,lb])=>(
+                      <button key={sc2} onClick={()=>handleDirectMod(tx,dayModalDateStr,sc2)} style={{textAlign:"left",padding:"9px 12px",fontSize:13,color:th.text,background:th.surface,border:"none",borderRadius:9,cursor:"pointer",lineHeight:1.3}}>{lb}</button>
+                    ))}
+                  </div>
+                  <p style={{fontSize:10,color:"#ef4444",letterSpacing:"0.1em",textTransform:"uppercase",margin:"0 0 6px",paddingLeft:2,opacity:0.8}}>Supprimer</p>
+                  <div style={{display:"flex",flexDirection:"column",gap:3}}>
+                    {[["this","Cette occurrence"],["follow","Cette occurrence et les suivantes"],["anterior","Toutes les occurrences antérieures"],["all","Toutes les occurrences"]].map(([sc2,lb])=>(
+                      <button key={sc2} onClick={()=>handleDirectDel(tx,dayModalDateStr,sc2)} style={{textAlign:"left",padding:"9px 12px",fontSize:13,color:sc2==="all"?"#ef4444":th.text,background:sc2==="all"?(isDark?"rgba(239,68,68,0.1)":"#fff5f5"):th.surface,border:"none",borderRadius:9,cursor:"pointer",lineHeight:1.3}}>{lb}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </Sheet>}
 
       {delMod&&<Sheet onClose={()=>setDelMod(null)} th={th}><h3 style={{fontSize:15,color:th.text,fontWeight:600,margin:"0 0 4px"}}>{t.delTitle}</h3><p style={{fontSize:12,color:th.muted,margin:"0 0 20px"}}>{delMod.tx.description}</p><div style={{display:"flex",flexDirection:"column",gap:8}}>{normRec(delMod.tx.recurrence,parseD(delMod.tx.startDate)).type==="once"?<button onClick={()=>handleDel("all")} style={{padding:"13px 16px",textAlign:"left",fontSize:14,color:"#ef4444",background:isDark?"rgba(239,68,68,0.1)":"#fff5f5",border:"none",borderRadius:12,cursor:"pointer",fontWeight:500}}>{t.allEvts}</button>:[["this",t.thisEvt],["follow",t.thisFollow],["all",t.allEvts]].map(([sc,lb])=>(<button key={sc} onClick={()=>handleDel(sc)} style={{padding:"13px 16px",textAlign:"left",fontSize:14,color:sc==="all"?"#ef4444":th.text,background:sc==="all"?(isDark?"rgba(239,68,68,0.1)":"#fff5f5"):th.surface,border:"none",borderRadius:12,cursor:"pointer",fontWeight:sc==="all"?500:400}}>{lb}</button>))}</div><button onClick={()=>setDelMod(null)} style={{width:"100%",marginTop:12,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>{t.cancel}</button></Sheet>}
@@ -1014,12 +1055,13 @@ function App(){
               <button key={v} onClick={()=>handleTypeChange(v)} style={{flex:1,padding:"11px 0",fontSize:14,borderRadius:12,border:"none",cursor:"pointer",fontWeight:500,transition:"all 0.15s",background:formMod.form.type===v?(v==="income"?(isDark?"rgba(16,185,129,0.15)":"#ecfdf5"):(isDark?"rgba(239,68,68,0.12)":"#fff5f5")):th.surface,color:formMod.form.type===v?(v==="income"?"#059669":"#ef4444"):th.muted}}>{l}</button>
             ))}
           </div>
-          {formMod.editScope&&<div style={{background:th.surface,borderRadius:10,padding:"8px 12px",marginBottom:16}}><p style={{fontSize:11,color:th.muted,margin:0}}>{{this:"Cette occurrence seulement",follow:"Cette occurrence et les suivantes",terminate:"Terminé après cette date"}[formMod.editScope]||""}</p></div>}
+          {formMod.editScope&&<div style={{background:th.surface,borderRadius:10,padding:"8px 12px",marginBottom:16}}><p style={{fontSize:11,color:th.muted,margin:0}}>{{this:"Cette occurrence seulement",follow:"Cette occurrence et les suivantes"}[formMod.editScope]||""}</p></div>}
           <div style={{display:"flex",flexDirection:"column",gap:20}}>
             <div><label style={lbl}>{t.descLbl}</label><input type="text" value={formMod.form.desc} onChange={e=>setFF("desc")(e.target.value)} style={{...iSt,fontSize:16}}/></div>
             <div><label style={lbl}>{t.amtLbl}</label><input type="number" value={formMod.form.amt} step="0.01" placeholder="0.00" onChange={e=>setFF("amt")(e.target.value)} style={{...iSt,fontSize:22,fontWeight:600,fontVariantNumeric:"tabular-nums"}}/></div>
             <div><label style={lbl}>{t.startLbl}</label><input type="date" value={formMod.form.date} onChange={e=>handleDateChange(e.target.value)} style={iSt}/></div>
-            <CategoryPicker value={formMod.form.cat} onChange={v=>setFF("cat")(v)} th={th} t={t}/>
+            <CategoryPicker value={formMod.form.cat} onChange={handleCatChange} th={th} t={t}/>
+            <SubCategoryPicker category={formMod.form.cat} value={formMod.form.subCat} onChange={v=>setFF("subCat")(v)} th={th} t={t}/>
             {!formMod.editScope&&<RecurrencePicker value={formMod.form.rec} onChange={v=>setFF("rec")(v)} startDate={formMod.form.date} t={t} th={th}/>}
           </div>
           <div style={{position:"fixed",bottom:0,left:0,right:0,padding:"16px 24px",background:th.sheetBg,borderTop:"1px solid "+th.border,display:"flex",gap:10,zIndex:201,maxWidth:640,margin:"0 auto"}}>
