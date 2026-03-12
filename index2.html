@@ -245,6 +245,17 @@ function StatCard({label,value,sub,color,th}){
   return(<div style={{flex:"1 1 140px",background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:"14px 16px",minWidth:0}}><p style={{fontSize:10,color:th.muted,letterSpacing:"0.1em",textTransform:"uppercase",margin:"0 0 8px"}}>{label}</p><p style={{fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",color:color||th.text,margin:"0 0 2px",lineHeight:1}}>{value}</p>{sub&&<p style={{fontSize:11,color:th.muted,margin:0}}>{sub}</p>}</div>);
 }
 
+function cleanTxs(txs){
+  return txs.filter(tx=>{
+    const r=normRec(tx.recurrence,parseD(tx.startDate));
+    if(r.type==="once"){
+      const ex=new Set(tx.exceptions||[]);
+      if(ex.has(tx.startDate))return false;
+    }
+    return true;
+  });
+}
+
 async function doPushToGitHub(json,token,gistId){
   const body={files:{"budget.json":{content:json}}};
   const url=gistId?`https://api.github.com/gists/${gistId}`:"https://api.github.com/gists";
@@ -400,7 +411,7 @@ function App(){
           const lTs=lastRemoteTsRef.current;
           if(rTs>lTs){
             if(ghPull){
-              if(Array.isArray(d.txs))setTxs(d.txs);
+              if(Array.isArray(d.txs))setTxs(cleanTxs(d.txs));
               if(typeof d.initBal==="number")setInitBal(d.initBal);
               if(d.lang)setLang(d.lang);if(d.cur)setCur(d.cur);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.budgets)setBudgets(d.budgets);
               if(d.updated){lastRemoteTsRef.current=d.updated;await window.storage.set("bgt9-updated",String(d.updated));}
@@ -438,7 +449,7 @@ function App(){
     return()=>clearInterval(periodicCheckRef.current);
   },[saveMode,ghToken,ghGistId]);
 
-  const applyRemoteData=d=>{try{if(Array.isArray(d.txs))setTxs(d.txs);if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.lang)setLang(d.lang);if(d.cur)setCur(d.cur);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.budgets)setBudgets(d.budgets);if(d.updated)window.storage.set("bgt9-updated",String(d.updated));setLastSync(new Date());}catch(e){}};
+  const applyRemoteData=d=>{try{if(Array.isArray(d.txs))setTxs(cleanTxs(d.txs));if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.lang)setLang(d.lang);if(d.cur)setCur(d.cur);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.budgets)setBudgets(d.budgets);if(d.updated)window.storage.set("bgt9-updated",String(d.updated));setLastSync(new Date());}catch(e){}};
   const saveLocalNow=async()=>{setIsSyncing(true);try{await window.storage.set("bgt9-tx",JSON.stringify(txs));await window.storage.set("bgt9-bal",String(initBal));await window.storage.set("bgt9-bud",JSON.stringify(budgets));await window.storage.set("bgt9-updated",String(Date.now()));lastSavedHashRef.current=JSON.stringify({txs,initBal,budgets});setLastSync(new Date());}catch(e){}finally{setIsSyncing(false);}};
   const ghPushNow=async()=>{if(!ghToken)return;setIsSyncing(true);try{const r=await doPushToGitHub(getExportJSON(),ghToken,ghGistId);if(r.id){setGhGistId(r.id);await window.storage.set("bgt9-updated",String(Date.now()));setLastSync(new Date());}}catch(e){}finally{setIsSyncing(false);}};
   const ghPullNow=async()=>{if(!ghToken||!ghGistId)return;setIsSyncing(true);try{const res=await fetch(`https://api.github.com/gists/${ghGistId}`,{headers:{"Authorization":"token "+ghToken}});if(!res.ok)throw new Error();const data=await res.json();const content=data.files?.["budget.json"]?.content;if(!content)throw new Error();let d;try{d=JSON.parse(content);}catch(e){throw new Error();}applyRemoteData(d);if(d.updated){lastRemoteTsRef.current=d.updated;await window.storage.set("bgt9-updated",String(d.updated));}}catch(e){}finally{setIsSyncing(false);}};
@@ -451,7 +462,7 @@ function App(){
   };
 
   const handleCopy=()=>{if(navigator.clipboard?.writeText){navigator.clipboard.writeText(getExportJSON()).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2500);});}};
-  const handleImport=()=>{try{const d=JSON.parse(importText);if(Array.isArray(d.txs))setTxs(d.txs);if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.lang)setLang(d.lang);if(d.cur)setCur(d.cur);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.budgets)setBudgets(d.budgets);setImportMod(false);setImportText("");}catch(e){}};
+  const handleImport=()=>{try{const d=JSON.parse(importText);if(Array.isArray(d.txs))setTxs(cleanTxs(d.txs));if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.lang)setLang(d.lang);if(d.cur)setCur(d.cur);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.budgets)setBudgets(d.budgets);setImportMod(false);setImportText("");}catch(e){}};
   const deleteAccount=async()=>{for(const k of["bgt9-tx","bgt9-bal","bgt9-bud","bgt9-cfg","bgt9-gh","bgt9-updated"])try{await window.storage.delete(k);}catch(e){}setTxs([]);setInitBal(1000);setBudgets({});setDisp({endBal:false,revExp:false,net:false});setDarkMode("off");setGhToken("");setGhGistId("");setLastSync(null);};
 
   const curBalVal=useMemo(()=>balAt(txs,initBal,TODAY),[txs,initBal]);
