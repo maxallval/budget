@@ -633,6 +633,8 @@ function App() {
   // ── Refs ─────────────────────────────────────────────────────────────────
   const balInputRef   = useRef(null);
   const balSettRef    = useRef(null);
+  const dateInputRef  = useRef(null);
+  const formModRef    = useRef(null);
   const lastTapRef    = useRef(0);
   const saveTimer     = useRef(null);
   const cfgTimer      = useRef(null);
@@ -767,6 +769,9 @@ function App() {
   }, [txs,yr,mo,searchQuery,getCatName]);
   const recurTxs = useMemo(() => txs.filter(tx=>normRec(tx.recurrence,parseD(tx.startDate)).type!=="once").sort((a,b)=>new Date(b.startDate)-new Date(a.startDate)), [txs]);
   const syncText = useMemo(() => isSyncing ? "Synchronisation…" : relTimeStr(lastSync), [isSyncing,lastSync,tick]);
+
+  // Garder formModRef toujours à jour pour éviter les closures stales
+  useEffect(() => { formModRef.current = formMod; }, [formMod]);
 
   // Export snapshot (toujours à jour pour enqueuePush)
   latestExport.current = { txs, initBal, balAnchor, disp, darkMode, budgets, customCats, customSubcats, subcatGroupOverrides };
@@ -990,9 +995,18 @@ function App() {
     setFormMod(m=>({...m,form:{...m.form,date:nd,rec:nr}}));
   };
   const saveForm = () => {
-    const {tx,form,editScope,editDateStr}=formMod, amt=parseFloat(form.amt);
-    if(!form.desc.trim()||isNaN(amt)||amt<=0) return;
-    const data={description:form.desc,amount:amt,type:form.type,recurrence:form.rec,startDate:form.date,category:form.cat,subCategory:form.subCat||undefined};
+    // Lire depuis le ref pour éviter toute closure stale
+    const current = formModRef.current;
+    if (!current) return;
+    const {tx, editScope, editDateStr} = current;
+    const form = {
+      ...current.form,
+      // Priorité : valeur DOM réelle > state
+      date: dateInputRef.current?.value || current.form.date,
+    };
+    const amt = parseFloat(form.amt);
+    if (!form.desc.trim() || isNaN(amt) || amt <= 0) return;
+    const data = {description:form.desc, amount:amt, type:form.type, recurrence:form.rec, startDate:form.date, category:form.cat, subCategory:form.subCat||undefined};
     if(!tx) setTxs(prev=>[...prev,{id:Date.now().toString(),...data,exceptions:[]}]);
     else if(editScope==="this") setTxs(prev=>{const upd=prev.map(t=>t.id!==tx.id?t:{...t,exceptions:[...(t.exceptions||[]),editDateStr]});return[...upd,{id:Date.now().toString(),...data,startDate:editDateStr,recurrence:{type:"once"},exceptions:[]}];});
     else if(editScope==="follow") { const ne=dayBef(editDateStr); setTxs(prev=>{const orig=prev.find(t=>t.id===tx.id),tooEarly=orig&&parseD(ne)<parseD(orig.startDate),base=tooEarly?prev.filter(t=>t.id!==tx.id):prev.map(t=>t.id!==tx.id?t:{...t,endDate:ne});return[...base,{id:Date.now().toString(),...data,startDate:editDateStr,exceptions:[]}];}); }
@@ -1595,7 +1609,7 @@ function App() {
           <div style={{display:"flex",flexDirection:"column",gap:20}}>
             <div><label style={lbl}>Description</label><input type="text" value={formMod.form.desc} onChange={e=>setFF("desc")(e.target.value)} style={{...iSt,fontSize:16}}/></div>
             <div><label style={lbl}>Montant</label><input type="number" value={formMod.form.amt} step="0.01" placeholder="0.00" onChange={e=>setFF("amt")(e.target.value)} style={{...iSt,fontSize:22,fontWeight:600,fontVariantNumeric:"tabular-nums"}}/></div>
-            <div><label style={lbl}>Date de début</label><input type="date" value={formMod.form.date} onChange={e=>e.target.value&&handleDateChange(e.target.value)} onBlur={e=>e.target.value&&handleDateChange(e.target.value)} style={{...iSt,colorScheme:isDark?"dark":"light"}}/></div>
+            <div><label style={lbl}>Date de début</label><input ref={dateInputRef} type="date" value={formMod.form.date} onChange={e=>e.target.value&&handleDateChange(e.target.value)} onBlur={e=>e.target.value&&handleDateChange(e.target.value)} style={{...iSt,colorScheme:isDark?"dark":"light"}}/></div>
             <CategoryPicker value={formMod.form.cat} onChange={handleCatChange} th={th} allCats={allCats} getCatName={getCatName}/>
             <SubCategoryPicker category={formMod.form.cat} value={formMod.form.subCat} onChange={v=>setFF("subCat")(v)} th={th} allSubcats={allSubcats}/>
             {!formMod.editScope && <RecurrencePicker value={formMod.form.rec} onChange={v=>setFF("rec")(v)} startDate={formMod.form.date} th={th}/>}
