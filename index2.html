@@ -459,6 +459,7 @@ function App(){
   const[delAccMod,setDelAccMod]=useState(false);
   const[delAccInput,setDelAccInput]=useState("");
   const[expandedTx,setExpandedTx]=useState(null);
+  const[pendingDel,setPendingDel]=useState(null); // {txId, scope}
   const[exportMod,setExportMod]=useState(false);
   const[importMod,setImportMod]=useState(false);
   const[importText,setImportText]=useState("");
@@ -467,7 +468,8 @@ function App(){
   // Refs
   const balInputRef  =useRef(null);
   const balSettRef   =useRef(null);
-  const dateRef      =useRef(""); // source de vérité pour la date du formulaire
+  const dateInputRef =useRef(null);
+  const formModRef   =useRef(null); // toujours synchronisé — jamais stale
   const lastTapRef   =useRef(0);
   const saveTimer    =useRef(null);
   const cfgTimer     =useRef(null);
@@ -620,10 +622,9 @@ function App(){
   const openForm=(tx=null,prefill=null)=>{
     const dt=prefill||dStr(TODAY);
     const initialDate=tx?tx.startDate:dt;
-    dateRef.current=initialDate; // initialiser le ref date
     setFormMod({tx,editScope:null,editDateStr:null,form:tx
-      ?{desc:tx.description,amt:String(tx.amount),type:tx.type,rec:normRec(tx.recurrence,parseD(tx.startDate)),cat:tx.category||"other",subCat:tx.subCategory||null}
-      :{desc:"",amt:"",type:"expense",rec:{type:"once"},cat:"other",subCat:null}
+      ?{desc:tx.description,amt:String(tx.amount),type:tx.type,rec:normRec(tx.recurrence,parseD(tx.startDate)),date:initialDate,cat:tx.category||"other",subCat:tx.subCategory||null}
+      :{desc:"",amt:"",type:"expense",rec:{type:"once"},date:dt,cat:"other",subCat:null}
     });
   };
   const setFF=k=>v=>setFormMod(m=>({...m,form:{...m.form,[k]:v}}));
@@ -632,22 +633,24 @@ function App(){
 
   const handleDateChange=nd=>{
     if(!nd)return;
-    dateRef.current=nd; // toujours mettre à jour le ref EN PREMIER
-    const ns=parseD(nd),rec=formMod.form.rec;
-    let nr=rec;
-    if(rec.type==="weekly")nr={...rec,weekday:ns.getDay()};
-    else if(rec.type==="monthly_nth_weekday")nr={...rec,nth:getNthWD(ns),weekday:ns.getDay()};
-    setFormMod(m=>({...m,form:{...m.form,rec:nr}}));
+    // Updater fonctionnel : lit le state le plus récent, pas la closure
+    setFormMod(m=>{
+      const ns=parseD(nd),rec=m.form.rec;
+      let nr=rec;
+      if(rec.type==="weekly")nr={...rec,weekday:ns.getDay()};
+      else if(rec.type==="monthly_nth_weekday")nr={...rec,nth:getNthWD(ns),weekday:ns.getDay()};
+      return{...m,form:{...m.form,date:nd,rec:nr}};
+    });
   };
 
-  const saveForm=()=>{
+  const saveForm=(forcedDate)=>{
     if(!formMod)return;
     const{tx,editScope,editDateStr}=formMod;
     const form=formMod.form;
     const amt=parseFloat(form.amt);
     if(!form.desc.trim()||isNaN(amt)||amt<=0)return;
-    // dateRef.current est la seule source de vérité pour la date
-    const finalDate=dateRef.current;
+    // forcedDate vient du DOM au moment du clic — jamais stale
+    const finalDate=forcedDate||form.date;
     if(!finalDate)return;
     const data={description:form.desc,amount:amt,type:form.type,recurrence:form.rec,startDate:finalDate,category:form.cat,subCategory:form.subCat||undefined};
     if(!tx)setTxs(prev=>[...prev,{id:Date.now().toString(),...data,exceptions:[]}]);
@@ -659,7 +662,24 @@ function App(){
 
   // Suppression
   const handleDel=scope=>{const{tx,dateStr}=delMod;if(scope==="all"||normRec(tx.recurrence,parseD(tx.startDate)).type==="once")setTxs(prev=>prev.filter(t=>t.id!==tx.id));else if(scope==="this")setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,exceptions:[...(t.exceptions||[]),dateStr]}));else if(scope==="follow"){const ne=dayBef(dateStr);if(parseD(ne)<parseD(tx.startDate))setTxs(prev=>prev.filter(t=>t.id!==tx.id));else setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,endDate:ne}));}setDelMod(null);};
-  const handleDirectMod=(tx,dateStr,scope)=>{setExpandedTx(null);if(scope==="this"){setDayMod(null);dateRef.current=dateStr;setFormMod({tx,editScope:"this",editDateStr:dateStr,form:{desc:tx.description,amt:String(tx.amount),type:tx.type,rec:{type:"once"},cat:tx.category||"other",subCat:tx.subCategory||null}});}else if(scope==="follow"){setDayMod(null);dateRef.current=dateStr;setFormMod({tx,editScope:"follow",editDateStr:dateStr,form:{desc:tx.description,amt:String(tx.amount),type:tx.type,rec:normRec(tx.recurrence,parseD(tx.startDate)),cat:tx.category||"other",subCat:tx.subCategory||null}});}else if(scope==="all"){setDayMod(null);openForm(tx);}else if(scope==="terminate")setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,endDate:dateStr}));};
+  const handleDirectMod=(tx,dateStr,scope)=>{
+    setExpandedTx(null);
+    const isOnce=normRec(tx.recurrence,parseD(tx.startDate)).type==="once";
+    // Pour une transaction unique, "this" = modification directe
+    const effectiveScope=(isOnce&&scope==="this")?"all":scope;
+    if(effectiveScope==="this"){
+      setDayMod(null);
+      setFormMod({tx,editScope:"this",editDateStr:dateStr,form:{desc:tx.description,amt:String(tx.amount),type:tx.type,rec:{type:"once"},date:dateStr,cat:tx.category||"other",subCat:tx.subCategory||null}});
+    }else if(effectiveScope==="follow"){
+      setDayMod(null);
+      setFormMod({tx,editScope:"follow",editDateStr:dateStr,form:{desc:tx.description,amt:String(tx.amount),type:tx.type,rec:normRec(tx.recurrence,parseD(tx.startDate)),date:dateStr,cat:tx.category||"other",subCat:tx.subCategory||null}});
+    }else if(effectiveScope==="all"){
+      setDayMod(null);
+      openForm(tx);
+    }else if(effectiveScope==="terminate"){
+      setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,endDate:dateStr}));
+    }
+  };
   const handleDirectDel=(tx,dateStr,scope)=>{const isOnce=normRec(tx.recurrence,parseD(tx.startDate)).type==="once";if(scope==="this"){if(isOnce)setTxs(prev=>prev.filter(t=>t.id!==tx.id));else setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,exceptions:[...(t.exceptions||[]),dateStr]}));}else if(scope==="follow"){const ne=dayBef(dateStr);if(isOnce||parseD(ne)<parseD(tx.startDate))setTxs(prev=>prev.filter(t=>t.id!==tx.id));else setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,endDate:ne}));}else if(scope==="anterior"){if(isOnce)setTxs(prev=>prev.filter(t=>t.id!==tx.id));else setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,startDate:dateStr,exceptions:(t.exceptions||[]).filter(e=>e>=dateStr)}));}else if(scope==="all")setTxs(prev=>prev.filter(t=>t.id!==tx.id));setExpandedTx(null);};
 
   // Catégories
@@ -894,15 +914,35 @@ function App(){
         {dayModalList.length===0?<div style={{textAlign:"center",padding:"32px 0"}}><p style={{fontSize:13,color:th.muted}}>Aucune transaction ce jour</p></div>
         :dayModalList.map(tx=>{const cat=dynCatById(tx.category||"other"),isExp=expandedTx===tx.id,sc=dynSubcatById(tx.subCategory);return(
           <div key={tx.id}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 0",borderBottom:isExp?"none":"1px solid "+th.border,cursor:"pointer"}} onClick={()=>setExpandedTx(isExp?null:tx.id)}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 0",borderBottom:isExp?"none":"1px solid "+th.border,cursor:"pointer"}} onClick={()=>{setExpandedTx(isExp?null:tx.id);setPendingDel(null);}}>
               <div style={{display:"flex",alignItems:"center",gap:10,flex:1}}><div style={{width:36,height:36,borderRadius:10,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0,border:"2px solid "+(isExp?cat.color:"transparent")}}>{cat.emoji}</div><div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p><p style={{fontSize:11,margin:"2px 0 0",color:cat.color,fontWeight:500}}>{getCatName(cat.id)}{sc?<span style={{color:th.muted,fontWeight:400}}> · {sc.label}</span>:null}</p></div></div>
               <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}><span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:tx.type==="income"?"#059669":"#ef4444"}}>{tx.type==="income"?"+":"−"}{fA(tx.amount,true)}</span><span style={{fontSize:11,color:th.muted,display:"inline-block",transform:isExp?"rotate(180deg)":"none",transition:"transform 0.15s",lineHeight:1}}>▾</span></div>
             </div>
             {isExp&&(<div style={{padding:"12px 0 16px",borderBottom:"1px solid "+th.border}}>
               <p style={{fontSize:10,color:th.muted,letterSpacing:"0.1em",textTransform:"uppercase",margin:"0 0 6px",paddingLeft:2}}>Modifier</p>
-              <div style={{display:"flex",flexDirection:"column",gap:3,marginBottom:14}}>{[["this","Cette occurrence"],["follow","Cette occurrence et les suivantes"],["all","Toute la série"],["terminate","Terminé après cette date"]].map(([sc2,lb])=><button key={sc2} onClick={()=>handleDirectMod(tx,dayModalDateStr,sc2)} style={{textAlign:"left",padding:"9px 12px",fontSize:13,color:th.text,background:th.surface,border:"none",borderRadius:9,cursor:"pointer",lineHeight:1.3}}>{lb}</button>)}</div>
+              <div style={{display:"flex",flexDirection:"column",gap:3,marginBottom:14}}>
+                {(normRec(tx.recurrence,parseD(tx.startDate)).type==="once"
+                  ?[["this","Cette occurrence"]]
+                  :[["this","Cette occurrence"],["follow","Cette occurrence et les suivantes"],["all","Toute la série"],["terminate","Terminé après cette date"]]
+                ).map(([sc2,lb])=><button key={sc2} onClick={()=>handleDirectMod(tx,dayModalDateStr,sc2)} style={{textAlign:"left",padding:"9px 12px",fontSize:13,color:th.text,background:th.surface,border:"none",borderRadius:9,cursor:"pointer",lineHeight:1.3}}>{lb}</button>)}
+              </div>
               <p style={{fontSize:10,color:"#ef4444",letterSpacing:"0.1em",textTransform:"uppercase",margin:"0 0 6px",paddingLeft:2,opacity:0.8}}>Supprimer</p>
-              <div style={{display:"flex",flexDirection:"column",gap:3}}>{[["this","Cette occurrence"],["follow","Cette occurrence et les suivantes"],["anterior","Toutes les occurrences antérieures"],["all","Toutes les occurrences"]].map(([sc2,lb])=><button key={sc2} onClick={()=>handleDirectDel(tx,dayModalDateStr,sc2)} style={{textAlign:"left",padding:"9px 12px",fontSize:13,color:sc2==="all"?"#ef4444":th.text,background:sc2==="all"?(isDark?"rgba(239,68,68,0.1)":"#fff5f5"):th.surface,border:"none",borderRadius:9,cursor:"pointer",lineHeight:1.3}}>{lb}</button>)}</div>
+              <div style={{display:"flex",flexDirection:"column",gap:3}}>
+                {(normRec(tx.recurrence,parseD(tx.startDate)).type==="once"
+                  ?[["this","Cette occurrence"]]
+                  :[["this","Cette occurrence"],["follow","Cette occurrence et les suivantes"],["anterior","Toutes les occurrences antérieures"],["all","Toutes les occurrences"]]
+                ).map(([sc2,lb])=>{
+                  const isPending=pendingDel?.txId===tx.id&&pendingDel?.scope===sc2;
+                  return(
+                    <button key={sc2} onClick={()=>{
+                      if(isPending){handleDirectDel(tx,dayModalDateStr,sc2);setPendingDel(null);}
+                      else setPendingDel({txId:tx.id,scope:sc2});
+                    }} style={{textAlign:"left",padding:"9px 12px",fontSize:13,color:"#ef4444",background:isPending?(isDark?"rgba(239,68,68,0.18)":"#fee2e2"):th.surface,border:"1px solid "+(isPending?"#ef4444":"transparent"),borderRadius:9,cursor:"pointer",lineHeight:1.3,transition:"all 0.15s"}}>
+                      {isPending?"Confirmer — "+lb:lb}
+                    </button>
+                  );
+                })}
+              </div>
             </div>)}
           </div>
         );})}
@@ -926,20 +966,21 @@ function App(){
           <div>
             <label style={lbl}>Date de début</label>
             <input
+              ref={dateInputRef}
               type="date"
-              defaultValue={dateRef.current}
-              onChange={e=>{if(e.target.value)handleDateChange(e.target.value);}}
-              onBlur={e=>{if(e.target.value)handleDateChange(e.target.value);}}
+              value={formMod.form.date}
+              onChange={e=>e.target.value&&handleDateChange(e.target.value)}
+              onBlur={e=>e.target.value&&handleDateChange(e.target.value)}
               style={{...iSt,colorScheme:isDark?"dark":"light"}}
             />
           </div>
           <CategoryPicker value={formMod.form.cat} onChange={handleCatChange} th={th} allCats={allCats} getCatName={getCatName}/>
           <SubCategoryPicker category={formMod.form.cat} value={formMod.form.subCat} onChange={v=>setFF("subCat")(v)} th={th} allSubcats={allSubcats}/>
-          {!formMod.editScope&&<RecurrencePicker value={formMod.form.rec} onChange={v=>setFF("rec")(v)} startDate={dateRef.current||dStr(TODAY)} th={th}/>}
+          {!formMod.editScope&&<RecurrencePicker value={formMod.form.rec} onChange={v=>setFF("rec")(v)} startDate={formMod.form.date||dStr(TODAY)} th={th}/>}
         </div>
         <div style={{position:"fixed",bottom:0,left:0,right:0,padding:"16px 24px",background:th.sheetBg,borderTop:"1px solid "+th.border,display:"flex",gap:10,zIndex:201,maxWidth:640,margin:"0 auto"}}>
           <button onClick={()=>setFormMod(null)} style={{flex:1,padding:"13px 0",fontSize:14,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>Annuler</button>
-          <button onClick={saveForm} style={{flex:3,padding:"13px 0",fontSize:14,border:"none",borderRadius:12,background:th.btnBg,color:th.btnText,cursor:"pointer",fontWeight:600}}>{formMod.tx?"Enregistrer":"Ajouter"}</button>
+          <button onClick={()=>saveForm(dateInputRef.current?.value)} style={{flex:3,padding:"13px 0",fontSize:14,border:"none",borderRadius:12,background:th.btnBg,color:th.btnText,cursor:"pointer",fontWeight:600}}>{formMod.tx?"Enregistrer":"Ajouter"}</button>
         </div>
       </FullSheet>)}
 
