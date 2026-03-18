@@ -188,7 +188,7 @@ function occsInMonth(tx,yr,mo){
   if(r.type==="daily"){const res=[],d=new Date(s>ms?s:ms);while(d<=me){if(ok(snap(d)))res.push(d.getDate());d.setDate(d.getDate()+1);}return res;}
   if(r.type==="weekly"){const twd=r.weekday!==undefined?r.weekday:s.getDay(),a=new Date(s);while(a.getDay()!==twd)a.setDate(a.getDate()+1);const res=[],d=new Date(a);while(d<=me){if(ok(snap(d)))res.push(d.getDate());d.setDate(d.getDate()+7);}return res;}
   if(r.type==="monthly_day"){const day=s.getDate();if(day>me.getDate())return[];const d=new Date(yr,mo,day);return ok(d)?[day]:[];}
-  if(r.type==="monthly_nth_weekday"){const{nth,weekday:wd2}=r;let c=0;for(let dy=1;dy<=me.getDate();dy++){const d=new Date(yr,mo,dy);if(d.getDay()===wd2){c++;if(c===nth)return ok(d)?[dy][];}}return[];}
+  if(r.type==="monthly_nth_weekday"){const{nth,weekday:wd2}=r;let c=0;for(let dy=1;dy<=me.getDate();dy++){const d=new Date(yr,mo,dy);if(d.getDay()===wd2){c++;if(c===nth)return ok(d)?[dy]:[];}}return[];}
   if(r.type==="annually"){if(mo!==s.getMonth()||yr<s.getFullYear())return[];const d=new Date(yr,mo,s.getDate());return ok(d)?[s.getDate()]:[];}
   if(r.type==="weekdays"){const res=[],d=new Date(s>ms?s:ms);while(d<=me){const w=d.getDay();if(w>0&&w<6&&ok(snap(d)))res.push(d.getDate());d.setDate(d.getDate()+1);}return res;}
   if(r.type==="custom"){const{interval:iv=1,unit:u="day",weekdays:wds=[]}=r,res=[];
