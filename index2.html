@@ -834,7 +834,7 @@ function App(){
         {SUB_NAV[tab].map(s=><button key={s.id} onClick={()=>setSubTab(prev=>({...prev,[tab]:s.id}))} style={{fontSize:12,paddingBottom:10,paddingTop:12,paddingLeft:12,paddingRight:12,border:"none",background:"none",cursor:"pointer",borderBottom:curSub===s.id?"2px solid "+th.sub:"2px solid transparent",color:curSub===s.id?th.text:th.sub,fontWeight:curSub===s.id?600:400,whiteSpace:"nowrap",flexShrink:0}}>{s.label}</button>)}
       </div>)}
 
-      <div key={tab+"-"+(curSub||"")} style={{padding:"24px",paddingBottom:"100px",maxWidth:640,animation:"fadeIn 0.18s ease"}}>
+      <div key={tab+"-"+(curSub||"")} style={{padding:"24px",paddingBottom:"100px",maxWidth:640,animation:"fadeIn 0.27s ease"}}>
 
         {/* HOME */}
         {tab==="home"&&(<div>
