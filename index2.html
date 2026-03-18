@@ -42,13 +42,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 <script>
-// ── Supabase client ───────────────────────────────────────────────────────
 window._sb = supabase.createClient(
   'https://wlicvwitvfmjghssapbx.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndsaWN2d2l0dmZtamdoc3NhcGJ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMzQwNDksImV4cCI6MjA4ODYxMDA0OX0.1vaYyzrXkBn4LxS3wa25jucGIvMUDsL5oP8Jdw5W0XA'
 );
-
-// ── localStorage shim ─────────────────────────────────────────────────────
 window.storage={
   get:    async k=>{try{const v=localStorage.getItem(k);return v!==null?{value:v}:null;}catch{return null;}},
   set:    async(k,v)=>{try{localStorage.setItem(k,String(v));return{key:k,value:v};}catch{return null;}},
@@ -60,7 +57,7 @@ window.storage={
  * ╔══════════════════════════════════════════════════════════════════╗
  * ║  ⚠️  RAPPEL — À CHAQUE MODIFICATION DE CE FICHIER :             ║
  * ║  Mettre à jour le numéro de version dans l'onglet Paramètres.   ║
- * ║  Chercher  v0.033  et incrémenter (ex. v0.034, v0.040…)         ║
+ * ║  Chercher  v0.034  et incrémenter (ex. v0.035, v0.040…)         ║
  * ╚══════════════════════════════════════════════════════════════════╝
  */
 
@@ -403,34 +400,19 @@ function RecurrencePicker({value,onChange,startDate,th}){
   </div>);
 }
 
-// ── GITHUB ────────────────────────────────────────────────────────────────
-async function doPush(json,token,gistId){
-  const body={files:{"budget.json":{content:json}}};
-  const url=gistId?`https://api.github.com/gists/${gistId}`:"https://api.github.com/gists";
-  const res=await fetch(url,{method:gistId?"PATCH":"POST",headers:{"Authorization":"token "+token,"Content-Type":"application/json"},body:JSON.stringify(gistId?body:{...body,description:"Budget App Data",public:false})});
-  if(!res.ok){let msg="HTTP "+res.status;try{const d=await res.json();msg=d.message||msg;}catch{}throw new Error(msg);}
-  return res.json();
-}
-
 // ── LOGIN SCREEN ──────────────────────────────────────────────────────────
 function LoginScreen(){
   const[loading,setLoading]=useState(false);
   const[err,setErr]=useState("");
-  const th=mkTh(false); // toujours mode clair sur l'écran de connexion
-
+  const th=mkTh(false);
   const handleGoogle=async()=>{
     setLoading(true);setErr("");
-    const{error}=await sb.auth.signInWithOAuth({
-      provider:"google",
-      options:{redirectTo:window.location.origin+window.location.pathname}
-    });
+    const{error}=await sb.auth.signInWithOAuth({provider:"google",options:{redirectTo:window.location.origin+window.location.pathname}});
     if(error){setErr(error.message);setLoading(false);}
   };
-
   return(
     <div style={{minHeight:"100vh",background:th.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:32,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>
       <div style={{width:"100%",maxWidth:360,animation:"fadeIn 0.5s ease"}}>
-        {/* Logo */}
         <div style={{textAlign:"center",marginBottom:40}}>
           <div style={{width:72,height:72,borderRadius:20,background:"linear-gradient(135deg,#6366f1,#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px",boxShadow:"0 8px 24px rgba(99,102,241,0.3)"}}>
             <span style={{fontSize:34}}>💰</span>
@@ -438,21 +420,15 @@ function LoginScreen(){
           <h1 style={{fontSize:26,fontWeight:800,color:th.text,margin:"0 0 6px",letterSpacing:"-0.02em"}}>Budget</h1>
           <p style={{fontSize:14,color:th.sub,margin:0}}>Gestion financière personnelle</p>
         </div>
-
-        {/* Google button */}
-        <button onClick={handleGoogle} disabled={loading} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:12,padding:"14px 20px",borderRadius:14,border:"1px solid "+th.border,background:th.bg,color:th.text,fontSize:15,fontWeight:600,cursor:loading?"default":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.06)",transition:"all 0.15s",opacity:loading?0.7:1,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>
+        <button onClick={handleGoogle} disabled={loading} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:12,padding:"14px 20px",borderRadius:14,border:"1px solid "+th.border,background:th.bg,color:th.text,fontSize:15,fontWeight:600,cursor:loading?"default":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.06)",opacity:loading?0.7:1,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>
           {loading
-            ?<span style={{width:20,height:20,borderRadius:"50%",border:"2px solid "+th.border,borderTopColor:"#6366f1",display:"inline-block",animation:"pulse 0.8s linear infinite"}}/>
+            ?<span style={{width:20,height:20,borderRadius:"50%",border:"2px solid #e5e7eb",borderTopColor:"#6366f1",display:"inline-block",animation:"pulse 0.8s linear infinite"}}/>
             :<svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
           }
           {loading?"Connexion…":"Continuer avec Google"}
         </button>
-
         {err&&<p style={{fontSize:12,color:"#ef4444",textAlign:"center",marginTop:12}}>{err}</p>}
-
-        <p style={{fontSize:11,color:th.muted,textAlign:"center",marginTop:24,lineHeight:1.6}}>
-          Tes données sont stockées de façon sécurisée<br/>et ne sont accessibles que par toi.
-        </p>
+        <p style={{fontSize:11,color:th.muted,textAlign:"center",marginTop:24,lineHeight:1.6}}>Tes données sont stockées de façon sécurisée<br/>et ne sont accessibles que par toi.</p>
       </div>
     </div>
   );
@@ -463,18 +439,18 @@ function App(){
   const MONTHS=["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
   const DAYS=["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"];
 
-  // Auth state
+  // Auth
   const[authLoading,setAuthLoading]=useState(true);
   const[session,setSession]=useState(null);
 
-  // Data state
+  // Données
   const[txs,setTxs]=useState([]);
   const[initBal,setInitBal]=useState(1000);
   const[balAnchor,setBalAnchor]=useState(null);
   const[budgets,setBudgets]=useState({});
   const[loaded,setLoaded]=useState(false);
 
-  // Nav state
+  // Navigation
   const[tab,setTab]=useState("home");
   const[subTab,setSubTab]=useState({});
   const[yr,setYr]=useState(TODAY.getFullYear());
@@ -490,24 +466,14 @@ function App(){
   const[searchQuery,setSearchQuery]=useState("");
   const[showSplash,setShowSplash]=useState(true);
 
-  // Sync state
-  const[saveMode,setSaveMode]=useState("local");
-  const[saveAuto,setSaveAuto]=useState(true);
-  const[showSyncBar,setShowSyncBar]=useState(true);
-  const[ghToken,setGhToken]=useState("");
-  const[ghGistId,setGhGistId]=useState("");
-  const[ghPullOnStart,setGhPullOnStart]=useState(true);
+  // Sync
   const[isSyncing,setIsSyncing]=useState(false);
   const[lastSync,setLastSync]=useState(null);
   const[tick,setTick]=useState(0);
   const[isOnline,setIsOnline]=useState(()=>navigator.onLine);
-  const[updateAvailable,setUpdateAvailable]=useState(false);
-  const[remoteData,setRemoteData]=useState(null);
   const[connStatus,setConnStatus]=useState({localRead:null,localWrite:null});
-  const[showToken,setShowToken]=useState(false);
 
-  // Cats state
-  const[showGhSettings,setShowGhSettings]=useState(false);
+  // Catégories
   const[advancedCats,setAdvancedCats]=useState(false);
   const[customCats,setCustomCats]=useState([]);
   const[customSubcats,setCustomSubcats]=useState([]);
@@ -518,7 +484,7 @@ function App(){
   const[addCatForm,setAddCatForm]=useState(null);
   const[addSubcatForm,setAddSubcatForm]=useState(null);
 
-  // Modal state
+  // Modaux
   const[editingBal,setEditingBal]=useState(false);
   const[balInput,setBalInput]=useState("");
   const[editingBalSett,setEditingBalSett]=useState(false);
@@ -541,19 +507,10 @@ function App(){
   const dateInputRef =useRef(null);
   const formModRef   =useRef(null);
   const lastTapRef   =useRef(0);
-  const saveTimer    =useRef(null);
   const sbSaveTimer  =useRef(null);
   const cfgTimer     =useRef(null);
-  const ghSyncTimer  =useRef(null);
-  const retryTimer   =useRef(null);
-  const periodicCheck=useRef(null);
-  const syncQueue    =useRef([]);
-  const isSyncingRef =useRef(false);
-  const lastSavedHash=useRef(null);
-  const lastRemoteTs =useRef(0);
-  const latestExport =useRef(null);
-  const processQRef  =useRef(null);
   const vClickTimer  =useRef(null);
+  const latestExport =useRef(null);
 
   const isDark=darkMode==="on"||(darkMode==="auto"&&sysDark);
   const th=useMemo(()=>mkTh(isDark),[isDark]);
@@ -562,7 +519,7 @@ function App(){
 
   formModRef.current=formMod;
 
-  // Dynamic cats
+  // Cats dynamiques
   const allCats   =useMemo(()=>[...CATS,...customCats],[customCats]);
   const allSubcats=useMemo(()=>{const base=SUBCATS.map(sc=>subcatGroupOverrides[sc.id]?{...sc,group:subcatGroupOverrides[sc.id]}:sc);return[...base,...customSubcats];},[customSubcats,subcatGroupOverrides]);
   const getCatName   =useCallback(id=>CAT_NAMES[id]||customCats.find(c=>c.id===id)?.label||id,[customCats]);
@@ -578,7 +535,7 @@ function App(){
     return balAnchor.amount+delta;
   },[txs,initBal,balAnchor]);
 
-  latestExport.current={txs,initBal,balAnchor,disp,darkMode,budgets,customCats,customSubcats,subcatGroupOverrides};
+  latentExportSnap: latestExport.current={txs,initBal,balAnchor,disp,darkMode,budgets,customCats,customSubcats,subcatGroupOverrides};
   const getExportJSON=()=>JSON.stringify({...latestExport.current,updated:Date.now()},null,2);
 
   // Navigation
@@ -587,7 +544,7 @@ function App(){
   const DEFAULT_SUB={transactions:"historique",budget:"categories",analyse:"statistiques",troubleshoot:"connexions"};
   const curSub=subTab[tab]||(DEFAULT_SUB[tab]||null);
 
-  // Computed
+  // Dérivés
   const curBalVal =useMemo(()=>getBalAt(TODAY),[getBalAt]);
   const dim       =new Date(yr,mo+1,0).getDate();
   const cells     =useMemo(()=>{const fd=new Date(yr,mo,1).getDay();return[...Array(fd).fill(null),...Array.from({length:dim},(_,i)=>i+1)];},[yr,mo,dim]);
@@ -641,36 +598,18 @@ function App(){
 
   useEffect(()=>{const id=setInterval(()=>setTick(n=>n+1),15000);return()=>clearInterval(id);},[]);
   useEffect(()=>{const mq=window.matchMedia("(prefers-color-scheme:dark)");const h=e=>setSysDark(e.matches);mq.addEventListener("change",h);return()=>mq.removeEventListener("change",h);},[]);
-  useEffect(()=>{const go=()=>{setIsOnline(true);if(syncQueue.current.length)setTimeout(()=>processQRef.current?.(),1000);};const off=()=>setIsOnline(false);window.addEventListener("online",go);window.addEventListener("offline",off);return()=>{window.removeEventListener("online",go);window.removeEventListener("offline",off);};},[]);
+  useEffect(()=>{const go=()=>setIsOnline(true);const off=()=>setIsOnline(false);window.addEventListener("online",go);window.addEventListener("offline",off);return()=>{window.removeEventListener("online",go);window.removeEventListener("offline",off);};},[]);
 
-  // Queue
-  const processQueue=async()=>{
-    if(isSyncingRef.current||!navigator.onLine||!syncQueue.current.length)return;
-    isSyncingRef.current=true;setIsSyncing(true);const item=syncQueue.current[0];
-    try{const r=await doPush(item.json,ghToken,ghGistId);if(r.id){if(r.id!==ghGistId)setGhGistId(r.id);await window.storage.set("bgt9-updated",String(item.ts));}syncQueue.current.shift();isSyncingRef.current=false;setIsSyncing(false);clearTimeout(retryTimer.current);setLastSync(new Date());if(syncQueue.current.length)setTimeout(()=>processQRef.current?.(),500);}
-    catch{isSyncingRef.current=false;item.retries=(item.retries||0)+1;if(item.retries<=5){const d=Math.min(2000*Math.pow(2,item.retries-1),32000);retryTimer.current=setTimeout(()=>processQRef.current?.(),d);}else{syncQueue.current.shift();setIsSyncing(false);}}
-  };
-  processQRef.current=processQueue;
-  const enqueuePush=()=>{const snap=latestExport.current;if(!snap||!ghToken)return;const ts=Date.now(),json=JSON.stringify({...snap,updated:ts},null,2);const idx=syncQueue.current.findIndex(i=>i.type==="push");const entry={type:"push",json,ts,retries:0};if(idx>=0)syncQueue.current[idx]=entry;else syncQueue.current.push(entry);processQRef.current?.();};
-
-  // Load — localStorage + Supabase
+  // Chargement depuis Supabase
   useEffect(()=>{
     if(!session)return;
     (async()=>{
       let lR=false,lW=false;
       try{await window.storage.set("bgt9-ct","1");lR=!!(await window.storage.get("bgt9-ct"));lW=true;}catch{}
       setConnStatus({localRead:lR,localWrite:lW});
-      // Local
-      try{const r=await window.storage.get("bgt9-tx");if(r)setTxs(JSON.parse(r.value));}catch{}
-      try{const r=await window.storage.get("bgt9-bal");if(r)setInitBal(parseFloat(r.value)||1000);}catch{}
-      try{const r=await window.storage.get("bgt9-anchor");if(r)setBalAnchor(JSON.parse(r.value));}catch{}
-      try{const r=await window.storage.get("bgt9-bud");if(r)setBudgets(JSON.parse(r.value));}catch{}
-      try{const r=await window.storage.get("bgt9-cats");if(r){const d=JSON.parse(r.value);if(d.customCats)setCustomCats(d.customCats);if(d.customSubcats)setCustomSubcats(d.customSubcats);if(d.subcatGroupOverrides)setSubcatGroupOverrides(d.subcatGroupOverrides);}}catch{}
-      try{const r=await window.storage.get("bgt9-updated");if(r)lastRemoteTs.current=parseInt(r.value)||0;}catch{}
-      let sMode="local",ghPull=true,ghTok="",ghGid="";
-      try{const r=await window.storage.get("bgt9-cfg");if(r){const c=JSON.parse(r.value);if(c.disp)setDisp(c.disp);if(c.darkMode)setDarkMode(c.darkMode);if(c.mode)setMode(c.mode);if(c.saveMode){setSaveMode(c.saveMode);sMode=c.saveMode;}if(c.saveAuto!==undefined)setSaveAuto(c.saveAuto);if(c.showSyncBar!==undefined)setShowSyncBar(c.showSyncBar);if(c.advancedCats!==undefined)setAdvancedCats(c.advancedCats);}}catch{}
-      try{const r=await window.storage.get("bgt9-gh");if(r){const g=JSON.parse(r.value);if(g.token){setGhToken(g.token);ghTok=g.token;}if(g.gistId){setGhGistId(g.gistId);ghGid=g.gistId;}if(g.pullOnStart!==undefined){setGhPullOnStart(g.pullOnStart);ghPull=g.pullOnStart;}}}catch{}
-      // Supabase — charge depuis le cloud (priorité sur localStorage)
+      // Config locale
+      try{const r=await window.storage.get("bgt9-cfg");if(r){const c=JSON.parse(r.value);if(c.disp)setDisp(c.disp);if(c.darkMode)setDarkMode(c.darkMode);if(c.mode)setMode(c.mode);if(c.advancedCats!==undefined)setAdvancedCats(c.advancedCats);}}catch{}
+      // Supabase — source de vérité
       try{
         const{data:row}=await sb.from("user_data").select("data,updated_at").eq("user_id",session.user.id).single();
         if(row?.data){
@@ -687,52 +626,40 @@ function App(){
           setLastSync(new Date(row.updated_at));
         }
       }catch{}
-      // GitHub Gist (optionnel)
-      if(sMode==="github"&&ghTok&&ghGid){try{const res=await fetch(`https://api.github.com/gists/${ghGid}`,{headers:{"Authorization":"token "+ghTok}});if(res.ok){const data=await res.json(),content=data.files?.["budget.json"]?.content;if(content){const d=JSON.parse(content);if((d.updated||0)>lastRemoteTs.current){if(ghPull){if(Array.isArray(d.txs))setTxs(cleanTxs(d.txs));if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.balAnchor!==undefined)setBalAnchor(d.balAnchor);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.budgets)setBudgets(d.budgets);if(d.updated){lastRemoteTs.current=d.updated;await window.storage.set("bgt9-updated",String(d.updated));}}else{lastRemoteTs.current=d.updated||0;setRemoteData(d);setUpdateAvailable(true);}}}}}catch{}}
       setLoaded(true);
     })();
   },[session]);
 
-  // Save cfg
-  useEffect(()=>{if(!loaded)return;clearTimeout(cfgTimer.current);cfgTimer.current=setTimeout(async()=>{try{await window.storage.set("bgt9-cfg",JSON.stringify({disp,darkMode,mode,saveMode,saveAuto,showSyncBar,advancedCats}));}catch{}try{await window.storage.set("bgt9-gh",JSON.stringify({token:ghToken,gistId:ghGistId,pullOnStart:ghPullOnStart}));}catch{}},400);},[disp,darkMode,mode,saveMode,saveAuto,showSyncBar,advancedCats,ghToken,ghGistId,ghPullOnStart,loaded]);
-  useEffect(()=>{if(!loaded)return;window.storage.set("bgt9-cats",JSON.stringify({customCats,customSubcats,subcatGroupOverrides})).catch(()=>{});},[customCats,customSubcats,subcatGroupOverrides,loaded]);
-
-  // Save local
+  // Sauvegarde config locale
   useEffect(()=>{
-    if(!loaded||!saveAuto)return;setIsSyncing(true);clearTimeout(saveTimer.current);
-    saveTimer.current=setTimeout(async()=>{try{const hash=JSON.stringify({txs,initBal,balAnchor,budgets});if(hash===lastSavedHash.current){setIsSyncing(false);return;}lastSavedHash.current=hash;await window.storage.set("bgt9-tx",JSON.stringify(txs));await window.storage.set("bgt9-bal",String(initBal));await window.storage.set("bgt9-anchor",JSON.stringify(balAnchor));await window.storage.set("bgt9-bud",JSON.stringify(budgets));setLastSync(new Date());}catch{}finally{setIsSyncing(false);}},600);
-  },[txs,initBal,balAnchor,budgets,loaded,saveAuto]);
+    if(!loaded)return;
+    clearTimeout(cfgTimer.current);
+    cfgTimer.current=setTimeout(async()=>{
+      try{await window.storage.set("bgt9-cfg",JSON.stringify({disp,darkMode,mode,advancedCats}));}catch{}
+    },400);
+  },[disp,darkMode,mode,advancedCats,loaded]);
 
-  // Save Supabase (auto, debounce 3s)
+  // Sauvegarde Supabase (debounce 3s)
   useEffect(()=>{
     if(!loaded||!session)return;
     clearTimeout(sbSaveTimer.current);
+    setIsSyncing(true);
     sbSaveTimer.current=setTimeout(async()=>{
       try{
-        const snap=latestExport.current;
+        const snap={txs,initBal,balAnchor,disp,darkMode,budgets,customCats,customSubcats,subcatGroupOverrides};
         await sb.from("user_data").upsert({user_id:session.user.id,data:snap,updated_at:new Date().toISOString()});
         setLastSync(new Date());
-      }catch{}
+      }catch{}finally{setIsSyncing(false);}
     },3000);
     return()=>clearTimeout(sbSaveTimer.current);
   },[txs,initBal,balAnchor,budgets,disp,darkMode,customCats,customSubcats,subcatGroupOverrides,loaded,session]);
 
-  // GitHub sync
-  useEffect(()=>{if(!loaded||!saveAuto||saveMode!=="github"||!ghToken)return;clearTimeout(ghSyncTimer.current);ghSyncTimer.current=setTimeout(()=>enqueuePush(),8000);return()=>clearTimeout(ghSyncTimer.current);},[txs,initBal,balAnchor,budgets,disp,darkMode,loaded,saveAuto,saveMode,ghToken]);
-  useEffect(()=>{if(saveMode!=="github"||!ghToken||!ghGistId){clearInterval(periodicCheck.current);return;}const check=async()=>{if(!navigator.onLine||isSyncingRef.current)return;try{const res=await fetch(`https://api.github.com/gists/${ghGistId}`,{headers:{"Authorization":"token "+ghToken}});if(!res.ok)return;const g=await res.json(),content=g.files?.["budget.json"]?.content;if(!content)return;const remote=JSON.parse(content),rTs=remote.updated||0,lTs=parseInt((await window.storage.get("bgt9-updated"))?.value||"0")||0;if(rTs>lTs&&rTs!==lastRemoteTs.current){lastRemoteTs.current=rTs;setRemoteData(remote);setUpdateAvailable(true);}}catch{}};periodicCheck.current=setInterval(check,60000);return()=>clearInterval(periodicCheck.current);},[saveMode,ghToken,ghGistId]);
-
   // ── Handlers ────────────────────────────────────────────────────────────
 
-  const applyRemote=d=>{try{if(Array.isArray(d.txs))setTxs(cleanTxs(d.txs));if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.balAnchor!==undefined)setBalAnchor(d.balAnchor);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.budgets)setBudgets(d.budgets);if(d.customCats)setCustomCats(d.customCats);if(d.customSubcats)setCustomSubcats(d.customSubcats);if(d.subcatGroupOverrides)setSubcatGroupOverrides(d.subcatGroupOverrides);if(d.updated)window.storage.set("bgt9-updated",String(d.updated));setLastSync(new Date());}catch{}};
-  const saveLocalNow=async()=>{setIsSyncing(true);try{await window.storage.set("bgt9-tx",JSON.stringify(txs));await window.storage.set("bgt9-bal",String(initBal));await window.storage.set("bgt9-anchor",JSON.stringify(balAnchor));await window.storage.set("bgt9-bud",JSON.stringify(budgets));await window.storage.set("bgt9-updated",String(Date.now()));lastSavedHash.current=JSON.stringify({txs,initBal,balAnchor,budgets});setLastSync(new Date());}catch{}finally{setIsSyncing(false);}};
-  const ghPushNow=async()=>{if(!ghToken)return;setIsSyncing(true);try{const r=await doPush(getExportJSON(),ghToken,ghGistId);if(r.id){setGhGistId(r.id);await window.storage.set("bgt9-updated",String(Date.now()));setLastSync(new Date());}}catch{}finally{setIsSyncing(false);}};
-  const ghPullNow=async()=>{if(!ghToken||!ghGistId)return;setIsSyncing(true);try{const res=await fetch(`https://api.github.com/gists/${ghGistId}`,{headers:{"Authorization":"token "+ghToken}});if(!res.ok)throw new Error();const data=await res.json(),content=data.files?.["budget.json"]?.content;if(!content)throw new Error();const d=JSON.parse(content);applyRemote(d);if(d.updated){lastRemoteTs.current=d.updated;await window.storage.set("bgt9-updated",String(d.updated));}}catch{}finally{setIsSyncing(false);}};
-  const handleManualSave=()=>saveMode==="local"?saveLocalNow():ghPushNow();
   const handleLogout=async()=>{await sb.auth.signOut();setLoaded(false);setTxs([]);setInitBal(1000);setBalAnchor(null);setBudgets({});};
   const deleteAccount=async()=>{
     if(session)try{await sb.from("user_data").delete().eq("user_id",session.user.id);}catch{}
-    for(const k of["bgt9-tx","bgt9-bal","bgt9-anchor","bgt9-bud","bgt9-cfg","bgt9-gh","bgt9-updated","bgt9-cats"])try{await window.storage.delete(k);}catch{}
-    setTxs([]);setInitBal(1000);setBalAnchor(null);setBudgets({});setDisp({endBal:false,revExp:false,net:false});setDarkMode("off");setGhToken("");setGhGistId("");setLastSync(null);setCustomCats([]);setCustomSubcats([]);setSubcatGroupOverrides({});setAdvancedCats(false);
+    try{await window.storage.delete("bgt9-cfg");}catch{}
     await sb.auth.signOut();
   };
 
@@ -802,13 +729,11 @@ function App(){
   const nextMo =()=>mo===11?(setMo(0),setYr(y=>y+1)):setMo(m=>m+1);
   const goToday=()=>{setMo(TODAY.getMonth());setYr(TODAY.getFullYear());};
 
-  const ghConnected=saveMode==="github"&&!!ghToken,ghReadOk=ghConnected&&!!ghGistId;
-  const maskedToken=ghToken?ghToken.slice(0,4)+"••••••••"+ghToken.slice(-4):"";
   const StatusDot=({ok,na})=>na?<span style={{fontSize:12,color:th.muted}}>—</span>:<span style={{fontSize:12,color:ok?"#10b981":"#ef4444",fontWeight:500}}>{ok?"✓ OK":"✗ Non"}</span>;
   const dayModalList   =dayMod?txs.filter(tx=>occsInMonth(tx,yr,mo).includes(dayMod.day)):[];
   const dayModalDateStr=dayMod?`${yr}-${String(mo+1).padStart(2,"0")}-${String(dayMod.day).padStart(2,"0")}`:"";
 
-  // ── Auth guards ──────────────────────────────────────────────────────────
+  // Auth guards
   if(authLoading)return(
     <div style={{minHeight:"100vh",background:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>
       <div style={{width:8,height:8,borderRadius:"50%",background:"#6366f1",animation:"pulse 1s ease infinite"}}/>
@@ -824,8 +749,8 @@ function App(){
       {showSplash&&(
         <div style={{position:"fixed",inset:0,background:isDark?"#0d0d0d":"#fff",zIndex:999,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",animation:"splashFadeOut 2.25s ease forwards"}}>
           <div style={{position:"relative",width:160,height:160,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:8}}>
-            {[{anim:"coinFly1",c:"#f59e0b",l:72,t:90},{anim:"coinFly2",c:"#eab308",l:72,t:90},{anim:"coinFly3",c:"#fbbf24",l:72,t:90},{anim:"coinFly4",c:"#f59e0b",l:72,t:90},{anim:"coinFly5",c:"#eab308",l:72,t:90},{anim:"coinFly6",c:"#fbbf24",l:72,t:90}].map((coin,i)=>(
-              <div key={i} style={{position:"absolute",top:coin.t,left:coin.l,width:16,height:16,borderRadius:"50%",background:coin.c,border:"2px solid #d97706",animation:`${coin.anim} 1s ease 0.25s forwards`,zIndex:2,boxShadow:"0 2px 6px rgba(0,0,0,0.25)"}}>
+            {[{anim:"coinFly1",c:"#f59e0b"},{anim:"coinFly2",c:"#eab308"},{anim:"coinFly3",c:"#fbbf24"},{anim:"coinFly4",c:"#f59e0b"},{anim:"coinFly5",c:"#eab308"},{anim:"coinFly6",c:"#fbbf24"}].map((coin,i)=>(
+              <div key={i} style={{position:"absolute",top:90,left:72,width:16,height:16,borderRadius:"50%",background:coin.c,border:"2px solid #d97706",animation:`${coin.anim} 1s ease 0.25s forwards`,zIndex:2,boxShadow:"0 2px 6px rgba(0,0,0,0.25)"}}>
                 <div style={{position:"absolute",top:2,left:2,width:6,height:6,borderRadius:"50%",background:"rgba(255,255,255,0.45)"}}/>
               </div>
             ))}
@@ -846,16 +771,6 @@ function App(){
           <div style={{animation:"textPop 0.5s ease 0.7s both"}}>
             <p style={{fontSize:22,fontWeight:700,color:isDark?"#f0f0f0":"#111",letterSpacing:"0.02em",margin:0,textAlign:"center"}}>Budget</p>
             <p style={{fontSize:12,color:isDark?"#888":"#9ca3af",textAlign:"center",margin:"4px 0 0",letterSpacing:"0.1em",textTransform:"uppercase"}}>Gestion financière</p>
-          </div>
-        </div>
-      )}
-
-      {updateAvailable&&remoteData&&(
-        <div style={{position:"sticky",top:0,zIndex:90,background:"#1d4ed8",color:"#fff",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",animation:"slideDown 0.3s ease",flexWrap:"wrap",gap:8}}>
-          <span style={{fontSize:13}}>📲 Nouvelles données disponibles</span>
-          <div style={{display:"flex",gap:8}}>
-            <button onClick={()=>{applyRemote(remoteData);setUpdateAvailable(false);setRemoteData(null);}} style={{fontSize:12,padding:"6px 14px",borderRadius:8,border:"none",background:"#fff",color:"#1d4ed8",cursor:"pointer",fontWeight:600}}>Restaurer</button>
-            <button onClick={()=>setUpdateAvailable(false)} style={{fontSize:12,padding:"6px 12px",borderRadius:8,border:"1px solid rgba(255,255,255,0.35)",background:"transparent",color:"#fff",cursor:"pointer"}}>Ignorer</button>
           </div>
         </div>
       )}
@@ -884,11 +799,16 @@ function App(){
         </div>
       </div>
 
-      {showSyncBar&&(<div style={{padding:"5px 24px",borderBottom:"1px solid "+th.border,display:"flex",alignItems:"center",gap:6,background:th.bg}}>
-        {isSyncing?<span style={{width:6,height:6,borderRadius:"50%",background:"#f59e0b",display:"inline-block",flexShrink:0,animation:"pulse 1s infinite"}}/>:<span style={{width:6,height:6,borderRadius:"50%",background:"#10b981",display:"inline-block",flexShrink:0,opacity:0.7}}/>}
+      {/* Sync bar */}
+      <div style={{padding:"5px 24px",borderBottom:"1px solid "+th.border,display:"flex",alignItems:"center",gap:6,background:th.bg}}>
+        {isSyncing
+          ?<span style={{width:6,height:6,borderRadius:"50%",background:"#f59e0b",display:"inline-block",flexShrink:0,animation:"pulse 1s infinite"}}/>
+          :<span style={{width:6,height:6,borderRadius:"50%",background:"#10b981",display:"inline-block",flexShrink:0,opacity:0.7}}/>
+        }
         <span style={{fontSize:10,color:th.muted}}>{syncText}</span>
-      </div>)}
+      </div>
 
+      {/* Nav */}
       <div style={{padding:"0 24px",borderBottom:"1px solid "+th.border,display:"flex",gap:0,overflowX:"auto"}}>
         {NAV_ITEMS.map(([k,l])=><button key={k} onClick={()=>setTab(k)} style={{fontSize:13,paddingBottom:12,paddingTop:16,paddingLeft:12,paddingRight:12,border:"none",background:"none",cursor:"pointer",borderBottom:tab===k?"2px solid "+th.text:"2px solid transparent",color:tab===k?th.text:k==="troubleshoot"?th.muted+"cc":th.muted,fontWeight:tab===k?600:400,whiteSpace:"nowrap",flexShrink:0}}>{l}</button>)}
       </div>
@@ -1016,7 +936,6 @@ function App(){
         {tab==="troubleshoot"&&curSub==="connexions"&&(<div>
           <p style={{...lbl,marginBottom:20}}>Connexions</p>
           <div style={{display:"flex",flexDirection:"column",gap:14}}>
-            {/* Supabase */}
             <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:36,height:36,borderRadius:10,background:"#10b98120",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>🟢</div><span style={{fontSize:14,fontWeight:600,color:th.text}}>Supabase</span></div><span style={{fontSize:11,padding:"3px 10px",borderRadius:20,background:"#10b98118",color:"#10b981",fontWeight:500}}>Actif</span></div>
               <div style={{display:"flex",flexDirection:"column",gap:10}}>
@@ -1024,22 +943,12 @@ function App(){
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:12,color:th.sub}}>Dernière sync</span><span style={{fontSize:12,color:th.text}}>{lastSync?lastSync.toLocaleTimeString("fr-CA",{hour:"2-digit",minute:"2-digit",second:"2-digit"}):"Jamais"}</span></div>
               </div>
             </div>
-            {/* Local */}
             <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:36,height:36,borderRadius:10,background:"#6366f120",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>💾</div><span style={{fontSize:14,fontWeight:600,color:th.text}}>Stockage local</span></div><span style={{fontSize:11,padding:"3px 10px",borderRadius:20,background:"#10b98118",color:"#10b981",fontWeight:500}}>Cache</span></div>
               <div style={{display:"flex",flexDirection:"column",gap:10}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingBottom:8,borderBottom:"1px solid "+th.border}}><span style={{fontSize:12,color:th.sub}}>Lecture</span><StatusDot ok={connStatus.localRead} na={connStatus.localRead===null}/></div>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:12,color:th.sub}}>Écriture</span><StatusDot ok={connStatus.localWrite} na={connStatus.localWrite===null}/></div>
               </div>
-            </div>
-            {/* GitHub */}
-            <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:36,height:36,borderRadius:10,background:"#8b5cf620",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>☁️</div><span style={{fontSize:14,fontWeight:600,color:th.text}}>GitHub Gist</span></div><span style={{fontSize:11,padding:"3px 10px",borderRadius:20,fontWeight:500,...(ghConnected?{background:"#10b98118",color:"#10b981"}:{background:th.surface,color:th.muted})}}>{ghConnected?"Actif":"Inactif"}</span></div>
-              <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingBottom:8,borderBottom:"1px solid "+th.border}}><span style={{fontSize:12,color:th.sub}}>Réseau</span><span style={{fontSize:12,color:isOnline?"#10b981":"#ef4444",fontWeight:500}}>{isOnline?"✓ En ligne":"✗ Hors ligne"}</span></div>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:12,color:th.sub}}>File de sync</span><span style={{fontSize:12,color:syncQueue.current.length>0?"#f59e0b":th.muted}}>{syncQueue.current.length} en attente</span></div>
-              </div>
-              {ghConnected&&<div style={{display:"flex",gap:8,marginTop:14,paddingTop:14,borderTop:"1px solid "+th.border}}><button onClick={ghPullNow} disabled={isSyncing||!isOnline||!ghGistId} style={{flex:1,padding:"9px 0",fontSize:12,border:"1px solid "+th.border,borderRadius:10,background:"none",color:isSyncing||!isOnline||!ghGistId?th.muted:th.text,cursor:isSyncing||!isOnline||!ghGistId?"default":"pointer"}}>↓ Pull</button><button onClick={ghPushNow} disabled={isSyncing||!isOnline} style={{flex:1,padding:"9px 0",fontSize:12,border:"none",borderRadius:10,background:isSyncing||!isOnline?th.surface:th.btnBg,color:isSyncing||!isOnline?th.muted:th.btnText,cursor:isSyncing||!isOnline?"default":"pointer",fontWeight:500}}>↑ Push</button></div>}
             </div>
           </div>
         </div>)}
@@ -1084,17 +993,7 @@ function App(){
           <Tog label="Gestion avancée des catégories" sub="Personnaliser et créer des catégories" value={advancedCats} onChange={setAdvancedCats} th={th}/>
           {advancedCats&&(<button onClick={()=>{setCatsMod(true);setCatsTab("cats");setAddCatForm(null);setAddSubcatForm(null);}} style={{display:"flex",alignItems:"center",justifyContent:"space-between",width:"100%",padding:"13px 16px",marginTop:10,background:th.cardBg,border:"1px solid "+th.border,borderRadius:12,cursor:"pointer",fontSize:13,color:th.text,textAlign:"left"}}><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:18}}>🗂️</span><span style={{fontWeight:500}}>Gérer les catégories</span></div><div style={{display:"flex",alignItems:"center",gap:8}}>{(customCats.length+customSubcats.length)>0&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:20,background:"#6366f118",color:"#6366f1",fontWeight:500}}>{customCats.length+customSubcats.length} perso.</span>}<span style={{color:th.muted,fontSize:16}}>›</span></div></button>)}
 
-          <p style={{...lbl,margin:"24px 0 4px"}}>Sauvegarde GitHub Gist <span style={{fontSize:9,color:th.muted,letterSpacing:0,textTransform:"none"}}>(optionnel)</span></p>
-          <Tog label="Activer le backup GitHub Gist" sub="Sauvegarde secondaire en plus de Supabase" value={showGhSettings} onChange={setShowGhSettings} th={th}/>
-          {showGhSettings&&(<div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:16,marginTop:12,marginBottom:20,display:"flex",flexDirection:"column",gap:16}}>
-            <Tog label="Afficher l'état de sync" value={showSyncBar} onChange={setShowSyncBar} th={th}/>
-            <div><label style={lbl}>Personal Access Token</label><input type="password" value={ghToken} onChange={e=>setGhToken(e.target.value)} placeholder="ghp_xxxxxxxxxxxx" style={{...iSt,fontSize:12,fontFamily:"monospace"}}/></div>
-            <div><label style={lbl}>Gist ID</label><input type="text" value={ghGistId} onChange={e=>setGhGistId(e.target.value)} placeholder="—" style={{...iSt,fontSize:12,fontFamily:"monospace"}}/></div>
-            {ghToken&&<div style={{display:"flex",gap:8}}><button onClick={ghPullNow} disabled={isSyncing||!isOnline||!ghGistId} style={{flex:1,padding:"9px 0",fontSize:12,border:"1px solid "+th.border,borderRadius:10,background:"none",color:isSyncing||!isOnline||!ghGistId?th.muted:th.text,cursor:"pointer"}}>↓ Pull</button><button onClick={ghPushNow} disabled={isSyncing||!isOnline} style={{flex:1,padding:"9px 0",fontSize:12,border:"none",borderRadius:10,background:th.btnBg,color:th.btnText,cursor:"pointer",fontWeight:500}}>↑ Push</button></div>}
-            <p style={{fontSize:11,color:th.muted,margin:0,lineHeight:1.5}}>Gist privé. Token : permission gist seulement.</p>
-          </div>)}
-
-          <p style={{...lbl,margin:"0 0 8px"}}>Données</p>
+          <p style={{...lbl,margin:"24px 0 8px"}}>Données</p>
           <div style={{display:"flex",gap:8,paddingBottom:20,borderBottom:"1px solid "+th.border}}>
             <button onClick={()=>setExportMod(true)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:10,background:"none",color:th.text,cursor:"pointer"}}>↑ Exporter</button>
             <button onClick={()=>{setImportText("");setImportMod(true);}} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:10,background:"none",color:th.text,cursor:"pointer"}}>↓ Importer</button>
@@ -1106,7 +1005,7 @@ function App(){
             <button onClick={()=>{setDelAccMod(true);setDelAccInput("");}} style={{fontSize:13,color:th.danger,background:"none",border:"1px solid "+th.danger,borderRadius:10,padding:"8px 16px",cursor:"pointer"}}>Supprimer le compte →</button>
           </div>
           <div style={{marginTop:32,paddingTop:20,borderTop:"1px solid "+th.border,textAlign:"center"}}>
-            <p onClick={handleVersionClick} style={{fontSize:11,color:showTroubleshoot?"#6366f1":th.muted,letterSpacing:"0.1em",cursor:"pointer",userSelect:"none"}}>v0.033</p>
+            <p onClick={handleVersionClick} style={{fontSize:11,color:showTroubleshoot?"#6366f1":th.muted,letterSpacing:"0.1em",cursor:"pointer",userSelect:"none"}}>v0.034</p>
           </div>
         </div>)}
       </div>
