@@ -472,6 +472,8 @@ function App(){
   const[tick,setTick]=useState(0);
   const[isOnline,setIsOnline]=useState(()=>navigator.onLine);
   const[connStatus,setConnStatus]=useState({localRead:null,localWrite:null});
+  const[syncBarVisible,setSyncBarVisible]=useState(false);
+  const[syncBarFading,setSyncBarFading]=useState(false);
 
   // Catégories
   const[advancedCats,setAdvancedCats]=useState(false);
@@ -511,6 +513,8 @@ function App(){
   const cfgTimer     =useRef(null);
   const vClickTimer  =useRef(null);
   const latestExport =useRef(null);
+  const syncHideTimer=useRef(null);
+  const syncFadeTimer=useRef(null);
 
   const isDark=darkMode==="on"||(darkMode==="auto"&&sysDark);
   const th=useMemo(()=>mkTh(isDark),[isDark]);
@@ -599,6 +603,12 @@ function App(){
   useEffect(()=>{const id=setInterval(()=>setTick(n=>n+1),15000);return()=>clearInterval(id);},[]);
   useEffect(()=>{const mq=window.matchMedia("(prefers-color-scheme:dark)");const h=e=>setSysDark(e.matches);mq.addEventListener("change",h);return()=>mq.removeEventListener("change",h);},[]);
   useEffect(()=>{const go=()=>setIsOnline(true);const off=()=>setIsOnline(false);window.addEventListener("online",go);window.addEventListener("offline",off);return()=>{window.removeEventListener("online",go);window.removeEventListener("offline",off);};},[]);
+
+  useEffect(()=>{
+    clearTimeout(syncHideTimer.current);clearTimeout(syncFadeTimer.current);
+    if(isSyncing){setSyncBarVisible(true);setSyncBarFading(false);}
+    else if(lastSync){setSyncBarVisible(true);setSyncBarFading(false);syncHideTimer.current=setTimeout(()=>{setSyncBarFading(true);syncFadeTimer.current=setTimeout(()=>{setSyncBarVisible(false);setSyncBarFading(false);},1000);},5000);}
+  },[isSyncing,lastSync]);
 
   // Chargement depuis Supabase
   useEffect(()=>{
@@ -799,8 +809,7 @@ function App(){
         </div>
       </div>
 
-      {/* Sync bar */}
-      <div style={{padding:"5px 24px",borderBottom:"1px solid "+th.border,display:"flex",alignItems:"center",gap:6,background:th.bg}}>
+      <div style={{maxHeight:syncBarVisible?36:0,padding:syncBarVisible?"5px 24px":"0 24px",borderBottom:"1px solid "+th.border,display:"flex",alignItems:"center",gap:6,background:th.bg,overflow:"hidden",opacity:syncBarFading?0:syncBarVisible?1:0,transition:"opacity 1s ease,max-height 0.4s ease,padding 0.4s ease"}}>
         {isSyncing
           ?<span style={{width:6,height:6,borderRadius:"50%",background:"#f59e0b",display:"inline-block",flexShrink:0,animation:"pulse 1s infinite"}}/>
           :<span style={{width:6,height:6,borderRadius:"50%",background:"#10b981",display:"inline-block",flexShrink:0,opacity:0.7}}/>
