@@ -507,6 +507,7 @@ function App(){
   const[showToken,setShowToken]=useState(false);
 
   // Cats state
+  const[showGhSettings,setShowGhSettings]=useState(false);
   const[advancedCats,setAdvancedCats]=useState(false);
   const[customCats,setCustomCats]=useState([]);
   const[customSubcats,setCustomSubcats]=useState([]);
@@ -1083,14 +1084,15 @@ function App(){
           <Tog label="Gestion avancée des catégories" sub="Personnaliser et créer des catégories" value={advancedCats} onChange={setAdvancedCats} th={th}/>
           {advancedCats&&(<button onClick={()=>{setCatsMod(true);setCatsTab("cats");setAddCatForm(null);setAddSubcatForm(null);}} style={{display:"flex",alignItems:"center",justifyContent:"space-between",width:"100%",padding:"13px 16px",marginTop:10,background:th.cardBg,border:"1px solid "+th.border,borderRadius:12,cursor:"pointer",fontSize:13,color:th.text,textAlign:"left"}}><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:18}}>🗂️</span><span style={{fontWeight:500}}>Gérer les catégories</span></div><div style={{display:"flex",alignItems:"center",gap:8}}>{(customCats.length+customSubcats.length)>0&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:20,background:"#6366f118",color:"#6366f1",fontWeight:500}}>{customCats.length+customSubcats.length} perso.</span>}<span style={{color:th.muted,fontSize:16}}>›</span></div></button>)}
 
-          <p style={{...lbl,margin:"24px 0 4px"}}>Sauvegarde GitHub Gist (optionnel)</p>
-          <Tog label="Afficher l'état de sync" value={showSyncBar} onChange={setShowSyncBar} th={th}/>
-          <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:16,marginBottom:20,marginTop:16,display:"flex",flexDirection:"column",gap:16}}>
+          <p style={{...lbl,margin:"24px 0 4px"}}>Sauvegarde GitHub Gist <span style={{fontSize:9,color:th.muted,letterSpacing:0,textTransform:"none"}}>(optionnel)</span></p>
+          <Tog label="Activer le backup GitHub Gist" sub="Sauvegarde secondaire en plus de Supabase" value={showGhSettings} onChange={setShowGhSettings} th={th}/>
+          {showGhSettings&&(<div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:16,marginTop:12,marginBottom:20,display:"flex",flexDirection:"column",gap:16}}>
+            <Tog label="Afficher l'état de sync" value={showSyncBar} onChange={setShowSyncBar} th={th}/>
             <div><label style={lbl}>Personal Access Token</label><input type="password" value={ghToken} onChange={e=>setGhToken(e.target.value)} placeholder="ghp_xxxxxxxxxxxx" style={{...iSt,fontSize:12,fontFamily:"monospace"}}/></div>
             <div><label style={lbl}>Gist ID</label><input type="text" value={ghGistId} onChange={e=>setGhGistId(e.target.value)} placeholder="—" style={{...iSt,fontSize:12,fontFamily:"monospace"}}/></div>
             {ghToken&&<div style={{display:"flex",gap:8}}><button onClick={ghPullNow} disabled={isSyncing||!isOnline||!ghGistId} style={{flex:1,padding:"9px 0",fontSize:12,border:"1px solid "+th.border,borderRadius:10,background:"none",color:isSyncing||!isOnline||!ghGistId?th.muted:th.text,cursor:"pointer"}}>↓ Pull</button><button onClick={ghPushNow} disabled={isSyncing||!isOnline} style={{flex:1,padding:"9px 0",fontSize:12,border:"none",borderRadius:10,background:th.btnBg,color:th.btnText,cursor:"pointer",fontWeight:500}}>↑ Push</button></div>}
-            <p style={{fontSize:11,color:th.muted,margin:0,lineHeight:1.5}}>Optionnel. Backup secondaire en plus de Supabase.</p>
-          </div>
+            <p style={{fontSize:11,color:th.muted,margin:0,lineHeight:1.5}}>Gist privé. Token : permission gist seulement.</p>
+          </div>)}
 
           <p style={{...lbl,margin:"0 0 8px"}}>Données</p>
           <div style={{display:"flex",gap:8,paddingBottom:20,borderBottom:"1px solid "+th.border}}>
