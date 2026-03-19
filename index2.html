@@ -524,6 +524,7 @@ function App(){
   const cfgTimer     =useRef(null);
   const vClickTimer  =useRef(null);
   const latestExport =useRef(null);
+  const touchStartX  =useRef(null);
   const syncHideTimer=useRef(null);
   const syncFadeTimer=useRef(null);
 
@@ -746,6 +747,19 @@ function App(){
   const handleImport=()=>{try{const d=JSON.parse(importText);if(Array.isArray(d.txs))setTxs(cleanTxs(d.txs));if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.balAnchor!==undefined)setBalAnchor(d.balAnchor);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.budgets)setBudgets(d.budgets);if(d.customCats)setCustomCats(d.customCats);if(d.customSubcats)setCustomSubcats(d.customSubcats);if(d.subcatGroupOverrides)setSubcatGroupOverrides(d.subcatGroupOverrides);setImportMod(false);setImportText("");}catch{}};
   const handleTitleClick  =e=>{e.stopPropagation();const now=Date.now();if(now-lastTapRef.current<350){setTab("home");setMo(TODAY.getMonth());setYr(TODAY.getFullYear());}lastTapRef.current=now;};
   const handleVersionClick=()=>{clearTimeout(vClickTimer.current);const next=versionClicks+1;setVersionClicks(next);if(next>=5){setShowTroubleshoot(true);setVersionClicks(0);}else vClickTimer.current=setTimeout(()=>setVersionClicks(0),3000);};
+  const handleSwipe=(dx)=>{
+    if(Math.abs(dx)<40)return;
+    const dir=dx<0?1:-1; // swipe left = suivant, swipe right = précédent
+    const subs=SUB_NAV[tab];
+    if(subs&&subs.length>1){
+      const idx=subs.findIndex(s=>s.id===curSub);
+      const next=idx+dir;
+      if(next>=0&&next<subs.length)setSubTab(prev=>({...prev,[tab]:subs[next].id}));
+    }else{
+      dir>0?nextMo():prevMo();
+    }
+  };
+
   const prevMo =()=>mo===0?(setMo(11),setYr(y=>y-1)):setMo(m=>m-1);
   const nextMo =()=>mo===11?(setMo(0),setYr(y=>y+1)):setMo(m=>m+1);
   const goToday=()=>{setMo(TODAY.getMonth());setYr(TODAY.getFullYear());};
@@ -850,7 +864,7 @@ function App(){
         {SUB_NAV[tab].map(s=><button key={s.id} onClick={()=>setSubTab(prev=>({...prev,[tab]:s.id}))} style={{fontSize:12,paddingBottom:10,paddingTop:12,paddingLeft:12,paddingRight:12,border:"none",background:"none",cursor:"pointer",borderBottom:curSub===s.id?"2px solid "+th.sub:"2px solid transparent",color:curSub===s.id?th.text:th.sub,fontWeight:curSub===s.id?600:400,whiteSpace:"nowrap",flexShrink:0}}>{s.label}</button>)}
       </div>)}
 
-      <div key={tab+"-"+(curSub||"")} style={{padding:"24px",paddingBottom:"100px",maxWidth:640,animation:"fadeIn 0.27s ease"}}>
+      <div key={tab+"-"+(curSub||"")} onTouchStart={e=>{touchStartX.current=e.touches[0].clientX;}} onTouchEnd={e=>{if(touchStartX.current===null)return;const dx=e.changedTouches[0].clientX-touchStartX.current;touchStartX.current=null;handleSwipe(dx);}} style={{padding:"24px",paddingBottom:"100px",maxWidth:640,animation:"fadeIn 0.27s ease"}}>
 
         {/* HOME */}
         {tab==="home"&&(<div>
