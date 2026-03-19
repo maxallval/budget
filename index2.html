@@ -240,11 +240,29 @@ const SegCtrl=({options,value,onChange,th})=>(
     {options.map(([v,l])=><button key={v} onClick={()=>onChange(v)} style={{flex:1,fontSize:12,padding:"6px 10px",borderRadius:8,border:"none",cursor:"pointer",background:value===v?th.bg:"transparent",color:value===v?th.text:th.muted,boxShadow:value===v?"0 1px 4px rgba(0,0,0,0.12)":"none",fontWeight:value===v?500:400,whiteSpace:"nowrap"}}>{l}</button>)}
   </div>
 );
-const Sheet=({onClose,children,th})=>(
-  <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.35)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:150,padding:16,animation:"fadeIn 0.27s ease"}} onClick={onClose}>
-    <div style={{background:th.sheetBg,width:"100%",maxWidth:480,borderRadius:20,padding:24,paddingBottom:88,boxShadow:"0 -4px 40px rgba(0,0,0,0.2)",maxHeight:"90vh",overflow:"auto",animation:"sheetIn 0.27s ease"}} onClick={e=>e.stopPropagation()}>{children}</div>
-  </div>
-);
+const Sheet=({onClose,children,th})=>{
+  const outerRef=useRef(null);
+  const innerRef=useRef(null);
+  useEffect(()=>{
+    const outer=outerRef.current,inner=innerRef.current;
+    if(!outer||!inner)return;
+    const update=()=>{
+      const h=Math.min(inner.offsetHeight,window.innerHeight*0.9);
+      outer.style.height=h+"px";
+    };
+    const ro=new ResizeObserver(update);
+    ro.observe(inner);
+    update();
+    return()=>ro.disconnect();
+  },[]);
+  return(
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.35)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:150,padding:16,animation:"fadeIn 0.27s ease"}} onClick={onClose}>
+      <div ref={outerRef} style={{background:th.sheetBg,width:"100%",maxWidth:480,borderRadius:20,boxShadow:"0 -4px 40px rgba(0,0,0,0.2)",overflow:"hidden",transition:"height 0.28s cubic-bezier(0.4,0,0.2,1)",animation:"sheetIn 0.27s ease"}} onClick={e=>e.stopPropagation()}>
+        <div ref={innerRef} style={{padding:24,paddingBottom:88}}>{children}</div>
+      </div>
+    </div>
+  );
+};
 const FullSheet=({children,th})=>(
   <div style={{position:"fixed",inset:0,background:th.sheetBg,zIndex:200,overflowY:"auto",display:"flex",flexDirection:"column",animation:"fullPageIn 0.27s cubic-bezier(0.32,0.72,0,1)",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>
     <div style={{flex:1,padding:"0 24px 100px",maxWidth:640,width:"100%",margin:"0 auto"}}>{children}</div>
