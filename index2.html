@@ -465,6 +465,10 @@ function App(){
   const[goalForm,setGoalForm]=useState(null);
   const[acknowledgedOverruns,setAcknowledgedOverruns]=useState(new Set());
   const[overrunDismissing,setOverrunDismissing]=useState(false);
+  const[motd,setMotd]=useState("");
+  const[motdUrl,setMotdUrl]=useState("https://maxallval.github.io/budget/messages/messages.txt");
+  const[motdVisible,setMotdVisible]=useState(false);
+  const[motdFading,setMotdFading]=useState(false);
   const[loaded,setLoaded]=useState(false);
 
   const[tab,setTab]=useState("home");
@@ -528,6 +532,8 @@ function App(){
   const syncHideTimer=useRef(null);
   const syncFadeTimer=useRef(null);
   const overrunTimer =useRef(null);
+  const motdTimer    =useRef(null);
+  const motdFadeTimer=useRef(null);
 
   const isDark=darkMode==="on"||(darkMode==="auto"&&sysDark);
   const th=useMemo(()=>mkTh(isDark),[isDark]);
@@ -629,7 +635,7 @@ function App(){
       let lR=false,lW=false;
       try{await window.storage.set("bgt9-ct","1");lR=!!(await window.storage.get("bgt9-ct"));lW=true;}catch{}
       setConnStatus({localRead:lR,localWrite:lW});
-      try{const r=await window.storage.get("bgt9-cfg");if(r){const c=JSON.parse(r.value);if(c.disp)setDisp(c.disp);if(c.darkMode)setDarkMode(c.darkMode);if(c.mode)setMode(c.mode);if(c.advancedCats!==undefined)setAdvancedCats(c.advancedCats);if(c.showDecimals!==undefined)setShowDecimals(c.showDecimals);}}catch{}
+      try{const r=await window.storage.get("bgt9-cfg");if(r){const c=JSON.parse(r.value);if(c.disp)setDisp(c.disp);if(c.darkMode)setDarkMode(c.darkMode);if(c.mode)setMode(c.mode);if(c.advancedCats!==undefined)setAdvancedCats(c.advancedCats);if(c.showDecimals!==undefined)setShowDecimals(c.showDecimals);if(c.motdUrl)setMotdUrl(c.motdUrl);}}catch{}
       try{
         const{data:row}=await sb.from("user_data").select("data,updated_at").eq("user_id",session.user.id).single();
         if(row?.data){
@@ -656,9 +662,30 @@ function App(){
     if(!loaded)return;
     clearTimeout(cfgTimer.current);
     cfgTimer.current=setTimeout(async()=>{
-      try{await window.storage.set("bgt9-cfg",JSON.stringify({disp,darkMode,mode,advancedCats,showDecimals}));}catch{}
+      try{await window.storage.set("bgt9-cfg",JSON.stringify({disp,darkMode,mode,advancedCats,showDecimals,motdUrl}));}catch{}
     },400);
-  },[disp,darkMode,mode,advancedCats,showDecimals,loaded]);
+  },[disp,darkMode,mode,advancedCats,showDecimals,motdUrl,loaded]);
+
+  // MOTD fetch — après 10s, affiche 8s puis disparaît
+  useEffect(()=>{
+    if(!motdUrl||!loaded)return;
+    clearTimeout(motdTimer.current);
+    motdTimer.current=setTimeout(async()=>{
+      try{
+        const res=await fetch(motdUrl+"?t="+Date.now());
+        if(!res.ok)return;
+        const txt=(await res.text()).trim();
+        if(!txt)return;
+        setMotd(txt);setMotdVisible(true);setMotdFading(false);
+        clearTimeout(motdFadeTimer.current);
+        motdFadeTimer.current=setTimeout(()=>{
+          setMotdFading(true);
+          setTimeout(()=>{setMotdVisible(false);setMotdFading(false);},800);
+        },8000);
+      }catch{}
+    },10000);
+    return()=>{clearTimeout(motdTimer.current);clearTimeout(motdFadeTimer.current);};
+  },[motdUrl,loaded]);
 
   useEffect(()=>{
     if(!loaded||!session)return;
@@ -843,8 +870,9 @@ function App(){
                 <button onClick={acknowledgeOverruns} style={{fontSize:11,padding:"3px 10px",borderRadius:8,border:"none",background:"rgba(255,255,255,0.25)",color:"#fff",cursor:"pointer",fontWeight:600,flexShrink:0}}>Compris</button>
               </div>
               :<div style={{display:"flex",alignItems:"center",gap:7,justifyContent:"center",padding:"5px 16px"}}>
-                {isSyncing?<span style={{width:6,height:6,borderRadius:"50%",background:"#f59e0b",display:"inline-block",flexShrink:0,animation:"pulse 1s infinite"}}/>:<span style={{width:6,height:6,borderRadius:"50%",background:"#10b981",display:"inline-block",flexShrink:0,opacity:0.8}}/>}
-                <span style={{fontSize:11,color:th.sub,whiteSpace:"nowrap"}}>{syncText}</span>
+                {isMotd
+                  ?<span style={{fontSize:11,color:th.sub,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:"90%",textAlign:"center"}}>{motd}</span>
+                  :<>{isSyncing?<span style={{width:6,height:6,borderRadius:"50%",background:"#f59e0b",display:"inline-block",flexShrink:0,animation:"pulse 1s infinite"}}/>:<span style={{width:6,height:6,borderRadius:"50%",background:"#10b981",display:"inline-block",flexShrink:0,opacity:0.8}}/><span style={{fontSize:11,color:th.sub,whiteSpace:"nowrap"}}>{syncText}</span></>}
               </div>
             }
           </div>
@@ -1101,7 +1129,11 @@ function App(){
           <p style={{...lbl,margin:"24px 0 4px"}}>Catégories</p>
           <Tog label="Gestion avancée des catégories" sub="Personnaliser et créer des catégories" value={advancedCats} onChange={setAdvancedCats} th={th}/>
           {advancedCats&&(<button onClick={()=>{setCatsMod(true);setCatsTab("cats");setAddCatForm(null);setAddSubcatForm(null);}} style={{display:"flex",alignItems:"center",justifyContent:"space-between",width:"100%",padding:"13px 16px",marginTop:10,background:th.cardBg,border:"1px solid "+th.border,borderRadius:12,cursor:"pointer",fontSize:13,color:th.text,textAlign:"left"}}><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:18}}>🗂️</span><span style={{fontWeight:500}}>Gérer les catégories</span></div><div style={{display:"flex",alignItems:"center",gap:8}}>{(customCats.length+customSubcats.length)>0&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:20,background:"#6366f118",color:"#6366f1",fontWeight:500}}>{customCats.length+customSubcats.length} perso.</span>}<span style={{color:th.muted,fontSize:16}}>›</span></div></button>)}
-          <p style={{...lbl,margin:"24px 0 8px"}}>Données</p>
+          <p style={{...lbl,margin:"24px 0 8px"}}>Message du jour</p>
+          <div style={{paddingBottom:20,borderBottom:"1px solid "+th.border}}>
+            <p style={{fontSize:11,color:th.muted,margin:"0 0 8px",lineHeight:1.5}}>URL raw GitHub vers un fichier <code style={{fontSize:10,background:th.surface,padding:"1px 5px",borderRadius:4}}>.txt</code>. Le texte s'affichera dans la barre de statut après 10 s.</p>
+            <input type="text" value={motdUrl} onChange={e=>setMotdUrl(e.target.value)} placeholder="https://raw.githubusercontent.com/…/messages.txt" style={{...iSt,fontSize:11,fontFamily:"monospace",marginTop:0}}/>
+          </div>
           <div style={{display:"flex",gap:8,paddingBottom:20,borderBottom:"1px solid "+th.border}}>
             <button onClick={()=>setExportMod(true)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:10,background:"none",color:th.text,cursor:"pointer"}}>↑ Exporter</button>
             <button onClick={()=>{setImportText("");setImportMod(true);}} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:10,background:"none",color:th.text,cursor:"pointer"}}>↓ Importer</button>
