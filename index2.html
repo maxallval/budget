@@ -238,12 +238,12 @@ const SegCtrl=({options,value,onChange,th})=>(
   </div>
 );
 const Sheet=({onClose,children,th})=>(
-  <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.35)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:150,padding:16,animation:"fadeIn 0.27s ease"}} onClick={onClose}>
-    <div style={{background:th.sheetBg,width:"100%",maxWidth:480,borderRadius:20,padding:24,paddingBottom:88,boxShadow:"0 -4px 40px rgba(0,0,0,0.2)",maxHeight:"90vh",overflow:"auto",animation:"sheetIn 0.27s ease"}} onClick={e=>e.stopPropagation()}>{children}</div>
+  <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.35)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:150,padding:16,animation:"fadeIn 0.54s ease"}} onClick={onClose}>
+    <div style={{background:th.sheetBg,width:"100%",maxWidth:480,borderRadius:20,padding:24,paddingBottom:88,boxShadow:"0 -4px 40px rgba(0,0,0,0.2)",maxHeight:"90vh",overflow:"auto",animation:"sheetIn 0.54s ease"}} onClick={e=>e.stopPropagation()}>{children}</div>
   </div>
 );
 const FullSheet=({children,th})=>(
-  <div style={{position:"fixed",inset:0,background:th.sheetBg,zIndex:200,overflowY:"auto",display:"flex",flexDirection:"column",animation:"fullPageIn 0.27s cubic-bezier(0.32,0.72,0,1)",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>
+  <div style={{position:"fixed",inset:0,background:th.sheetBg,zIndex:200,overflowY:"auto",display:"flex",flexDirection:"column",animation:"fullPageIn 0.54s cubic-bezier(0.32,0.72,0,1)",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>
     <div style={{flex:1,padding:"0 24px 100px",maxWidth:640,width:"100%",margin:"0 auto"}}>{children}</div>
   </div>
 );
@@ -820,7 +820,7 @@ function App(){
         </div>
       )}
 
-      <div key={tab+"-"+(curSub||"")} style={{padding:"24px",paddingBottom:"100px",maxWidth:640,animation:"fadeIn 0.27s ease"}}>
+      <div key={tab+"-"+(curSub||"")} style={{padding:"24px",paddingBottom:"100px",maxWidth:640,animation:"fadeIn 0.54s ease"}}>
 
         {tab==="home"&&(
           <div>
