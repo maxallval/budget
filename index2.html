@@ -400,6 +400,16 @@ function RecurrencePicker({value,onChange,startDate,th}){
   </div>);
 }
 
+// ── NAV ICONS ─────────────────────────────────────────────────────────────
+const NAV_ICONS={
+  home:         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+  transactions: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>,
+  budget:       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>,
+  analyse:      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
+  settings:     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>,
+  troubleshoot: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>,
+};
+
 // ── LOGIN SCREEN ──────────────────────────────────────────────────────────
 function LoginScreen(){
   const[loading,setLoading]=useState(false);
@@ -786,8 +796,17 @@ function App(){
         </div>
       )}
 
-      <div style={{position:"fixed",bottom:16,right:16,zIndex:99}}>
+      <div style={{position:"fixed",bottom:80,right:16,zIndex:99}}>
         <button onClick={()=>openForm()} style={{width:48,height:48,borderRadius:"50%",background:th.btnBg,color:th.btnText,border:"none",cursor:"pointer",fontSize:26,fontWeight:300,boxShadow:"0 4px 16px rgba(0,0,0,0.2)",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>+</button>
+      </div>
+
+      {/* Bottom nav */}
+      <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:100,background:th.bg,borderTop:"1px solid "+th.border,display:"flex",paddingBottom:"env(safe-area-inset-bottom,0px)"}}>
+        {NAV_ITEMS.map(([k])=>(
+          <button key={k} onClick={()=>setTab(k)} style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:"14px 0",border:"none",background:"none",cursor:"pointer",color:tab===k?th.text:th.muted,transition:"color 0.15s"}}>
+            {NAV_ICONS[k]}
+          </button>
+        ))}
       </div>
 
       {/* Sync pill — fixed overlay */}
@@ -825,10 +844,7 @@ function App(){
 
 
 
-      {/* Nav */}
-      <div style={{padding:"0 24px",borderBottom:"1px solid "+th.border,display:"flex",gap:0,overflowX:"auto"}}>
-        {NAV_ITEMS.map(([k,l])=><button key={k} onClick={()=>setTab(k)} style={{fontSize:13,paddingBottom:12,paddingTop:16,paddingLeft:12,paddingRight:12,border:"none",background:"none",cursor:"pointer",borderBottom:tab===k?"2px solid "+th.text:"2px solid transparent",color:tab===k?th.text:k==="troubleshoot"?th.muted+"cc":th.muted,fontWeight:tab===k?600:400,whiteSpace:"nowrap",flexShrink:0}}>{l}</button>)}
-      </div>
+
       {SUB_NAV[tab]&&(<div style={{padding:"0 24px",borderBottom:"1px solid "+th.border,display:"flex",gap:0,overflowX:"auto",background:th.bgSub}}>
         {tab==="transactions"&&<button onClick={()=>openForm()} style={{fontSize:12,paddingBottom:10,paddingTop:12,paddingLeft:12,paddingRight:16,border:"none",background:"none",cursor:"pointer",borderBottom:"2px solid transparent",color:th.sub,whiteSpace:"nowrap",flexShrink:0,display:"flex",alignItems:"center",gap:4}}><span style={{fontSize:14,lineHeight:1}}>+</span> Ajouter</button>}
         {SUB_NAV[tab].map(s=><button key={s.id} onClick={()=>setSubTab(prev=>({...prev,[tab]:s.id}))} style={{fontSize:12,paddingBottom:10,paddingTop:12,paddingLeft:12,paddingRight:12,border:"none",background:"none",cursor:"pointer",borderBottom:curSub===s.id?"2px solid "+th.sub:"2px solid transparent",color:curSub===s.id?th.text:th.sub,fontWeight:curSub===s.id?600:400,whiteSpace:"nowrap",flexShrink:0}}>{s.label}</button>)}
