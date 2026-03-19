@@ -825,29 +825,33 @@ function App(){
         </div>
       )}
 
-      {/* Sync pill */}
-      {(()=>{const show=syncBarVisible||headerHovered,fading=syncBarFading&&!headerHovered;return(
-        <div style={{position:"fixed",top:0,left:0,right:0,zIndex:98,pointerEvents:"none"}}>
-          <div style={{display:"flex",alignItems:"center",gap:7,justifyContent:"center",padding:"5px 16px",width:"100%",background:th.bg,borderBottom:"1px solid "+th.border,opacity:fading?0:show?1:0,transform:show&&!fading?"translateY(0)":"translateY(-100%)",transition:"opacity 0.7s ease,transform 0.3s ease"}}>
-            {isSyncing?<span style={{width:6,height:6,borderRadius:"50%",background:"#f59e0b",display:"inline-block",flexShrink:0,animation:"pulse 1s infinite"}}/>:<span style={{width:6,height:6,borderRadius:"50%",background:"#10b981",display:"inline-block",flexShrink:0,opacity:0.8}}/>}
-            <span style={{fontSize:11,color:th.sub,whiteSpace:"nowrap"}}>{syncText}</span>
+      {/* Top status bar — overrun prend la priorité sur sync */}
+      {(()=>{
+        const isOverrun=(showOverrunAlert||overrunDismissing)&&!syncBarVisible&&!headerHovered;
+        const syncShow=!isOverrun&&(syncBarVisible||headerHovered);
+        const syncFading=!isOverrun&&syncBarFading&&!headerHovered;
+        const visible=isOverrun||syncShow;
+        return(
+          <div style={{position:"fixed",top:0,left:0,right:0,zIndex:98,pointerEvents:isOverrun?"auto":"none",transform:visible&&!syncFading&&!(overrunDismissing)?"translateY(0)":"translateY(-100%)",opacity:syncFading||overrunDismissing?0:visible?1:0,transition:"transform 0.3s ease, opacity 0.5s ease",background:isOverrun?"#f97316":th.bg,borderBottom:"1px solid "+(isOverrun?"rgba(255,255,255,0.2)":th.border)}}>
+            {isOverrun
+              ?<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 16px",gap:8}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,flex:1,minWidth:0}}>
+                  <span style={{fontSize:14,flexShrink:0}}>⚠️</span>
+                  <div style={{minWidth:0}}>
+                    <p style={{fontSize:12,fontWeight:700,color:"#fff",margin:"0 0 1px"}}>Budget dépassé</p>
+                    <p style={{fontSize:11,color:"rgba(255,255,255,0.85)",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{overrunCats.map(c=>getCatName(c.id)).join(", ")}</p>
+                  </div>
+                </div>
+                <button onClick={acknowledgeOverruns} style={{fontSize:12,padding:"5px 12px",borderRadius:8,border:"none",background:"rgba(255,255,255,0.25)",color:"#fff",cursor:"pointer",fontWeight:600,flexShrink:0}}>Compris</button>
+              </div>
+              :<div style={{display:"flex",alignItems:"center",gap:7,justifyContent:"center",padding:"5px 16px"}}>
+                {isSyncing?<span style={{width:6,height:6,borderRadius:"50%",background:"#f59e0b",display:"inline-block",flexShrink:0,animation:"pulse 1s infinite"}}/>:<span style={{width:6,height:6,borderRadius:"50%",background:"#10b981",display:"inline-block",flexShrink:0,opacity:0.8}}/>}
+                <span style={{fontSize:11,color:th.sub,whiteSpace:"nowrap"}}>{syncText}</span>
+              </div>
+            }
           </div>
-        </div>
-      );})()}
-
-      {/* Overrun alert */}
-      {(showOverrunAlert||overrunDismissing)&&(
-        <div style={{position:"sticky",top:0,zIndex:90,background:"#f97316",color:"#fff",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,flexWrap:"wrap",animation:overrunDismissing?"none":"slideDown 0.3s ease",opacity:overrunDismissing?0:1,maxHeight:overrunDismissing?0:80,overflow:"hidden",transition:"opacity 0.35s ease, max-height 0.4s ease"}}>
-          <div style={{display:"flex",alignItems:"center",gap:8,flex:1,minWidth:0}}>
-            <span style={{fontSize:16,flexShrink:0}}>⚠️</span>
-            <div style={{minWidth:0}}>
-              <p style={{fontSize:12,fontWeight:700,margin:"0 0 1px"}}>Budget dépassé</p>
-              <p style={{fontSize:11,margin:0,opacity:0.9,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{overrunCats.map(c=>getCatName(c.id)).join(", ")}</p>
-            </div>
-          </div>
-          <button onClick={acknowledgeOverruns} style={{fontSize:12,padding:"6px 14px",borderRadius:8,border:"none",background:"rgba(255,255,255,0.25)",color:"#fff",cursor:"pointer",fontWeight:600,flexShrink:0}}>Compris</button>
-        </div>
-      )}
+        );
+      })()}
 
       {/* FAB */}
       <div style={{position:"fixed",bottom:80,right:16,zIndex:99}}>
