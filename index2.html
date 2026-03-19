@@ -502,6 +502,7 @@ function App(){
   /* Speed-dial FAB state */
   const[hoveredTxId,setHoveredTxId]=useState(null);
   const[tappedTxId,setTappedTxId]=useState(null);
+  const[dupMod,setDupMod]=useState(null);
 
   const balInputRef=useRef(null);
   const balSettRef=useRef(null);
@@ -553,12 +554,10 @@ function App(){
 
   const clearActiveTx=()=>{setHoveredTxId(null);setTappedTxId(null);setDupMod(null);};
 
-  /* Duplicate date picker */
-  const[dupMod,setDupMod]=useState(null); // {tx, date}
   const confirmDuplicate=()=>{
     if(!dupMod)return;
     setTxs(prev=>[...prev,{...dupMod.tx,id:Date.now().toString(),startDate:dupMod.date,recurrence:{type:"once"},exceptions:[]}]);
-    setDupMod(null);clearActiveTx();
+    setDupMod(null);setHoveredTxId(null);setTappedTxId(null);
   };
 
   const curBalVal=useMemo(()=>getBalAt(TODAY),[getBalAt]);
