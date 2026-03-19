@@ -772,8 +772,8 @@ function App(){
     return(
       <div
         key={tx.id}
-        onMouseEnter={()=>setActiveTx(tx)}
-        onMouseLeave={()=>setActiveTx(null)}
+        onPointerEnter={e=>{if(e.pointerType==="mouse")setActiveTx(tx);}}
+        onPointerLeave={e=>{if(e.pointerType==="mouse")setActiveTx(null);}}
         onClick={()=>setActiveTx(tx)}
         style={{
           display:"flex",alignItems:"center",justifyContent:"space-between",
