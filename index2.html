@@ -36,6 +36,7 @@
     @keyframes fadeIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
     @keyframes slideInFromRight{from{transform:translateX(56px);opacity:0}to{transform:translateX(0);opacity:1}}
     @keyframes slideInFromLeft{from{transform:translateX(-56px);opacity:0}to{transform:translateX(0);opacity:1}}
+    @keyframes popIn{0%{transform:scale(0.3);opacity:0}65%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
   </style>
 </head>
 <body>
@@ -399,6 +400,10 @@ const NAV_ICONS={
   troubleshoot:<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>,
 };
 
+/* SVG icons for FAB satellites */
+const ICON_EDIT=<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
+const ICON_COPY=<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>;
+
 function LoginScreen(){
   const[loading,setLoading]=useState(false);
   const[err,setErr]=useState("");
@@ -494,6 +499,9 @@ function App(){
   const[importMod,setImportMod]=useState(false);
   const[importText,setImportText]=useState("");
   const[copied,setCopied]=useState(false);
+  /* Speed-dial FAB state */
+  const[hoveredTxId,setHoveredTxId]=useState(null);
+  const[tappedTxId,setTappedTxId]=useState(null);
 
   const balInputRef=useRef(null);
   const balSettRef=useRef(null);
@@ -537,6 +545,13 @@ function App(){
   const SUB_NAV={transactions:[{id:"historique",label:"Historique"},{id:"recurrent",label:"Recurrent"}],budget:[{id:"categories",label:"Budget par categorie"},{id:"objectifs",label:"Objectifs"}],analyse:[{id:"statistiques",label:"Statistiques"},{id:"graphiques",label:"Graphiques"},{id:"controle",label:"Controle des couts"}],troubleshoot:[{id:"connexions",label:"Connexions"}]};
   const DEFAULT_SUB={transactions:"historique",budget:"categories",analyse:"statistiques",troubleshoot:"connexions"};
   const curSub=subTab[tab]||(DEFAULT_SUB[tab]||null);
+
+  /* Speed-dial: active transaction */
+  const activeTxId=hoveredTxId||tappedTxId;
+  const activeTx=useMemo(()=>activeTxId?txs.find(t=>t.id===activeTxId)||null:null,[activeTxId,txs]);
+  const showSpeedDial=tab==="transactions"&&!!activeTx;
+
+  const clearActiveTx=()=>{setHoveredTxId(null);setTappedTxId(null);};
 
   const curBalVal=useMemo(()=>getBalAt(TODAY),[getBalAt]);
   const dim=new Date(yr,mo+1,0).getDate();
@@ -724,6 +739,17 @@ function App(){
   const goToday=()=>{setSlideDir(null);setMo(TODAY.getMonth());setYr(TODAY.getFullYear());};
   const handleSwipe=dx=>{if(Math.abs(dx)<40)return;const dir=dx<0?1:-1;const subs=SUB_NAV[tab];if(subs&&subs.length>1){const idx=subs.findIndex(s=>s.id===curSub);const next=idx+dir;if(next>=0&&next<subs.length)setSubTab(prev=>({...prev,[tab]:subs[next].id}));}else{dir>0?nextMo():prevMo();}};
 
+  /* Style partagé pour les boutons satellites */
+  const satBtnSt=(bottom,right,delay)=>({
+    position:"absolute",bottom,right,
+    width:48,height:48,borderRadius:"50%",
+    background:th.btnBg,color:th.btnText,
+    border:"none",cursor:"pointer",
+    boxShadow:"0 4px 16px rgba(0,0,0,0.22)",
+    display:"flex",alignItems:"center",justifyContent:"center",
+    animation:`popIn 0.25s cubic-bezier(0.34,1.56,0.64,1) ${delay}s both`,
+  });
+
   const StatusDot=({ok,na})=>na?<span style={{fontSize:12,color:th.muted}}>-</span>:<span style={{fontSize:12,color:ok?"#10b981":"#ef4444",fontWeight:500}}>{ok?"OK":"Non"}</span>;
   const dayModalList=dayMod?txs.filter(tx=>occsInMonth(tx,yr,mo).includes(dayMod.day)):[];
   const dayModalDateStr=dayMod?yr+"-"+String(mo+1).padStart(2,"0")+"-"+String(dayMod.day).padStart(2,"0"):"";
@@ -739,7 +765,11 @@ function App(){
   const barFading=syncFade||(overrunDismissing&&!syncShow)||(motdFading&&isMotd);
 
   return(
-    <div onTouchStart={e=>{touchStartX.current=e.touches[0].clientX;}} onTouchEnd={e=>{if(touchStartX.current===null)return;const dx=e.changedTouches[0].clientX-touchStartX.current;touchStartX.current=null;handleSwipe(dx);}} style={{minHeight:"100vh",background:th.bg,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>
+    <div
+      onTouchStart={e=>{touchStartX.current=e.touches[0].clientX;}}
+      onTouchEnd={e=>{if(touchStartX.current===null)return;const dx=e.changedTouches[0].clientX-touchStartX.current;touchStartX.current=null;handleSwipe(dx);}}
+      onClick={()=>setTappedTxId(null)}
+      style={{minHeight:"100vh",background:th.bg,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>
 
       {showSplash&&(
         <div style={{position:"fixed",inset:0,background:isDark?"#0d0d0d":"#fff",zIndex:999,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",animation:"splashFadeOut 2.25s ease forwards"}}>
@@ -793,8 +823,29 @@ function App(){
         )}
       </div>
 
-      <div style={{position:"fixed",bottom:80,right:16,zIndex:99}}>
-        <button onClick={()=>openForm()} style={{width:48,height:48,borderRadius:"50%",background:th.btnBg,color:th.btnText,border:"none",cursor:"pointer",fontSize:26,fontWeight:300,boxShadow:"0 4px 16px rgba(0,0,0,0.2)",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>+</button>
+      {/* FAB speed-dial */}
+      <div style={{position:"fixed",bottom:80,right:16,zIndex:99,width:48,height:48}}>
+        {showSpeedDial&&<>
+          {/* Modifier — directement au-dessus */}
+          <button
+            key={"edit-"+activeTxId}
+            onClick={e=>{e.stopPropagation();openForm(activeTx);clearActiveTx();}}
+            title="Modifier"
+            style={satBtnSt(58,0,0)}
+          >{ICON_EDIT}</button>
+          {/* Dupliquer — en diagonale haut-gauche */}
+          <button
+            key={"dup-"+activeTxId}
+            onClick={e=>{e.stopPropagation();duplicateTx(activeTx);clearActiveTx();}}
+            title="Dupliquer"
+            style={satBtnSt(30,58,0.06)}
+          >{ICON_COPY}</button>
+        </>}
+        {/* Bouton + principal */}
+        <button
+          onClick={e=>{e.stopPropagation();clearActiveTx();openForm();}}
+          style={{position:"absolute",bottom:0,right:0,width:48,height:48,borderRadius:"50%",background:th.btnBg,color:th.btnText,border:"none",cursor:"pointer",fontSize:26,fontWeight:300,boxShadow:"0 4px 16px rgba(0,0,0,0.2)",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}
+        >+</button>
       </div>
 
       <div onMouseEnter={()=>setHeaderHovered(true)} onMouseLeave={()=>setHeaderHovered(false)} style={{padding:"36px 24px 20px",borderBottom:"1px solid "+th.border}}>
@@ -819,7 +870,7 @@ function App(){
       {SUB_NAV[tab]&&(
         <div style={{padding:"0 24px",borderBottom:"1px solid "+th.border,display:"flex",gap:0,overflowX:"auto",background:th.bgSub}}>
           {tab==="transactions"&&<button onClick={()=>openForm()} style={{fontSize:12,paddingBottom:10,paddingTop:12,paddingLeft:12,paddingRight:16,border:"none",background:"none",cursor:"pointer",borderBottom:"2px solid transparent",color:th.sub,whiteSpace:"nowrap",flexShrink:0,display:"flex",alignItems:"center",gap:4}}><span style={{fontSize:14,lineHeight:1}}>+</span> Ajouter</button>}
-          {SUB_NAV[tab].map(s=><button key={s.id} onClick={()=>setSubTab(prev=>({...prev,[tab]:s.id}))} style={{fontSize:12,paddingBottom:10,paddingTop:12,paddingLeft:12,paddingRight:12,border:"none",background:"none",cursor:"pointer",borderBottom:curSub===s.id?"2px solid "+th.sub:"2px solid transparent",color:curSub===s.id?th.text:th.sub,fontWeight:curSub===s.id?600:400,whiteSpace:"nowrap",flexShrink:0}}>{s.label}</button>)}
+          {SUB_NAV[tab].map(s=><button key={s.id} onClick={()=>{setSubTab(prev=>({...prev,[tab]:s.id}));clearActiveTx();}} style={{fontSize:12,paddingBottom:10,paddingTop:12,paddingLeft:12,paddingRight:12,border:"none",background:"none",cursor:"pointer",borderBottom:curSub===s.id?"2px solid "+th.sub:"2px solid transparent",color:curSub===s.id?th.text:th.sub,fontWeight:curSub===s.id?600:400,whiteSpace:"nowrap",flexShrink:0}}>{s.label}</button>)}
         </div>
       )}
 
@@ -871,33 +922,63 @@ function App(){
               <input type="text" value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} placeholder="Rechercher..." style={{display:"block",width:"100%",padding:"9px 36px",fontSize:13,color:th.text,background:th.surface,border:"1px solid "+th.border,borderRadius:10,outline:"none",boxSizing:"border-box"}}/>
               {searchQuery&&<button onClick={()=>setSearchQuery("")} style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",fontSize:13,color:th.muted,background:"none",border:"none",cursor:"pointer",padding:4}}>X</button>}
             </div>
-            {monthTxs.length===0?<div style={{textAlign:"center",padding:"60px 0"}}><p style={{fontSize:32,color:th.border,margin:"0 0 8px"}}>O</p><p style={{fontSize:13,color:th.muted}}>{searchQuery?"Aucun resultat":"Aucune transaction"}</p></div>
-            :monthTxs.map(tx=>{const cat=dynCatById(tx.category||"other"),n=occsInMonth(tx,yr,mo).length,sc=dynSubcatById(tx.subCategory);return(
-              <div key={tx.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderBottom:"1px solid "+th.border}}>
-                <div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:34,height:34,borderRadius:9,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{cat.emoji}</div><div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p><p style={{fontSize:11,color:th.muted,margin:"3px 0 0"}}>{getCatName(cat.id)}{sc?<span style={{color:th.sub}}> - {sc.label}</span>:null}</p><p style={{fontSize:11,color:th.muted,margin:"2px 0 0"}}>{recLabel(tx)}{n>1?<span style={{color:th.sub}}> x{n}</span>:null}</p></div></div>
-                <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
-                  <span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:tx.type==="income"?"#059669":"#ef4444"}}>{tx.type==="income"?"+":"-"}{f(tx.amount*n,true)}</span>
-                  <button onClick={()=>duplicateTx(tx)} title="Dupliquer" style={{fontSize:14,color:th.muted,background:"none",border:"none",cursor:"pointer",padding:4,lineHeight:1}}>&#10697;</button>
-                  <button onClick={()=>openForm(tx)} style={{fontSize:13,color:th.muted,background:"none",border:"none",cursor:"pointer",padding:4}}>&#9998;</button>
-                </div>
-              </div>
-            );})}
+            {monthTxs.length===0
+              ?<div style={{textAlign:"center",padding:"60px 0"}}><p style={{fontSize:32,color:th.border,margin:"0 0 8px"}}>O</p><p style={{fontSize:13,color:th.muted}}>{searchQuery?"Aucun resultat":"Aucune transaction"}</p></div>
+              :monthTxs.map(tx=>{
+                const cat=dynCatById(tx.category||"other"),n=occsInMonth(tx,yr,mo).length,sc=dynSubcatById(tx.subCategory);
+                const isActive=activeTxId===tx.id;
+                return(
+                  <div
+                    key={tx.id}
+                    onMouseEnter={()=>setHoveredTxId(tx.id)}
+                    onMouseLeave={()=>setHoveredTxId(null)}
+                    onClick={e=>{e.stopPropagation();setTappedTxId(p=>p===tx.id?null:tx.id);}}
+                    style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderBottom:"1px solid "+th.border,cursor:"pointer",background:isActive?th.surface+"88":"transparent",borderRadius:isActive?8:0,paddingLeft:isActive?8:0,paddingRight:isActive?8:0,transition:"background 0.15s,padding 0.15s"}}
+                  >
+                    <div style={{display:"flex",alignItems:"center",gap:10}}>
+                      <div style={{width:34,height:34,borderRadius:9,background:cat.color+(isActive?"44":"22"),border:"2px solid "+(isActive?cat.color:"transparent"),display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0,transition:"border-color 0.15s,background 0.15s"}}>{cat.emoji}</div>
+                      <div>
+                        <p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p>
+                        <p style={{fontSize:11,color:th.muted,margin:"3px 0 0"}}>{getCatName(cat.id)}{sc?<span style={{color:th.sub}}> - {sc.label}</span>:null}</p>
+                        <p style={{fontSize:11,color:th.muted,margin:"2px 0 0"}}>{recLabel(tx)}{n>1?<span style={{color:th.sub}}> x{n}</span>:null}</p>
+                      </div>
+                    </div>
+                    <span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:tx.type==="income"?"#059669":"#ef4444",flexShrink:0}}>{tx.type==="income"?"+":"-"}{f(tx.amount*n,true)}</span>
+                  </div>
+                );
+              })
+            }
           </div>
         )}
 
         {tab==="transactions"&&curSub==="recurrent"&&(
           <div>
-            {recurTxs.length===0?<div style={{textAlign:"center",padding:"60px 0"}}><p style={{fontSize:32,color:th.border,margin:"0 0 8px"}}>O</p><p style={{fontSize:13,color:th.muted}}>Aucune transaction recurrente</p></div>
-            :recurTxs.map(tx=>{const cat=dynCatById(tx.category||"other"),sc=dynSubcatById(tx.subCategory);return(
-              <div key={tx.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderBottom:"1px solid "+th.border}}>
-                <div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:34,height:34,borderRadius:9,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{cat.emoji}</div><div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p><p style={{fontSize:11,color:th.muted,margin:"3px 0 0"}}>{getCatName(cat.id)}{sc?<span style={{color:th.sub}}> - {sc.label}</span>:null}</p><p style={{fontSize:11,color:th.muted,margin:"2px 0 0"}}>{recLabel(tx)}</p></div></div>
-                <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
-                  <span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:tx.type==="income"?"#059669":"#ef4444"}}>{tx.type==="income"?"+":"-"}{f(tx.amount,true)}</span>
-                  <button onClick={()=>duplicateTx(tx)} title="Dupliquer" style={{fontSize:14,color:th.muted,background:"none",border:"none",cursor:"pointer",padding:4,lineHeight:1}}>&#10697;</button>
-                  <button onClick={()=>openForm(tx)} style={{fontSize:13,color:th.muted,background:"none",border:"none",cursor:"pointer",padding:4}}>&#9998;</button>
-                </div>
-              </div>
-            );})}
+            {recurTxs.length===0
+              ?<div style={{textAlign:"center",padding:"60px 0"}}><p style={{fontSize:32,color:th.border,margin:"0 0 8px"}}>O</p><p style={{fontSize:13,color:th.muted}}>Aucune transaction recurrente</p></div>
+              :recurTxs.map(tx=>{
+                const cat=dynCatById(tx.category||"other"),sc=dynSubcatById(tx.subCategory);
+                const isActive=activeTxId===tx.id;
+                return(
+                  <div
+                    key={tx.id}
+                    onMouseEnter={()=>setHoveredTxId(tx.id)}
+                    onMouseLeave={()=>setHoveredTxId(null)}
+                    onClick={e=>{e.stopPropagation();setTappedTxId(p=>p===tx.id?null:tx.id);}}
+                    style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderBottom:"1px solid "+th.border,cursor:"pointer",background:isActive?th.surface+"88":"transparent",borderRadius:isActive?8:0,paddingLeft:isActive?8:0,paddingRight:isActive?8:0,transition:"background 0.15s,padding 0.15s"}}
+                  >
+                    <div style={{display:"flex",alignItems:"center",gap:10}}>
+                      <div style={{width:34,height:34,borderRadius:9,background:cat.color+(isActive?"44":"22"),border:"2px solid "+(isActive?cat.color:"transparent"),display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0,transition:"border-color 0.15s,background 0.15s"}}>{cat.emoji}</div>
+                      <div>
+                        <p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p>
+                        <p style={{fontSize:11,color:th.muted,margin:"3px 0 0"}}>{getCatName(cat.id)}{sc?<span style={{color:th.sub}}> - {sc.label}</span>:null}</p>
+                        <p style={{fontSize:11,color:th.muted,margin:"2px 0 0"}}>{recLabel(tx)}</p>
+                      </div>
+                    </div>
+                    <span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:tx.type==="income"?"#059669":"#ef4444",flexShrink:0}}>{tx.type==="income"?"+":"-"}{f(tx.amount,true)}</span>
+                  </div>
+                );
+              })
+            }
           </div>
         )}
 
@@ -1074,7 +1155,7 @@ function App(){
 
       <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:100,background:th.bg,borderTop:"1px solid "+th.border,display:"flex",paddingBottom:"env(safe-area-inset-bottom,0px)"}}>
         {NAV_ITEMS.map(([k])=>(
-          <button key={k} onClick={()=>setTab(k)} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"12px 0 8px",border:"none",background:"none",cursor:"pointer",color:tab===k?th.text:th.muted,transition:"color 0.15s",gap:5}}>
+          <button key={k} onClick={()=>{setTab(k);clearActiveTx();}} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"12px 0 8px",border:"none",background:"none",cursor:"pointer",color:tab===k?th.text:th.muted,transition:"color 0.15s",gap:5}}>
             {NAV_ICONS[k]}
             <div style={{width:4,height:4,borderRadius:"50%",background:tab===k?th.text:"transparent",transition:"background 0.2s"}}/>
           </button>
