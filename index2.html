@@ -774,7 +774,7 @@ function App(){
         key={tx.id}
         onMouseEnter={()=>setActiveTx(tx)}
         onMouseLeave={()=>setActiveTx(null)}
-        onClick={()=>setActiveTx(prev=>prev?.id===tx.id?null:tx)}
+        onClick={()=>setActiveTx(tx)}
         style={{
           display:"flex",alignItems:"center",justifyContent:"space-between",
           padding:"12px 10px",borderBottom:"1px solid "+th.border,
