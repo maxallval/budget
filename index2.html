@@ -834,15 +834,13 @@ function App(){
         return(
           <div style={{position:"fixed",top:0,left:0,right:0,zIndex:98,pointerEvents:isOverrun?"auto":"none",transform:visible&&!syncFading&&!(overrunDismissing)?"translateY(0)":"translateY(-100%)",opacity:syncFading||overrunDismissing?0:visible?1:0,transition:"transform 0.3s ease, opacity 0.5s ease",background:isOverrun?"#f97316":th.bg,borderBottom:"1px solid "+(isOverrun?"rgba(255,255,255,0.2)":th.border)}}>
             {isOverrun
-              ?<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 16px",gap:8}}>
-                <div style={{display:"flex",alignItems:"center",gap:8,flex:1,minWidth:0}}>
-                  <span style={{fontSize:14,flexShrink:0}}>⚠️</span>
-                  <div style={{minWidth:0}}>
-                    <p style={{fontSize:12,fontWeight:700,color:"#fff",margin:"0 0 1px"}}>Budget dépassé</p>
-                    <p style={{fontSize:11,color:"rgba(255,255,255,0.85)",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{overrunCats.map(c=>getCatName(c.id)).join(", ")}</p>
-                  </div>
+              ?<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"5px 16px",gap:8}}>
+                <div style={{display:"flex",alignItems:"center",gap:6,flex:1,minWidth:0,overflow:"hidden"}}>
+                  <span style={{fontSize:12,flexShrink:0}}>⚠️</span>
+                  <span style={{fontSize:11,fontWeight:700,color:"#fff",flexShrink:0}}>Budget dépassé</span>
+                  <span style={{fontSize:11,color:"rgba(255,255,255,0.8)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>· {overrunCats.map(c=>getCatName(c.id)).join(", ")}</span>
                 </div>
-                <button onClick={acknowledgeOverruns} style={{fontSize:12,padding:"5px 12px",borderRadius:8,border:"none",background:"rgba(255,255,255,0.25)",color:"#fff",cursor:"pointer",fontWeight:600,flexShrink:0}}>Compris</button>
+                <button onClick={acknowledgeOverruns} style={{fontSize:11,padding:"3px 10px",borderRadius:8,border:"none",background:"rgba(255,255,255,0.25)",color:"#fff",cursor:"pointer",fontWeight:600,flexShrink:0}}>Compris</button>
               </div>
               :<div style={{display:"flex",alignItems:"center",gap:7,justifyContent:"center",padding:"5px 16px"}}>
                 {isSyncing?<span style={{width:6,height:6,borderRadius:"50%",background:"#f59e0b",display:"inline-block",flexShrink:0,animation:"pulse 1s infinite"}}/>:<span style={{width:6,height:6,borderRadius:"50%",background:"#10b981",display:"inline-block",flexShrink:0,opacity:0.8}}/>}
