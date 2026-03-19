@@ -551,7 +551,7 @@ function App(){
   const activeTx=useMemo(()=>activeTxId?txs.find(t=>t.id===activeTxId)||null:null,[activeTxId,txs]);
   const showSpeedDial=tab==="transactions"&&!!activeTx;
 
-  const clearActiveTx=()=>{setHoveredTxId(null);setTappedTxId(null);};
+  const clearActiveTx=()=>{setHoveredTxId(null);setTappedTxId(null);setDupMod(null);};
 
   /* Duplicate date picker */
   const[dupMod,setDupMod]=useState(null); // {tx, date}
@@ -601,11 +601,11 @@ function App(){
     window.history.pushState({b:true},"");
     const h=()=>{
       window.history.pushState({b:true},"");
-      if(formMod){setFormMod(null);return;}if(goalForm){setGoalForm(null);return;}if(catsMod){setCatsMod(false);return;}if(dayMod){setDayMod(null);setExpandedTx(null);setPendingDel(null);return;}if(delMod){setDelMod(null);return;}if(delAccMod){setDelAccMod(false);setDelAccInput("");return;}if(exportMod){setExportMod(false);return;}if(importMod){setImportMod(false);setImportText("");return;}
+      if(formMod){setFormMod(null);return;}if(goalForm){setGoalForm(null);return;}if(catsMod){setCatsMod(false);return;}if(dayMod){setDayMod(null);setExpandedTx(null);setPendingDel(null);return;}if(delMod){setDelMod(null);return;}if(delAccMod){setDelAccMod(false);setDelAccInput("");return;}if(dupMod){setDupMod(null);return;}if(exportMod){setExportMod(false);return;}if(importMod){setImportMod(false);setImportText("");return;}
       setTab("home");setMo(TODAY.getMonth());setYr(TODAY.getFullYear());
     };
     window.addEventListener("popstate",h);return()=>window.removeEventListener("popstate",h);
-  },[formMod,goalForm,catsMod,dayMod,delMod,delAccMod,exportMod,importMod]);
+  },[formMod,goalForm,catsMod,dayMod,delMod,delAccMod,dupMod,exportMod,importMod]);
   useEffect(()=>{const id=setInterval(()=>setTick(n=>n+1),15000);return()=>clearInterval(id);},[]);
   useEffect(()=>{const mq=window.matchMedia("(prefers-color-scheme:dark)");const h=e=>setSysDark(e.matches);mq.addEventListener("change",h);return()=>mq.removeEventListener("change",h);},[]);
   useEffect(()=>{const go=()=>setIsOnline(true);const off=()=>setIsOnline(false);window.addEventListener("online",go);window.addEventListener("offline",off);return()=>{window.removeEventListener("online",go);window.removeEventListener("offline",off);};},[]);
