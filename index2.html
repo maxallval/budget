@@ -19,7 +19,6 @@
     input[type=number]{-moz-appearance:textfield}
     button:focus,input:focus,select:focus,textarea:focus{outline:none}
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-    @keyframes slideDown{from{transform:translateY(-100%)}to{transform:translateY(0)}}
     @keyframes fullPageIn{from{opacity:0;transform:translateY(100%)}to{opacity:1;transform:translateY(0)}}
     @keyframes sheetIn{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
     @keyframes splashFadeOut{0%{opacity:1}88%{opacity:1}100%{opacity:0;pointer-events:none}}
@@ -227,6 +226,54 @@ function recLabel(tx){
   }
 }
 
+// ─── Helpers outside App (stable references, no re-creation on render) ────────
+
+const fabBtn=(bg,color)=>({
+  position:"absolute",width:48,height:48,borderRadius:"50%",
+  background:bg,color,border:"none",cursor:"pointer",
+  display:"flex",alignItems:"center",justifyContent:"center",
+  boxShadow:"0 4px 16px rgba(0,0,0,0.22)",
+  fontSize:19,lineHeight:1,
+});
+
+function StatusDot({ok,na,th}){
+  return na
+    ?<span style={{fontSize:12,color:th.muted}}>-</span>
+    :<span style={{fontSize:12,color:ok?"#10b981":"#ef4444",fontWeight:500}}>{ok?"OK":"Non"}</span>;
+}
+
+function TxRow({tx,amount,recurrenceLabel,cat,sc,isActive,setActiveTx,fmt,getCatName,th}){
+  return(
+    <div
+      onPointerEnter={e=>{if(e.pointerType==="mouse")setActiveTx(tx);}}
+      onPointerLeave={e=>{if(e.pointerType==="mouse")setActiveTx(null);}}
+      onClick={()=>setActiveTx(tx)}
+      style={{
+        display:"flex",alignItems:"center",justifyContent:"space-between",
+        padding:"12px 10px",borderBottom:"1px solid "+th.border,
+        borderRadius:10,cursor:"pointer",
+        background:isActive?th.surface:"transparent",
+        transition:"background 0.15s",
+        margin:"0 -10px",
+      }}
+    >
+      <div style={{display:"flex",alignItems:"center",gap:10}}>
+        <div style={{width:34,height:34,borderRadius:9,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0,border:"2px solid "+(isActive?cat.color:"transparent"),transition:"border-color 0.15s"}}>{cat.emoji}</div>
+        <div>
+          <p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p>
+          <p style={{fontSize:11,color:th.muted,margin:"3px 0 0"}}>{getCatName(cat.id)}{sc?<span style={{color:th.sub}}> · {sc.label}</span>:null}</p>
+          <p style={{fontSize:11,color:th.muted,margin:"2px 0 0"}}>{recurrenceLabel}</p>
+        </div>
+      </div>
+      <span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:tx.type==="income"?"#059669":"#ef4444",flexShrink:0}}>
+        {tx.type==="income"?"+":"-"}{fmt(amount,true)}
+      </span>
+    </div>
+  );
+}
+
+// ─── UI primitives ────────────────────────────────────────────────────────────
+
 const Tog=({label,sub,value,onChange,th})=>(
   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0",borderBottom:"1px solid "+th.border}}>
     <div><span style={{fontSize:13,color:th.text,display:"block"}}>{label}</span>{sub&&<span style={{fontSize:11,color:th.muted}}>{sub}</span>}</div>
@@ -246,13 +293,9 @@ const Sheet=({onClose,children,th})=>{
   useEffect(()=>{
     const outer=outerRef.current,inner=innerRef.current;
     if(!outer||!inner)return;
-    const update=()=>{
-      const h=Math.min(inner.offsetHeight,window.innerHeight*0.9);
-      outer.style.height=h+"px";
-    };
+    const update=()=>{const h=Math.min(inner.offsetHeight,window.innerHeight*0.9);outer.style.height=h+"px";};
     const ro=new ResizeObserver(update);
-    ro.observe(inner);
-    update();
+    ro.observe(inner);update();
     return()=>ro.disconnect();
   },[]);
   return(
@@ -513,9 +556,8 @@ function App(){
   const[importMod,setImportMod]=useState(false);
   const[importText,setImportText]=useState("");
   const[copied,setCopied]=useState(false);
-  // Active transaction for FAB speed-dial (hover on desktop, tap on mobile)
   const[activeTx,setActiveTx]=useState(null);
-  const[dupMod,setDupMod]=useState(null); // {tx, date}
+  const[dupMod,setDupMod]=useState(null);
 
   const balInputRef=useRef(null);
   const balSettRef=useRef(null);
@@ -590,7 +632,6 @@ function App(){
   const overrunKey=yr+"-"+mo;
   const showOverrunAlert=overrunCats.length>0&&!acknowledgedOverruns.has(overrunKey)&&!overrunDismissing;
 
-  // Clear activeTx when leaving transactions tab
   useEffect(()=>{if(tab!=="transactions")setActiveTx(null);},[tab]);
 
   useEffect(()=>{
@@ -603,11 +644,19 @@ function App(){
     window.history.pushState({b:true},"");
     const h=()=>{
       window.history.pushState({b:true},"");
-      if(formMod){setFormMod(null);return;}if(goalForm){setGoalForm(null);return;}if(catsMod){setCatsMod(false);return;}if(dayMod){setDayMod(null);setExpandedTx(null);setPendingDel(null);return;}if(delMod){setDelMod(null);return;}if(delAccMod){setDelAccMod(false);setDelAccInput("");return;}if(exportMod){setExportMod(false);return;}if(importMod){setImportMod(false);setImportText("");return;}
+      if(formMod){setFormMod(null);return;}
+      if(dupMod){setDupMod(null);return;}
+      if(goalForm){setGoalForm(null);return;}
+      if(catsMod){setCatsMod(false);return;}
+      if(dayMod){setDayMod(null);setExpandedTx(null);setPendingDel(null);return;}
+      if(delMod){setDelMod(null);return;}
+      if(delAccMod){setDelAccMod(false);setDelAccInput("");return;}
+      if(exportMod){setExportMod(false);return;}
+      if(importMod){setImportMod(false);setImportText("");return;}
       setTab("home");setMo(TODAY.getMonth());setYr(TODAY.getFullYear());
     };
     window.addEventListener("popstate",h);return()=>window.removeEventListener("popstate",h);
-  },[formMod,goalForm,catsMod,dayMod,delMod,delAccMod,exportMod,importMod]);
+  },[formMod,dupMod,goalForm,catsMod,dayMod,delMod,delAccMod,exportMod,importMod]);
   useEffect(()=>{const id=setInterval(()=>setTick(n=>n+1),15000);return()=>clearInterval(id);},[]);
   useEffect(()=>{const mq=window.matchMedia("(prefers-color-scheme:dark)");const h=e=>setSysDark(e.matches);mq.addEventListener("change",h);return()=>mq.removeEventListener("change",h);},[]);
   useEffect(()=>{const go=()=>setIsOnline(true);const off=()=>setIsOnline(false);window.addEventListener("online",go);window.addEventListener("offline",off);return()=>{window.removeEventListener("online",go);window.removeEventListener("offline",off);};},[]);
@@ -749,55 +798,9 @@ function App(){
   const goToday=()=>{setSlideDir(null);setMo(TODAY.getMonth());setYr(TODAY.getFullYear());};
   const handleSwipe=dx=>{if(Math.abs(dx)<40)return;const dir=dx<0?1:-1;const subs=SUB_NAV[tab];if(subs&&subs.length>1){const idx=subs.findIndex(s=>s.id===curSub);const next=idx+dir;if(next>=0&&next<subs.length)setSubTab(prev=>({...prev,[tab]:subs[next].id}));}else{dir>0?nextMo():prevMo();}};
 
-  // FAB action button style
-  const fabBtn=(bg,color)=>({
-    position:"absolute",width:48,height:48,borderRadius:"50%",
-    background:bg,color,border:"none",cursor:"pointer",
-    display:"flex",alignItems:"center",justifyContent:"center",
-    boxShadow:"0 4px 16px rgba(0,0,0,0.22)",
-    fontSize:19,lineHeight:1,
-  });
-
-  const StatusDot=({ok,na})=>na?<span style={{fontSize:12,color:th.muted}}>-</span>:<span style={{fontSize:12,color:ok?"#10b981":"#ef4444",fontWeight:500}}>{ok?"OK":"Non"}</span>;
   const dayModalList=dayMod?txs.filter(tx=>occsInMonth(tx,yr,mo).includes(dayMod.day)):[];
   const dayModalDateStr=dayMod?yr+"-"+String(mo+1).padStart(2,"0")+"-"+String(dayMod.day).padStart(2,"0"):"";
-
   const showFabActions=activeTx&&tab==="transactions";
-
-  // Shared tx row renderer for both historique and recurrent
-  const TxRow=({tx,amount,recurrenceLabel})=>{
-    const cat=dynCatById(tx.category||"other");
-    const sc=dynSubcatById(tx.subCategory);
-    const isActive=activeTx?.id===tx.id;
-    return(
-      <div
-        key={tx.id}
-        onPointerEnter={e=>{if(e.pointerType==="mouse")setActiveTx(tx);}}
-        onPointerLeave={e=>{if(e.pointerType==="mouse")setActiveTx(null);}}
-        onClick={()=>setActiveTx(tx)}
-        style={{
-          display:"flex",alignItems:"center",justifyContent:"space-between",
-          padding:"12px 10px",borderBottom:"1px solid "+th.border,
-          borderRadius:10,cursor:"pointer",
-          background:isActive?th.surface:"transparent",
-          transition:"background 0.15s",
-          margin:"0 -10px",
-        }}
-      >
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <div style={{width:34,height:34,borderRadius:9,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0,border:"2px solid "+(isActive?cat.color:"transparent"),transition:"border-color 0.15s"}}>{cat.emoji}</div>
-          <div>
-            <p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p>
-            <p style={{fontSize:11,color:th.muted,margin:"3px 0 0"}}>{getCatName(cat.id)}{sc?<span style={{color:th.sub}}> · {sc.label}</span>:null}</p>
-            <p style={{fontSize:11,color:th.muted,margin:"2px 0 0"}}>{recurrenceLabel}</p>
-          </div>
-        </div>
-        <span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:tx.type==="income"?"#059669":"#ef4444",flexShrink:0}}>
-          {tx.type==="income"?"+":"-"}{f(amount,true)}
-        </span>
-      </div>
-    );
-  };
 
   if(authLoading)return(<div style={{minHeight:"100vh",background:"#fff",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:8,height:8,borderRadius:"50%",background:"#6366f1",animation:"pulse 1s ease infinite"}}/></div>);
   if(!session)return <LoginScreen/>;
@@ -841,6 +844,7 @@ function App(){
         </div>
       )}
 
+      {/* Status bar */}
       <div style={{position:"fixed",top:0,left:0,right:0,zIndex:98,pointerEvents:isOverrun?"auto":"none",transform:barVisible&&!barFading?"translateY(0)":"translateY(-100%)",opacity:barFading?0:barVisible?1:0,transition:"transform 0.3s ease,opacity 0.5s ease",background:isOverrun?"#f97316":th.bg,borderBottom:"1px solid "+(isOverrun?"rgba(255,255,255,0.2)":th.border)}}>
         {isOverrun?(
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"5px 16px",gap:8}}>
@@ -863,43 +867,32 @@ function App(){
         )}
       </div>
 
-      {/* Transparent backdrop to dismiss activeTx on mobile tap-outside */}
-      {showFabActions&&(
-        <div
-          onClick={()=>setActiveTx(null)}
-          style={{position:"fixed",inset:0,zIndex:97,background:"transparent"}}
-        />
-      )}
+      {/* Backdrop to dismiss activeTx on mobile tap-outside */}
+      {showFabActions&&<div onClick={()=>setActiveTx(null)} style={{position:"fixed",inset:0,zIndex:97,background:"transparent"}}/>}
 
-      {/* FAB + speed-dial action buttons */}
+      {/* FAB + speed-dial */}
       <div style={{position:"fixed",bottom:80,right:16,zIndex:99}}>
         {showFabActions&&(<>
-          {/* Edit — directly above */}
-          <button
-            title="Modifier"
-            onClick={()=>{openForm(activeTx);setActiveTx(null);}}
-            style={{...fabBtn(th.btnBg,th.btnText),bottom:56+8,right:0,animation:"popIn 0.22s cubic-bezier(0.34,1.56,0.64,1) both"}}
-          >
+          <button title="Modifier" onClick={()=>{openForm(activeTx);setActiveTx(null);}}
+            style={{...fabBtn(th.btnBg,th.btnText),bottom:56+8,right:0,animation:"popIn 0.22s cubic-bezier(0.34,1.56,0.64,1) both"}}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
             </svg>
           </button>
-          {/* Duplicate — diagonal upper-left */}
-          <button
-            title="Dupliquer"
-            onClick={()=>{setDupMod({tx:activeTx,date:dStr(TODAY)});setActiveTx(null);}}
-            style={{...fabBtn(th.btnBg,th.btnText),bottom:30,right:56,animation:"popIn 0.22s cubic-bezier(0.34,1.56,0.64,1) 0.06s both"}}
-          >
+          <button title="Dupliquer" onClick={()=>{setDupMod({tx:activeTx,date:dStr(TODAY)});setActiveTx(null);}}
+            style={{...fabBtn(th.btnBg,th.btnText),bottom:30,right:56,animation:"popIn 0.22s cubic-bezier(0.34,1.56,0.64,1) 0.06s both"}}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="9" y="9" width="13" height="13" rx="2"/>
               <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
             </svg>
           </button>
         </>)}
-        <button onClick={()=>{if(showFabActions){setActiveTx(null);}else{openForm();}}} style={{width:48,height:48,borderRadius:"50%",background:showFabActions?"#ef4444":th.btnBg,color:showFabActions?"#fff":th.btnText,border:"none",cursor:"pointer",fontSize:showFabActions?22:26,fontWeight:300,boxShadow:"0 4px 16px rgba(0,0,0,0.2)",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1,position:"relative",zIndex:1,transition:"background 0.18s, color 0.18s, transform 0.18s",transform:showFabActions?"rotate(45deg)":"rotate(0deg)"}}>+</button>
+        <button onClick={()=>{if(showFabActions){setActiveTx(null);}else{openForm();}}}
+          style={{width:48,height:48,borderRadius:"50%",background:showFabActions?"#ef4444":th.btnBg,color:showFabActions?"#fff":th.btnText,border:"none",cursor:"pointer",fontSize:showFabActions?22:26,fontWeight:300,boxShadow:"0 4px 16px rgba(0,0,0,0.2)",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1,position:"relative",zIndex:1,transition:"background 0.18s,color 0.18s,transform 0.18s",transform:showFabActions?"rotate(45deg)":"rotate(0deg)"}}>+</button>
       </div>
 
+      {/* Header */}
       <div onMouseEnter={()=>setHeaderHovered(true)} onMouseLeave={()=>setHeaderHovered(false)} style={{padding:"36px 24px 20px",borderBottom:"1px solid "+th.border}}>
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
           <div>
@@ -919,6 +912,7 @@ function App(){
         </div>
       </div>
 
+      {/* Sub-nav */}
       {SUB_NAV[tab]&&(
         <div style={{padding:"0 24px",borderBottom:"1px solid "+th.border,display:"flex",gap:0,overflowX:"auto",background:th.bgSub}}>
           {tab==="transactions"&&<button onClick={()=>openForm()} style={{fontSize:12,paddingBottom:10,paddingTop:12,paddingLeft:12,paddingRight:16,border:"none",background:"none",cursor:"pointer",borderBottom:"2px solid transparent",color:th.sub,whiteSpace:"nowrap",flexShrink:0,display:"flex",alignItems:"center",gap:4}}><span style={{fontSize:14,lineHeight:1}}>+</span> Ajouter</button>}
@@ -926,6 +920,7 @@ function App(){
         </div>
       )}
 
+      {/* Main content */}
       <div key={tab+"-"+(curSub||"")+(tab==="home"?"-"+yr+"-"+mo:"")} style={{padding:"24px",paddingBottom:"176px",maxWidth:640,animation:tab==="home"&&slideDir?(slideDir==="left"?"slideInFromRight":"slideInFromLeft")+" 0.28s ease":"fadeIn 0.27s ease"}}>
 
         {tab==="home"&&(
@@ -976,7 +971,10 @@ function App(){
             </div>
             {monthTxs.length===0
               ?<div style={{textAlign:"center",padding:"60px 0"}}><p style={{fontSize:32,color:th.border,margin:"0 0 8px"}}>O</p><p style={{fontSize:13,color:th.muted}}>{searchQuery?"Aucun resultat":"Aucune transaction"}</p></div>
-              :monthTxs.map(tx=>{const n=occsInMonth(tx,yr,mo).length;return <TxRow key={tx.id} tx={tx} amount={tx.amount*n} recurrenceLabel={recLabel(tx)+(n>1?" x"+n:"")}/>;})
+              :monthTxs.map(tx=>{
+                const n=occsInMonth(tx,yr,mo).length;
+                return <TxRow key={tx.id} tx={tx} amount={tx.amount*n} recurrenceLabel={recLabel(tx)+(n>1?" x"+n:"")} cat={dynCatById(tx.category||"other")} sc={dynSubcatById(tx.subCategory)} isActive={activeTx?.id===tx.id} setActiveTx={setActiveTx} fmt={f} getCatName={getCatName} th={th}/>;
+              })
             }
           </div>
         )}
@@ -985,7 +983,9 @@ function App(){
           <div>
             {recurTxs.length===0
               ?<div style={{textAlign:"center",padding:"60px 0"}}><p style={{fontSize:32,color:th.border,margin:"0 0 8px"}}>O</p><p style={{fontSize:13,color:th.muted}}>Aucune transaction recurrente</p></div>
-              :recurTxs.map(tx=><TxRow key={tx.id} tx={tx} amount={tx.amount} recurrenceLabel={recLabel(tx)}/>)
+              :recurTxs.map(tx=>
+                <TxRow key={tx.id} tx={tx} amount={tx.amount} recurrenceLabel={recLabel(tx)} cat={dynCatById(tx.category||"other")} sc={dynSubcatById(tx.subCategory)} isActive={activeTx?.id===tx.id} setActiveTx={setActiveTx} fmt={f} getCatName={getCatName} th={th}/>
+              )
             }
           </div>
         )}
@@ -1105,8 +1105,8 @@ function App(){
               <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}>
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:36,height:36,borderRadius:10,background:"#6366f120",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>💾</div><span style={{fontSize:14,fontWeight:600,color:th.text}}>Stockage local</span></div><span style={{fontSize:11,padding:"3px 10px",borderRadius:20,background:"#10b98118",color:"#10b981",fontWeight:500}}>Cache</span></div>
                 <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingBottom:8,borderBottom:"1px solid "+th.border}}><span style={{fontSize:12,color:th.sub}}>Lecture</span><StatusDot ok={connStatus.localRead} na={connStatus.localRead===null}/></div>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:12,color:th.sub}}>Ecriture</span><StatusDot ok={connStatus.localWrite} na={connStatus.localWrite===null}/></div>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingBottom:8,borderBottom:"1px solid "+th.border}}><span style={{fontSize:12,color:th.sub}}>Lecture</span><StatusDot ok={connStatus.localRead} na={connStatus.localRead===null} th={th}/></div>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:12,color:th.sub}}>Ecriture</span><StatusDot ok={connStatus.localWrite} na={connStatus.localWrite===null} th={th}/></div>
                 </div>
               </div>
             </div>
@@ -1155,12 +1155,13 @@ function App(){
               <button onClick={()=>{setDelAccMod(true);setDelAccInput("");}} style={{fontSize:13,color:th.danger,background:"none",border:"1px solid "+th.danger,borderRadius:10,padding:"8px 16px",cursor:"pointer"}}>Supprimer le compte</button>
             </div>
             <div style={{marginTop:32,paddingTop:20,borderTop:"1px solid "+th.border,textAlign:"center"}}>
-              <p onClick={handleVersionClick} style={{fontSize:11,color:showTroubleshoot?"#6366f1":th.muted,letterSpacing:"0.1em",cursor:"pointer",userSelect:"none"}}>v0.035</p>
+              <p onClick={handleVersionClick} style={{fontSize:11,color:showTroubleshoot?"#6366f1":th.muted,letterSpacing:"0.1em",cursor:"pointer",userSelect:"none"}}>v0.036</p>
             </div>
           </div>
         )}
       </div>
 
+      {/* Bottom nav */}
       <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:100,background:th.bg,borderTop:"1px solid "+th.border,display:"flex",paddingBottom:"env(safe-area-inset-bottom,0px)"}}>
         {NAV_ITEMS.map(([k])=>(
           <button key={k} onClick={()=>setTab(k)} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"12px 0 8px",border:"none",background:"none",cursor:"pointer",color:tab===k?th.text:th.muted,transition:"color 0.15s",gap:5}}>
@@ -1170,6 +1171,7 @@ function App(){
         ))}
       </div>
 
+      {/* Modals */}
       {dupMod&&<Sheet onClose={()=>setDupMod(null)} th={th}>
         <SheetHead title="Dupliquer la transaction" onClose={()=>setDupMod(null)} th={th}/>
         <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 14px",background:th.surface,borderRadius:12,marginBottom:20}}>
@@ -1180,12 +1182,7 @@ function App(){
           </div>
         </div>
         <label style={{...lbl,display:"block",marginBottom:8}}>Date de la copie</label>
-        <input
-          type="date"
-          value={dupMod.date}
-          onChange={e=>e.target.value&&setDupMod(m=>({...m,date:e.target.value}))}
-          style={{display:"block",width:"100%",padding:"12px 14px",fontSize:15,color:th.text,background:th.surface,border:"1px solid "+th.inputBorder,borderRadius:12,outline:"none",boxSizing:"border-box",colorScheme:isDark?"dark":"light",marginBottom:20}}
-        />
+        <input type="date" value={dupMod.date} onChange={e=>e.target.value&&setDupMod(m=>({...m,date:e.target.value}))} style={{display:"block",width:"100%",padding:"12px 14px",fontSize:15,color:th.text,background:th.surface,border:"1px solid "+th.inputBorder,borderRadius:12,outline:"none",boxSizing:"border-box",colorScheme:isDark?"dark":"light",marginBottom:20}}/>
         <div style={{display:"flex",gap:8}}>
           <button onClick={()=>setDupMod(null)} style={{flex:1,padding:"12px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>Annuler</button>
           <button onClick={()=>{duplicateTx(dupMod.tx,dupMod.date);setDupMod(null);}} style={{flex:2,padding:"12px 0",fontSize:13,border:"none",borderRadius:12,background:th.btnBg,color:th.btnText,cursor:"pointer",fontWeight:600}}>Dupliquer</button>
