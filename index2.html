@@ -36,7 +36,7 @@
     @keyframes fadeIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
     @keyframes slideInFromRight{from{transform:translateX(56px);opacity:0}to{transform:translateX(0);opacity:1}}
     @keyframes slideInFromLeft{from{transform:translateX(-56px);opacity:0}to{transform:translateX(0);opacity:1}}
-    @keyframes popIn{0%{transform:scale(0.3);opacity:0}65%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+    @keyframes popIn{0%{opacity:0;transform:scale(0.4)}70%{transform:scale(1.1)}100%{opacity:1;transform:scale(1)}}
   </style>
 </head>
 <body>
@@ -400,10 +400,6 @@ const NAV_ICONS={
   troubleshoot:<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>,
 };
 
-/* SVG icons for FAB satellites */
-const ICON_EDIT=<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
-const ICON_COPY=<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>;
-
 function LoginScreen(){
   const[loading,setLoading]=useState(false);
   const[err,setErr]=useState("");
@@ -499,10 +495,8 @@ function App(){
   const[importMod,setImportMod]=useState(false);
   const[importText,setImportText]=useState("");
   const[copied,setCopied]=useState(false);
-  /* Speed-dial FAB state */
-  const[hoveredTxId,setHoveredTxId]=useState(null);
-  const[tappedTxId,setTappedTxId]=useState(null);
-  const[dupMod,setDupMod]=useState(null);
+  // Active transaction for FAB speed-dial (hover on desktop, tap on mobile)
+  const[activeTx,setActiveTx]=useState(null);
 
   const balInputRef=useRef(null);
   const balSettRef=useRef(null);
@@ -547,19 +541,6 @@ function App(){
   const DEFAULT_SUB={transactions:"historique",budget:"categories",analyse:"statistiques",troubleshoot:"connexions"};
   const curSub=subTab[tab]||(DEFAULT_SUB[tab]||null);
 
-  /* Speed-dial: active transaction */
-  const activeTxId=hoveredTxId||tappedTxId;
-  const activeTx=useMemo(()=>activeTxId?txs.find(t=>t.id===activeTxId)||null:null,[activeTxId,txs]);
-  const showSpeedDial=tab==="transactions"&&!!activeTx;
-
-  const clearActiveTx=()=>{setHoveredTxId(null);setTappedTxId(null);setDupMod(null);};
-
-  const confirmDuplicate=()=>{
-    if(!dupMod)return;
-    setTxs(prev=>[...prev,{...dupMod.tx,id:Date.now().toString(),startDate:dupMod.date,recurrence:{type:"once"},exceptions:[]}]);
-    setDupMod(null);setHoveredTxId(null);setTappedTxId(null);
-  };
-
   const curBalVal=useMemo(()=>getBalAt(TODAY),[getBalAt]);
   const dim=new Date(yr,mo+1,0).getDate();
   const cells=useMemo(()=>{const fd=new Date(yr,mo,1).getDay();return[...Array(fd).fill(null),...Array.from({length:dim},(_,i)=>i+1)];},[yr,mo,dim]);
@@ -590,6 +571,9 @@ function App(){
   const overrunKey=yr+"-"+mo;
   const showOverrunAlert=overrunCats.length>0&&!acknowledgedOverruns.has(overrunKey)&&!overrunDismissing;
 
+  // Clear activeTx when leaving transactions tab
+  useEffect(()=>{if(tab!=="transactions")setActiveTx(null);},[tab]);
+
   useEffect(()=>{
     sb.auth.getSession().then(({data:{session}})=>{setSession(session);setAuthLoading(false);});
     const{data:{subscription}}=sb.auth.onAuthStateChange((_,session)=>{setSession(session);if(!session)setLoaded(false);});
@@ -600,11 +584,11 @@ function App(){
     window.history.pushState({b:true},"");
     const h=()=>{
       window.history.pushState({b:true},"");
-      if(formMod){setFormMod(null);return;}if(goalForm){setGoalForm(null);return;}if(catsMod){setCatsMod(false);return;}if(dayMod){setDayMod(null);setExpandedTx(null);setPendingDel(null);return;}if(delMod){setDelMod(null);return;}if(delAccMod){setDelAccMod(false);setDelAccInput("");return;}if(dupMod){setDupMod(null);return;}if(exportMod){setExportMod(false);return;}if(importMod){setImportMod(false);setImportText("");return;}
+      if(formMod){setFormMod(null);return;}if(goalForm){setGoalForm(null);return;}if(catsMod){setCatsMod(false);return;}if(dayMod){setDayMod(null);setExpandedTx(null);setPendingDel(null);return;}if(delMod){setDelMod(null);return;}if(delAccMod){setDelAccMod(false);setDelAccInput("");return;}if(exportMod){setExportMod(false);return;}if(importMod){setImportMod(false);setImportText("");return;}
       setTab("home");setMo(TODAY.getMonth());setYr(TODAY.getFullYear());
     };
     window.addEventListener("popstate",h);return()=>window.removeEventListener("popstate",h);
-  },[formMod,goalForm,catsMod,dayMod,delMod,delAccMod,dupMod,exportMod,importMod]);
+  },[formMod,goalForm,catsMod,dayMod,delMod,delAccMod,exportMod,importMod]);
   useEffect(()=>{const id=setInterval(()=>setTick(n=>n+1),15000);return()=>clearInterval(id);},[]);
   useEffect(()=>{const mq=window.matchMedia("(prefers-color-scheme:dark)");const h=e=>setSysDark(e.matches);mq.addEventListener("change",h);return()=>mq.removeEventListener("change",h);},[]);
   useEffect(()=>{const go=()=>setIsOnline(true);const off=()=>setIsOnline(false);window.addEventListener("online",go);window.addEventListener("offline",off);return()=>{window.removeEventListener("online",go);window.removeEventListener("offline",off);};},[]);
@@ -746,20 +730,55 @@ function App(){
   const goToday=()=>{setSlideDir(null);setMo(TODAY.getMonth());setYr(TODAY.getFullYear());};
   const handleSwipe=dx=>{if(Math.abs(dx)<40)return;const dir=dx<0?1:-1;const subs=SUB_NAV[tab];if(subs&&subs.length>1){const idx=subs.findIndex(s=>s.id===curSub);const next=idx+dir;if(next>=0&&next<subs.length)setSubTab(prev=>({...prev,[tab]:subs[next].id}));}else{dir>0?nextMo():prevMo();}};
 
-  /* Style partagé pour les boutons satellites */
-  const satBtnSt=(bottom,right,delay)=>({
-    position:"absolute",bottom,right,
-    width:48,height:48,borderRadius:"50%",
-    background:th.btnBg,color:th.btnText,
-    border:"none",cursor:"pointer",
-    boxShadow:"0 4px 16px rgba(0,0,0,0.22)",
+  // FAB action button style
+  const fabBtn=(bg,color)=>({
+    position:"absolute",width:48,height:48,borderRadius:"50%",
+    background:bg,color,border:"none",cursor:"pointer",
     display:"flex",alignItems:"center",justifyContent:"center",
-    animation:`popIn 0.25s cubic-bezier(0.34,1.56,0.64,1) ${delay}s both`,
+    boxShadow:"0 4px 16px rgba(0,0,0,0.22)",
+    fontSize:19,lineHeight:1,
   });
 
   const StatusDot=({ok,na})=>na?<span style={{fontSize:12,color:th.muted}}>-</span>:<span style={{fontSize:12,color:ok?"#10b981":"#ef4444",fontWeight:500}}>{ok?"OK":"Non"}</span>;
   const dayModalList=dayMod?txs.filter(tx=>occsInMonth(tx,yr,mo).includes(dayMod.day)):[];
   const dayModalDateStr=dayMod?yr+"-"+String(mo+1).padStart(2,"0")+"-"+String(dayMod.day).padStart(2,"0"):"";
+
+  const showFabActions=activeTx&&tab==="transactions";
+
+  // Shared tx row renderer for both historique and recurrent
+  const TxRow=({tx,amount,recurrenceLabel})=>{
+    const cat=dynCatById(tx.category||"other");
+    const sc=dynSubcatById(tx.subCategory);
+    const isActive=activeTx?.id===tx.id;
+    return(
+      <div
+        key={tx.id}
+        onMouseEnter={()=>setActiveTx(tx)}
+        onMouseLeave={()=>setActiveTx(null)}
+        onClick={()=>setActiveTx(prev=>prev?.id===tx.id?null:tx)}
+        style={{
+          display:"flex",alignItems:"center",justifyContent:"space-between",
+          padding:"12px 10px",borderBottom:"1px solid "+th.border,
+          borderRadius:10,cursor:"pointer",
+          background:isActive?th.surface:"transparent",
+          transition:"background 0.15s",
+          margin:"0 -10px",
+        }}
+      >
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <div style={{width:34,height:34,borderRadius:9,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0,border:"2px solid "+(isActive?cat.color:"transparent"),transition:"border-color 0.15s"}}>{cat.emoji}</div>
+          <div>
+            <p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p>
+            <p style={{fontSize:11,color:th.muted,margin:"3px 0 0"}}>{getCatName(cat.id)}{sc?<span style={{color:th.sub}}> · {sc.label}</span>:null}</p>
+            <p style={{fontSize:11,color:th.muted,margin:"2px 0 0"}}>{recurrenceLabel}</p>
+          </div>
+        </div>
+        <span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:tx.type==="income"?"#059669":"#ef4444",flexShrink:0}}>
+          {tx.type==="income"?"+":"-"}{f(amount,true)}
+        </span>
+      </div>
+    );
+  };
 
   if(authLoading)return(<div style={{minHeight:"100vh",background:"#fff",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:8,height:8,borderRadius:"50%",background:"#6366f1",animation:"pulse 1s ease infinite"}}/></div>);
   if(!session)return <LoginScreen/>;
@@ -772,11 +791,7 @@ function App(){
   const barFading=syncFade||(overrunDismissing&&!syncShow)||(motdFading&&isMotd);
 
   return(
-    <div
-      onTouchStart={e=>{touchStartX.current=e.touches[0].clientX;}}
-      onTouchEnd={e=>{if(touchStartX.current===null)return;const dx=e.changedTouches[0].clientX-touchStartX.current;touchStartX.current=null;handleSwipe(dx);}}
-      onClick={()=>setTappedTxId(null)}
-      style={{minHeight:"100vh",background:th.bg,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>
+    <div onTouchStart={e=>{touchStartX.current=e.touches[0].clientX;}} onTouchEnd={e=>{if(touchStartX.current===null)return;const dx=e.changedTouches[0].clientX-touchStartX.current;touchStartX.current=null;handleSwipe(dx);}} style={{minHeight:"100vh",background:th.bg,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>
 
       {showSplash&&(
         <div style={{position:"fixed",inset:0,background:isDark?"#0d0d0d":"#fff",zIndex:999,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",animation:"splashFadeOut 2.25s ease forwards"}}>
@@ -807,7 +822,6 @@ function App(){
         </div>
       )}
 
-      {/* Top status bar */}
       <div style={{position:"fixed",top:0,left:0,right:0,zIndex:98,pointerEvents:isOverrun?"auto":"none",transform:barVisible&&!barFading?"translateY(0)":"translateY(-100%)",opacity:barFading?0:barVisible?1:0,transition:"transform 0.3s ease,opacity 0.5s ease",background:isOverrun?"#f97316":th.bg,borderBottom:"1px solid "+(isOverrun?"rgba(255,255,255,0.2)":th.border)}}>
         {isOverrun?(
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"5px 16px",gap:8}}>
@@ -830,29 +844,31 @@ function App(){
         )}
       </div>
 
-      {/* FAB speed-dial */}
-      <div style={{position:"fixed",bottom:80,right:16,zIndex:99,width:48,height:48}}>
-        {showSpeedDial&&<>
-          {/* Modifier — directement au-dessus */}
+      {/* Transparent backdrop to dismiss activeTx on mobile tap-outside */}
+      {showFabActions&&(
+        <div
+          onClick={()=>setActiveTx(null)}
+          style={{position:"fixed",inset:0,zIndex:97,background:"transparent"}}
+        />
+      )}
+
+      {/* FAB + speed-dial action buttons */}
+      <div style={{position:"fixed",bottom:80,right:16,zIndex:99}}>
+        {showFabActions&&(<>
+          {/* Edit — directly above */}
           <button
-            key={"edit-"+activeTxId}
-            onClick={e=>{e.stopPropagation();openForm(activeTx);clearActiveTx();}}
             title="Modifier"
-            style={satBtnSt(58,0,0)}
-          >{ICON_EDIT}</button>
-          {/* Dupliquer — en diagonale haut-gauche */}
+            onClick={()=>{openForm(activeTx);setActiveTx(null);}}
+            style={{...fabBtn(th.btnBg,th.btnText),bottom:56+8,right:0,animation:"popIn 0.22s cubic-bezier(0.34,1.56,0.64,1) both"}}
+          >&#9998;</button>
+          {/* Duplicate — diagonal upper-left */}
           <button
-            key={"dup-"+activeTxId}
-            onClick={e=>{e.stopPropagation();setDupMod({tx:activeTx,date:dStr(TODAY)});}}
             title="Dupliquer"
-            style={satBtnSt(30,58,0.06)}
-          >{ICON_COPY}</button>
-        </>}
-        {/* Bouton + principal — devient rouge × quand speed-dial ouvert */}
-        <button
-          onClick={e=>{e.stopPropagation();if(showSpeedDial){clearActiveTx();}else{openForm();}}}
-          style={{position:"absolute",bottom:0,right:0,width:48,height:48,borderRadius:"50%",background:showSpeedDial?"#ef4444":th.btnBg,color:"#fff",border:"none",cursor:"pointer",fontSize:showSpeedDial?22:26,fontWeight:300,boxShadow:"0 4px 16px rgba(0,0,0,0.2)",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1,transition:"background 0.2s,font-size 0.15s"}}
-        >{showSpeedDial?"×":"+"}</button>
+            onClick={()=>{duplicateTx(activeTx);setActiveTx(null);}}
+            style={{...fabBtn(th.btnBg,th.btnText),bottom:30,right:56,animation:"popIn 0.22s cubic-bezier(0.34,1.56,0.64,1) 0.06s both"}}
+          >&#10697;</button>
+        </>)}
+        <button onClick={()=>{setActiveTx(null);openForm();}} style={{width:48,height:48,borderRadius:"50%",background:th.btnBg,color:th.btnText,border:"none",cursor:"pointer",fontSize:26,fontWeight:300,boxShadow:"0 4px 16px rgba(0,0,0,0.2)",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1,position:"relative",zIndex:1}}>+</button>
       </div>
 
       <div onMouseEnter={()=>setHeaderHovered(true)} onMouseLeave={()=>setHeaderHovered(false)} style={{padding:"36px 24px 20px",borderBottom:"1px solid "+th.border}}>
@@ -877,7 +893,7 @@ function App(){
       {SUB_NAV[tab]&&(
         <div style={{padding:"0 24px",borderBottom:"1px solid "+th.border,display:"flex",gap:0,overflowX:"auto",background:th.bgSub}}>
           {tab==="transactions"&&<button onClick={()=>openForm()} style={{fontSize:12,paddingBottom:10,paddingTop:12,paddingLeft:12,paddingRight:16,border:"none",background:"none",cursor:"pointer",borderBottom:"2px solid transparent",color:th.sub,whiteSpace:"nowrap",flexShrink:0,display:"flex",alignItems:"center",gap:4}}><span style={{fontSize:14,lineHeight:1}}>+</span> Ajouter</button>}
-          {SUB_NAV[tab].map(s=><button key={s.id} onClick={()=>{setSubTab(prev=>({...prev,[tab]:s.id}));clearActiveTx();}} style={{fontSize:12,paddingBottom:10,paddingTop:12,paddingLeft:12,paddingRight:12,border:"none",background:"none",cursor:"pointer",borderBottom:curSub===s.id?"2px solid "+th.sub:"2px solid transparent",color:curSub===s.id?th.text:th.sub,fontWeight:curSub===s.id?600:400,whiteSpace:"nowrap",flexShrink:0}}>{s.label}</button>)}
+          {SUB_NAV[tab].map(s=><button key={s.id} onClick={()=>setSubTab(prev=>({...prev,[tab]:s.id}))} style={{fontSize:12,paddingBottom:10,paddingTop:12,paddingLeft:12,paddingRight:12,border:"none",background:"none",cursor:"pointer",borderBottom:curSub===s.id?"2px solid "+th.sub:"2px solid transparent",color:curSub===s.id?th.text:th.sub,fontWeight:curSub===s.id?600:400,whiteSpace:"nowrap",flexShrink:0}}>{s.label}</button>)}
         </div>
       )}
 
@@ -931,29 +947,7 @@ function App(){
             </div>
             {monthTxs.length===0
               ?<div style={{textAlign:"center",padding:"60px 0"}}><p style={{fontSize:32,color:th.border,margin:"0 0 8px"}}>O</p><p style={{fontSize:13,color:th.muted}}>{searchQuery?"Aucun resultat":"Aucune transaction"}</p></div>
-              :monthTxs.map(tx=>{
-                const cat=dynCatById(tx.category||"other"),n=occsInMonth(tx,yr,mo).length,sc=dynSubcatById(tx.subCategory);
-                const isActive=activeTxId===tx.id;
-                return(
-                  <div
-                    key={tx.id}
-                    onMouseEnter={()=>setHoveredTxId(tx.id)}
-                    onMouseLeave={()=>setHoveredTxId(null)}
-                    onClick={e=>{e.stopPropagation();setTappedTxId(p=>p===tx.id?null:tx.id);}}
-                    style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderBottom:"1px solid "+th.border,cursor:"pointer",background:isActive?th.surface+"88":"transparent",borderRadius:isActive?8:0,paddingLeft:isActive?8:0,paddingRight:isActive?8:0,transition:"background 0.15s,padding 0.15s"}}
-                  >
-                    <div style={{display:"flex",alignItems:"center",gap:10}}>
-                      <div style={{width:34,height:34,borderRadius:9,background:cat.color+(isActive?"44":"22"),border:"2px solid "+(isActive?cat.color:"transparent"),display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0,transition:"border-color 0.15s,background 0.15s"}}>{cat.emoji}</div>
-                      <div>
-                        <p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p>
-                        <p style={{fontSize:11,color:th.muted,margin:"3px 0 0"}}>{getCatName(cat.id)}{sc?<span style={{color:th.sub}}> - {sc.label}</span>:null}</p>
-                        <p style={{fontSize:11,color:th.muted,margin:"2px 0 0"}}>{recLabel(tx)}{n>1?<span style={{color:th.sub}}> x{n}</span>:null}</p>
-                      </div>
-                    </div>
-                    <span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:tx.type==="income"?"#059669":"#ef4444",flexShrink:0}}>{tx.type==="income"?"+":"-"}{f(tx.amount*n,true)}</span>
-                  </div>
-                );
-              })
+              :monthTxs.map(tx=>{const n=occsInMonth(tx,yr,mo).length;return <TxRow key={tx.id} tx={tx} amount={tx.amount*n} recurrenceLabel={recLabel(tx)+(n>1?" x"+n:"")}/>;})
             }
           </div>
         )}
@@ -962,29 +956,7 @@ function App(){
           <div>
             {recurTxs.length===0
               ?<div style={{textAlign:"center",padding:"60px 0"}}><p style={{fontSize:32,color:th.border,margin:"0 0 8px"}}>O</p><p style={{fontSize:13,color:th.muted}}>Aucune transaction recurrente</p></div>
-              :recurTxs.map(tx=>{
-                const cat=dynCatById(tx.category||"other"),sc=dynSubcatById(tx.subCategory);
-                const isActive=activeTxId===tx.id;
-                return(
-                  <div
-                    key={tx.id}
-                    onMouseEnter={()=>setHoveredTxId(tx.id)}
-                    onMouseLeave={()=>setHoveredTxId(null)}
-                    onClick={e=>{e.stopPropagation();setTappedTxId(p=>p===tx.id?null:tx.id);}}
-                    style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderBottom:"1px solid "+th.border,cursor:"pointer",background:isActive?th.surface+"88":"transparent",borderRadius:isActive?8:0,paddingLeft:isActive?8:0,paddingRight:isActive?8:0,transition:"background 0.15s,padding 0.15s"}}
-                  >
-                    <div style={{display:"flex",alignItems:"center",gap:10}}>
-                      <div style={{width:34,height:34,borderRadius:9,background:cat.color+(isActive?"44":"22"),border:"2px solid "+(isActive?cat.color:"transparent"),display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0,transition:"border-color 0.15s,background 0.15s"}}>{cat.emoji}</div>
-                      <div>
-                        <p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p>
-                        <p style={{fontSize:11,color:th.muted,margin:"3px 0 0"}}>{getCatName(cat.id)}{sc?<span style={{color:th.sub}}> - {sc.label}</span>:null}</p>
-                        <p style={{fontSize:11,color:th.muted,margin:"2px 0 0"}}>{recLabel(tx)}</p>
-                      </div>
-                    </div>
-                    <span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:tx.type==="income"?"#059669":"#ef4444",flexShrink:0}}>{tx.type==="income"?"+":"-"}{f(tx.amount,true)}</span>
-                  </div>
-                );
-              })
+              :recurTxs.map(tx=><TxRow key={tx.id} tx={tx} amount={tx.amount} recurrenceLabel={recLabel(tx)}/>)
             }
           </div>
         )}
@@ -1162,37 +1134,14 @@ function App(){
 
       <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:100,background:th.bg,borderTop:"1px solid "+th.border,display:"flex",paddingBottom:"env(safe-area-inset-bottom,0px)"}}>
         {NAV_ITEMS.map(([k])=>(
-          <button key={k} onClick={()=>{setTab(k);clearActiveTx();}} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"12px 0 8px",border:"none",background:"none",cursor:"pointer",color:tab===k?th.text:th.muted,transition:"color 0.15s",gap:5}}>
+          <button key={k} onClick={()=>setTab(k)} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"12px 0 8px",border:"none",background:"none",cursor:"pointer",color:tab===k?th.text:th.muted,transition:"color 0.15s",gap:5}}>
             {NAV_ICONS[k]}
             <div style={{width:4,height:4,borderRadius:"50%",background:tab===k?th.text:"transparent",transition:"background 0.2s"}}/>
           </button>
         ))}
       </div>
 
-      {dupMod&&<Sheet onClose={()=>setDupMod(null)} th={th}>
-        <SheetHead title="Dupliquer la transaction" onClose={()=>setDupMod(null)} th={th}/>
-        <div style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",background:th.surface,borderRadius:12,marginBottom:20}}>
-          <div style={{width:36,height:36,borderRadius:9,background:dynCatById(dupMod.tx.category||"other").color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{dynCatById(dupMod.tx.category||"other").emoji}</div>
-          <div>
-            <p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{dupMod.tx.description}</p>
-            <p style={{fontSize:11,color:dupMod.tx.type==="income"?"#059669":"#ef4444",margin:"3px 0 0",fontWeight:500}}>{dupMod.tx.type==="income"?"+":"-"}{f(dupMod.tx.amount,true)}</p>
-          </div>
-        </div>
-        <div style={{marginBottom:20}}>
-          <label style={{...lbl,display:"block",marginBottom:8}}>Date de la copie</label>
-          <input
-            type="date"
-            value={dupMod.date}
-            onChange={e=>e.target.value&&setDupMod(m=>({...m,date:e.target.value}))}
-            style={{display:"block",width:"100%",padding:"10px 0",fontSize:15,color:th.text,background:"transparent",border:"none",borderBottom:"1px solid "+th.inputBorder,outline:"none",colorScheme:isDark?"dark":"light"}}
-          />
-        </div>
-        <div style={{display:"flex",gap:8}}>
-          <button onClick={()=>setDupMod(null)} style={{flex:1,padding:"12px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>Annuler</button>
-          <button onClick={confirmDuplicate} style={{flex:2,padding:"12px 0",fontSize:13,border:"none",borderRadius:12,background:th.btnBg,color:th.btnText,cursor:"pointer",fontWeight:600}}>Dupliquer</button>
-        </div>
-      </Sheet>}<Sheet onClose={()=>setExportMod(false)} th={th}><SheetHead title="Exporter les donnees" onClose={()=>setExportMod(false)} th={th}/><p style={{fontSize:12,color:th.sub,marginBottom:12}}>Copiez ce JSON et conservez-le en lieu sur.</p><textarea readOnly value={getExportJSON()} style={{width:"100%",height:180,padding:"10px 12px",fontSize:11,fontFamily:"monospace",color:th.sub,background:th.surface,border:"1px solid "+th.border,borderRadius:10,resize:"none",boxSizing:"border-box",lineHeight:1.5}}/><div style={{display:"flex",gap:8,marginTop:12}}><button onClick={()=>setExportMod(false)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>Fermer</button><button onClick={handleCopy} style={{flex:2,padding:"11px 0",fontSize:13,border:"none",borderRadius:12,background:copied?"#059669":th.btnBg,color:copied?"#fff":th.btnText,cursor:"pointer",fontWeight:500,transition:"background 0.2s"}}>{copied?"Copie":"Copier"}</button></div></Sheet>}
-
+      {exportMod&&<Sheet onClose={()=>setExportMod(false)} th={th}><SheetHead title="Exporter les donnees" onClose={()=>setExportMod(false)} th={th}/><p style={{fontSize:12,color:th.sub,marginBottom:12}}>Copiez ce JSON et conservez-le en lieu sur.</p><textarea readOnly value={getExportJSON()} style={{width:"100%",height:180,padding:"10px 12px",fontSize:11,fontFamily:"monospace",color:th.sub,background:th.surface,border:"1px solid "+th.border,borderRadius:10,resize:"none",boxSizing:"border-box",lineHeight:1.5}}/><div style={{display:"flex",gap:8,marginTop:12}}><button onClick={()=>setExportMod(false)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>Fermer</button><button onClick={handleCopy} style={{flex:2,padding:"11px 0",fontSize:13,border:"none",borderRadius:12,background:copied?"#059669":th.btnBg,color:copied?"#fff":th.btnText,cursor:"pointer",fontWeight:500,transition:"background 0.2s"}}>{copied?"Copie":"Copier"}</button></div></Sheet>}
       {importMod&&<Sheet onClose={()=>setImportMod(false)} th={th}><SheetHead title="Importer les donnees" onClose={()=>setImportMod(false)} th={th}/><p style={{fontSize:12,color:th.sub,marginBottom:12}}>Collez un JSON exporte precedemment.</p><textarea value={importText} onChange={e=>setImportText(e.target.value)} placeholder="Collez votre JSON ici..." style={{width:"100%",height:200,padding:"10px 12px",fontSize:11,fontFamily:"monospace",color:th.text,background:th.surface,border:"1px solid "+th.border,borderRadius:10,resize:"none",boxSizing:"border-box",lineHeight:1.5}}/><div style={{display:"flex",gap:8,marginTop:12}}><button onClick={()=>setImportMod(false)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>Annuler</button><button onClick={handleImport} disabled={!importText.trim()} style={{flex:2,padding:"11px 0",fontSize:13,border:"none",borderRadius:12,background:importText.trim()?th.btnBg:th.surface,color:importText.trim()?th.btnText:th.muted,cursor:importText.trim()?"pointer":"default",fontWeight:500}}>Restaurer</button></div></Sheet>}
 
       {goalForm&&<Sheet onClose={()=>setGoalForm(null)} th={th}>
