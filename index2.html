@@ -500,7 +500,6 @@ function App(){
   const[motd,setMotd]=useState("");
   const[motdVisible,setMotdVisible]=useState(false);
   const[motdFading,setMotdFading]=useState(false);
-  const[motdCountdown,setMotdCountdown]=useState(null);
   const[loaded,setLoaded]=useState(false);
   const[tab,setTab]=useState("home");
   const[subTab,setSubTab]=useState({});
@@ -552,6 +551,7 @@ function App(){
   const[copied,setCopied]=useState(false);
   const[activeTx,setActiveTx]=useState(null);
   const[dupMod,setDupMod]=useState(null);
+  const[motdCountdown,setMotdCountdown]=useState(8);
 
   const balInputRef=useRef(null);
   const balSettRef=useRef(null);
@@ -565,8 +565,8 @@ function App(){
   const syncHideTimer=useRef(null);
   const syncFadeTimer=useRef(null);
   const overrunTimer=useRef(null);
-  const motdFadeTimer=useRef(null);
   const motdCountdownRef=useRef(null);
+  const motdFadeTimer=useRef(null);
 
   const isDark=darkMode==="on"||(darkMode==="auto"&&sysDark);
   const th=useMemo(()=>mkTh(isDark),[isDark]);
@@ -669,18 +669,16 @@ function App(){
         const txt=(await res.text()).trim();
         if(!txt)return;
         setMotd(txt);setMotdVisible(true);setMotdFading(false);
-        clearInterval(motdCountdownRef.current);
         setMotdCountdown(8);
-        motdCountdownRef.current=setInterval(()=>{
-          setMotdCountdown(prev=>{if(prev<=1){clearInterval(motdCountdownRef.current);return null;}return prev-1;});
-        },1000);
+        clearInterval(motdCountdownRef.current);
+        motdCountdownRef.current=setInterval(()=>{setMotdCountdown(c=>{if(c<=1){clearInterval(motdCountdownRef.current);return 0;}return c-1;});},1000);
         motdFadeTimer.current=setTimeout(()=>{
           setMotdFading(true);
-          setTimeout(()=>{setMotdVisible(false);setMotdFading(false);setMotdCountdown(null);},800);
+          setTimeout(()=>{setMotdVisible(false);setMotdFading(false);},800);
         },8000);
       }catch{}
     },10000);
-    return()=>{clearTimeout(t);clearTimeout(motdFadeTimer.current);clearInterval(motdCountdownRef.current);};
+    return()=>{clearTimeout(t);clearTimeout(motdFadeTimer.current);};
   },[loaded]);
   useEffect(()=>{
     if(!session)return;
@@ -845,9 +843,9 @@ function App(){
       )}
 
       {/* Barre de statut */}
-      <div style={{position:"fixed",top:0,left:0,right:0,zIndex:98,pointerEvents:isOverrun?"auto":"none",transform:barVisible&&!barFading?"translateY(0)":"translateY(-100%)",opacity:barFading?0:barVisible?1:0,transition:"transform 0.3s ease,opacity 0.5s ease",background:isOverrun?"#f97316":th.bg,borderBottom:"1px solid "+(isOverrun?"rgba(255,255,255,0.2)":th.border),minHeight:102,display:"flex",flexDirection:"column",justifyContent:"center"}}>
+      <div style={{position:"fixed",top:0,left:0,right:0,zIndex:98,pointerEvents:isOverrun?"auto":"none",transform:barVisible&&!barFading?"translateY(0)":"translateY(-100%)",opacity:barFading?0:barVisible?1:0,transition:"transform 0.3s ease,opacity 0.5s ease",background:isOverrun?"#f97316":th.bg,borderBottom:"1px solid "+(isOverrun?"rgba(255,255,255,0.2)":th.border)}}>
         {isOverrun?(
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 16px",flex:1,gap:8}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"5px 16px",gap:8}}>
             <div style={{display:"flex",alignItems:"center",gap:6,flex:1,minWidth:0,overflow:"hidden"}}>
               <span style={{fontSize:12,flexShrink:0}}>⚠️</span>
               <span style={{fontSize:11,fontWeight:700,color:"#fff",flexShrink:0}}>Budget dépassé</span>
@@ -856,12 +854,12 @@ function App(){
             <button onClick={acknowledgeOverruns} style={{fontSize:11,padding:"3px 10px",borderRadius:8,border:"none",background:"rgba(255,255,255,0.25)",color:"#fff",cursor:"pointer",fontWeight:600,flexShrink:0}}>Compris</button>
           </div>
         ):isMotd?(
-          <div style={{display:"flex",alignItems:"center",justifyContent:"center",flex:1,padding:"0 16px",position:"relative"}}>
-            <span style={{fontSize:11,color:th.sub,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:"80%",textAlign:"center"}}>{motd}</span>
-            {motdCountdown!==null&&<span style={{position:"absolute",bottom:8,right:14,fontSize:10,color:th.muted,fontVariantNumeric:"tabular-nums"}}>{motdCountdown}s</span>}
+          <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"104px",padding:"0 48px 0 16px",position:"relative"}}>
+            <span style={{fontSize:12,color:th.sub,textAlign:"center",lineHeight:1.6}}>{motd}</span>
+            <span style={{position:"absolute",bottom:10,right:14,fontSize:10,color:th.muted,fontVariantNumeric:"tabular-nums"}}>{motdCountdown}s</span>
           </div>
         ):(
-          <div style={{display:"flex",alignItems:"center",gap:7,justifyContent:"center",flex:1,padding:"0 16px"}}>
+          <div style={{display:"flex",alignItems:"center",gap:7,justifyContent:"center",padding:"5px 16px"}}>
             {isSyncing?<span style={{width:6,height:6,borderRadius:"50%",background:"#f59e0b",display:"inline-block",flexShrink:0,animation:"pulse 1s infinite"}}/>:<span style={{width:6,height:6,borderRadius:"50%",background:"#10b981",display:"inline-block",flexShrink:0,opacity:0.8}}/>}
             <span style={{fontSize:11,color:th.sub,whiteSpace:"nowrap"}}>{syncText}</span>
           </div>
