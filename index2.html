@@ -34,6 +34,8 @@
     @keyframes trailDot{0%{opacity:0.8;transform:scaleX(1)}100%{opacity:0;transform:scaleX(0.2)}}
     @keyframes textPop{0%{opacity:0;transform:scale(0.8)}60%{opacity:1;transform:scale(1.05)}100%{opacity:1;transform:scale(1)}}
     @keyframes fadeIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes slideInFromRight{from{transform:translateX(56px);opacity:0}to{transform:translateX(0);opacity:1}}
+    @keyframes slideInFromLeft{from{transform:translateX(-56px);opacity:0}to{transform:translateX(0);opacity:1}}
   </style>
 </head>
 <body>
@@ -238,12 +240,12 @@ const SegCtrl=({options,value,onChange,th})=>(
   </div>
 );
 const Sheet=({onClose,children,th})=>(
-  <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.35)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:150,padding:16,animation:"fadeIn 0.54s ease"}} onClick={onClose}>
-    <div style={{background:th.sheetBg,width:"100%",maxWidth:480,borderRadius:20,padding:24,paddingBottom:88,boxShadow:"0 -4px 40px rgba(0,0,0,0.2)",maxHeight:"90vh",overflow:"auto",animation:"sheetIn 0.54s ease"}} onClick={e=>e.stopPropagation()}>{children}</div>
+  <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.35)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:150,padding:16,animation:"fadeIn 0.27s ease"}} onClick={onClose}>
+    <div style={{background:th.sheetBg,width:"100%",maxWidth:480,borderRadius:20,padding:24,paddingBottom:88,boxShadow:"0 -4px 40px rgba(0,0,0,0.2)",maxHeight:"90vh",overflow:"auto",animation:"sheetIn 0.27s ease"}} onClick={e=>e.stopPropagation()}>{children}</div>
   </div>
 );
 const FullSheet=({children,th})=>(
-  <div style={{position:"fixed",inset:0,background:th.sheetBg,zIndex:200,overflowY:"auto",display:"flex",flexDirection:"column",animation:"fullPageIn 0.54s cubic-bezier(0.32,0.72,0,1)",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>
+  <div style={{position:"fixed",inset:0,background:th.sheetBg,zIndex:200,overflowY:"auto",display:"flex",flexDirection:"column",animation:"fullPageIn 0.27s cubic-bezier(0.32,0.72,0,1)",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>
     <div style={{flex:1,padding:"0 24px 100px",maxWidth:640,width:"100%",margin:"0 auto"}}>{children}</div>
   </div>
 );
@@ -456,6 +458,7 @@ function App(){
   const[showTroubleshoot,setShowTroubleshoot]=useState(false);
   const[versionClicks,setVersionClicks]=useState(0);
   const[chart12Offset,setChart12Offset]=useState(0);
+  const[slideDir,setSlideDir]=useState(null);
   const[topCatOffset,setTopCatOffset]=useState(0);
   const[searchQuery,setSearchQuery]=useState("");
   const[showSplash,setShowSplash]=useState(true);
@@ -716,9 +719,9 @@ function App(){
   const handleImport=()=>{try{const d=JSON.parse(importText);if(Array.isArray(d.txs))setTxs(cleanTxs(d.txs));if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.balAnchor!==undefined)setBalAnchor(d.balAnchor);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.showDecimals!==undefined)setShowDecimals(d.showDecimals);if(d.budgets)setBudgets(d.budgets);if(d.customCats)setCustomCats(d.customCats);if(d.customSubcats)setCustomSubcats(d.customSubcats);if(d.subcatGroupOverrides)setSubcatGroupOverrides(d.subcatGroupOverrides);if(Array.isArray(d.goals))setGoals(d.goals);setImportMod(false);setImportText("");}catch{}};
   const handleTitleClick=e=>{e.stopPropagation();const now=Date.now();if(now-lastTapRef.current<350){setTab("home");setMo(TODAY.getMonth());setYr(TODAY.getFullYear());}lastTapRef.current=now;};
   const handleVersionClick=()=>{clearTimeout(vClickTimer.current);const next=versionClicks+1;setVersionClicks(next);if(next>=5){setShowTroubleshoot(true);setVersionClicks(0);}else vClickTimer.current=setTimeout(()=>setVersionClicks(0),3000);};
-  const prevMo=()=>mo===0?(setMo(11),setYr(y=>y-1)):setMo(m=>m-1);
-  const nextMo=()=>mo===11?(setMo(0),setYr(y=>y+1)):setMo(m=>m+1);
-  const goToday=()=>{setMo(TODAY.getMonth());setYr(TODAY.getFullYear());};
+  const prevMo=()=>{setSlideDir("right");mo===0?(setMo(11),setYr(y=>y-1)):setMo(m=>m-1);};
+  const nextMo=()=>{setSlideDir("left");mo===11?(setMo(0),setYr(y=>y+1)):setMo(m=>m+1);};
+  const goToday=()=>{setSlideDir(null);setMo(TODAY.getMonth());setYr(TODAY.getFullYear());};
   const handleSwipe=dx=>{if(Math.abs(dx)<40)return;const dir=dx<0?1:-1;const subs=SUB_NAV[tab];if(subs&&subs.length>1){const idx=subs.findIndex(s=>s.id===curSub);const next=idx+dir;if(next>=0&&next<subs.length)setSubTab(prev=>({...prev,[tab]:subs[next].id}));}else{dir>0?nextMo():prevMo();}};
 
   const StatusDot=({ok,na})=>na?<span style={{fontSize:12,color:th.muted}}>-</span>:<span style={{fontSize:12,color:ok?"#10b981":"#ef4444",fontWeight:500}}>{ok?"OK":"Non"}</span>;
@@ -820,7 +823,7 @@ function App(){
         </div>
       )}
 
-      <div key={tab+"-"+(curSub||"")} style={{padding:"24px",paddingBottom:"100px",maxWidth:640,animation:"fadeIn 0.54s ease"}}>
+      <div key={tab+"-"+(curSub||"")+(tab==="home"?"-"+yr+"-"+mo:"")} style={{padding:"24px",paddingBottom:"100px",maxWidth:640,animation:tab==="home"&&slideDir?(slideDir==="left"?"slideInFromRight":"slideInFromLeft")+" 0.28s ease":"fadeIn 0.27s ease"}}>
 
         {tab==="home"&&(
           <div>
