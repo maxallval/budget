@@ -60,6 +60,7 @@ const{useState,useEffect,useMemo,useRef,useCallback}=React;
 const TODAY=new Date();TODAY.setHours(0,0,0,0);
 const sb=window._sb;
 
+// ─── Données de référence ─────────────────────────────────────────────────────
 const CATS=[
   {id:"income",emoji:"💰",color:"#22c55e"},
   {id:"housing",emoji:"🏠",color:"#3b82f6"},
@@ -153,13 +154,23 @@ const PRESET_COLORS=["#3b82f6","#f97316","#10b981","#8b5cf6","#ef4444","#06b6d4"
 const GOAL_EMOJIS=["🎯","✈️","🏠","🚗","💍","🎓","🏖️","💻","🛋️","🐾","🎸","⛵"];
 const MOTD_URL="https://maxallval.github.io/budget/messages/messages.txt";
 
-const mkTh=d=>d
-  ?{bg:"#0d0d0d",bgSub:"#161616",surface:"#1c1c1c",border:"#252525",inputBorder:"#333",text:"#f0f0f0",sub:"#888",muted:"#444",btnBg:"#efefef",btnText:"#111",togOff:"#3a3a3a",sheetBg:"#161616",danger:"#f87171",cardBg:"#181818"}
-  :{bg:"#fff",bgSub:"#f9fafb",surface:"#f3f4f6",border:"#f0f0f0",inputBorder:"#e5e7eb",text:"#111",sub:"#6b7280",muted:"#9ca3af",btnBg:"#111",btnText:"#fff",togOff:"#d1d5db",sheetBg:"#fff",danger:"#ef4444",cardBg:"#fafafa"};
+// ─── Constantes statiques (évite les re-créations) ────────────────────────────
+const DAYS_FR=["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"];
+const MONTHS_FR=["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+const NTH_FR=["","1er","2e","3e","4e","5e"];
+const DS_FR=["D","L","M","M","J","V","S"];
+const UNITS_FR={day:"jours",week:"semaines",month:"mois",year:"années"};
 
-const parseD=s=>{const[y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d);};
+// ─── parseD avec cache (évite split/map répétés sur les mêmes strings) ────────
+const _pdCache=new Map();
+const parseD=s=>{
+  let v=_pdCache.get(s);
+  if(!v){const[y,m,d]=s.split("-").map(Number);v=[y,m-1,d];_pdCache.set(s,v);}
+  return new Date(v[0],v[1],v[2]);
+};
+// dayBef n'utilise pas le cache pour éviter toute mutation accidentelle
+const dayBef=s=>{const[y,m,d]=s.split("-").map(Number);const dt=new Date(y,m-1,d);dt.setDate(dt.getDate()-1);return dStr(dt);};
 const dStr=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-const dayBef=s=>{const d=parseD(s);d.setDate(d.getDate()-1);return dStr(d);};
 const addMths=(yr,mo,n)=>{let m=mo+n,y=yr;while(m>11){m-=12;y++;}while(m<0){m+=12;y--;}return{yr:y,mo:m};};
 const fA=(n,full=false,dec=true)=>{
   const a=Math.abs(n);
@@ -170,6 +181,7 @@ const fA=(n,full=false,dec=true)=>{
 };
 function getNthWD(date){let c=0;const d=new Date(date.getFullYear(),date.getMonth(),1);while(d<=date){if(d.getDay()===date.getDay())c++;d.setDate(d.getDate()+1);}return c;}
 function normRec(rec,s){if(rec&&typeof rec==="object")return rec;const wd=s instanceof Date?s.getDay():parseD(String(s||"2024-01-01")).getDay();return({once:{type:"once"},daily:{type:"daily"},weekly:{type:"weekly",weekday:wd},monthly:{type:"monthly_day"},annual:{type:"annually"}})[rec]||{type:"once"};}
+
 function occsInMonth(tx,yr,mo){
   const ms=new Date(yr,mo,1),me=new Date(yr,mo+1,0);
   const s=parseD(tx.startDate),e=tx.endDate?parseD(tx.endDate):null;
@@ -192,6 +204,7 @@ function occsInMonth(tx,yr,mo){
     return res;}
   return[];
 }
+
 function countOccs(tx,upTo){
   const s=parseD(tx.startDate);if(s>upTo)return 0;
   let count=0,y=s.getFullYear(),m=s.getMonth(),its=0;
@@ -201,6 +214,7 @@ function countOccs(tx,upTo){
 }
 const rawBalAt=(txs,init,date)=>txs.reduce((b,tx)=>b+(tx.type==="income"?1:-1)*tx.amount*countOccs(tx,date),init);
 const cleanTxs=txs=>txs.filter(tx=>{const r=normRec(tx.recurrence,parseD(tx.startDate));return!(r.type==="once"&&new Set(tx.exceptions||[]).has(tx.startDate));});
+
 function relTimeStr(ls){
   if(!ls)return"Jamais synchronisé";
   const s=Math.floor((Date.now()-ls.getTime())/1000);
@@ -209,40 +223,41 @@ function relTimeStr(ls){
   const m=Math.floor(s/60);if(m<60)return"Synchronisé il y a "+m+"min";
   const h=Math.floor(m/60);return"Synchronisé il y a "+h+"h";
 }
+
+// recLabel utilise les constantes statiques du module
 function recLabel(tx){
-  const DAYS=["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"];
-  const MONTHS=["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
-  const NTH=["","1er","2e","3e","4e","5e"],DS=["D","L","M","M","J","V","S"];
   const s=parseD(tx.startDate),r=normRec(tx.recurrence,s),wd=r.weekday!==undefined?r.weekday:s.getDay();
   switch(r.type){
     case"once":return"Une fois";case"daily":return"Tous les jours";
-    case"weekly":return"Toutes les semaines le "+DAYS[wd];
+    case"weekly":return"Toutes les semaines le "+DAYS_FR[wd];
     case"monthly_day":return"Tous les mois";
-    case"monthly_nth_weekday":return"Tous les mois, le "+(NTH[r.nth]||r.nth)+" "+DAYS[r.weekday];
-    case"annually":return"Annuellement le "+s.getDate()+" "+MONTHS[s.getMonth()];
+    case"monthly_nth_weekday":return"Tous les mois, le "+(NTH_FR[r.nth]||r.nth)+" "+DAYS_FR[r.weekday];
+    case"annually":return"Annuellement le "+s.getDate()+" "+MONTHS_FR[s.getMonth()];
     case"weekdays":return"Jours de semaine (lun.-ven.)";
-    case"custom":{const{interval:iv=1,unit:u="week",weekdays:wds=[]}=r;const units={day:"jours",week:"semaines",month:"mois",year:"années"};let lb="Se répète tous les "+(iv>1?iv+" ":"")+( units[u]||u);if(u==="week"&&wds.length>0)lb+=" - "+wds.map(w=>DS[w]).join(" ");return lb;}
+    case"custom":{const{interval:iv=1,unit:u="week",weekdays:wds=[]}=r;let lb="Se répète tous les "+(iv>1?iv+" ":"")+(UNITS_FR[u]||u);if(u==="week"&&wds.length>0)lb+=" - "+wds.map(w=>DS_FR[w]).join(" ");return lb;}
     default:return"Une fois";
   }
 }
 
-// ─── Helpers outside App ──────────────────────────────────────────────────────
-
+// ─── FAB helper (stable, hors composant) ──────────────────────────────────────
 const fabBtn=(bg,color)=>({
   position:"absolute",width:48,height:48,borderRadius:"50%",
   background:bg,color,border:"none",cursor:"pointer",
   display:"flex",alignItems:"center",justifyContent:"center",
-  boxShadow:"0 4px 16px rgba(0,0,0,0.22)",
-  fontSize:19,lineHeight:1,
+  boxShadow:"0 4px 16px rgba(0,0,0,0.22)",fontSize:19,lineHeight:1,
 });
 
+// ─── Composants UI ────────────────────────────────────────────────────────────
+const mkTh=d=>d
+  ?{bg:"#0d0d0d",bgSub:"#161616",surface:"#1c1c1c",border:"#252525",inputBorder:"#333",text:"#f0f0f0",sub:"#888",muted:"#444",btnBg:"#efefef",btnText:"#111",togOff:"#3a3a3a",sheetBg:"#161616",danger:"#f87171",cardBg:"#181818"}
+  :{bg:"#fff",bgSub:"#f9fafb",surface:"#f3f4f6",border:"#f0f0f0",inputBorder:"#e5e7eb",text:"#111",sub:"#6b7280",muted:"#9ca3af",btnBg:"#111",btnText:"#fff",togOff:"#d1d5db",sheetBg:"#fff",danger:"#ef4444",cardBg:"#fafafa"};
+
 function StatusDot({ok,na,th}){
-  return na
-    ?<span style={{fontSize:12,color:th.muted}}>-</span>
-    :<span style={{fontSize:12,color:ok?"#10b981":"#ef4444",fontWeight:500}}>{ok?"OK":"Non"}</span>;
+  return na?<span style={{fontSize:12,color:th.muted}}>-</span>:<span style={{fontSize:12,color:ok?"#10b981":"#ef4444",fontWeight:500}}>{ok?"OK":"Non"}</span>;
 }
 
-function TxRow({tx,amount,recurrenceLabel,cat,sc,isActive,setActiveTx,fmt,getCatName,th}){
+// React.memo évite les re-renders des lignes non modifiées
+const TxRow=React.memo(function TxRow({tx,amount,recurrenceLabel,cat,sc,isActive,setActiveTx,fmt,getCatName,th}){
   return(
     <div
       onPointerEnter={e=>{if(e.pointerType==="mouse")setActiveTx(tx);}}
@@ -263,9 +278,7 @@ function TxRow({tx,amount,recurrenceLabel,cat,sc,isActive,setActiveTx,fmt,getCat
       </span>
     </div>
   );
-}
-
-// ─── UI primitives ────────────────────────────────────────────────────────────
+});
 
 const Tog=({label,sub,value,onChange,th})=>(
   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0",borderBottom:"1px solid "+th.border}}>
@@ -281,14 +294,12 @@ const SegCtrl=({options,value,onChange,th})=>(
   </div>
 );
 const Sheet=({onClose,children,th})=>{
-  const outerRef=useRef(null);
-  const innerRef=useRef(null);
+  const outerRef=useRef(null),innerRef=useRef(null);
   useEffect(()=>{
     const outer=outerRef.current,inner=innerRef.current;
     if(!outer||!inner)return;
-    const update=()=>{const h=Math.min(inner.offsetHeight,window.innerHeight*0.9);outer.style.height=h+"px";};
-    const ro=new ResizeObserver(update);
-    ro.observe(inner);update();
+    const update=()=>{outer.style.height=Math.min(inner.offsetHeight,window.innerHeight*0.9)+"px";};
+    const ro=new ResizeObserver(update);ro.observe(inner);update();
     return()=>ro.disconnect();
   },[]);
   return(
@@ -316,14 +327,15 @@ const FullSheetHead=({title,onClose,right,th})=>(
     <div style={{display:"flex",gap:8,alignItems:"center"}}>{right}</div>
   </div>
 );
-const MonthNav=({yr,mo,onPrev,onNext,onDbl,th})=>{
-  const M=["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
-  return(<div style={{display:"flex",alignItems:"center",gap:4}}>
+
+// M array static, hors composant
+const MonthNav=({yr,mo,onPrev,onNext,onDbl,th})=>(
+  <div style={{display:"flex",alignItems:"center",gap:4}}>
     <button onClick={onPrev} style={{width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:"none",border:"none",cursor:"pointer",fontSize:20,color:th.muted,borderRadius:8}}>&#8249;</button>
-    <span onDoubleClick={onDbl} style={{fontSize:15,color:th.text,fontWeight:500,minWidth:164,textAlign:"center",cursor:"default",userSelect:"none"}}>{M[mo]} {yr}</span>
+    <span onDoubleClick={onDbl} style={{fontSize:15,color:th.text,fontWeight:500,minWidth:164,textAlign:"center",cursor:"default",userSelect:"none"}}>{MONTHS_FR[mo]} {yr}</span>
     <button onClick={onNext} style={{width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:"none",border:"none",cursor:"pointer",fontSize:20,color:th.muted,borderRadius:8}}>&#8250;</button>
-  </div>);
-};
+  </div>
+);
 const MiniNav=({label,onPrev,onNext,nextDisabled,th})=>(
   <div style={{display:"flex",alignItems:"center",gap:2}}>
     <button onClick={onPrev} style={{width:26,height:26,display:"flex",alignItems:"center",justifyContent:"center",background:"none",border:"none",cursor:"pointer",fontSize:18,color:th.muted,borderRadius:6}}>&#8249;</button>
@@ -395,12 +407,10 @@ function SubCategoryPicker({category,value,onChange,th,allSubcats}){
     </div>
   </div>);
 }
+
+// UNITS_FR et DAYS_FR/MONTHS_FR déjà à portée du module
 function RecurrencePicker({value,onChange,startDate,th}){
-  const DAYS=["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"];
-  const DAYSS=["D","L","M","M","J","V","S"];
-  const MONTHS=["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
-  const NTH=["","1er","2e","3e","4e","5e"];
-  const UNITS=[{v:"day",l:"jours"},{v:"week",l:"semaines"},{v:"month",l:"mois"},{v:"year",l:"années"}];
+  const UNITS_REC=[{v:"day",l:"jours"},{v:"week",l:"semaines"},{v:"month",l:"mois"},{v:"year",l:"années"}];
   const s=useMemo(()=>parseD(startDate),[startDate]);
   const wd=s.getDay(),nth=getNthWD(s);
   const nr=useMemo(()=>normRec(value,s),[value,s]);
@@ -408,9 +418,9 @@ function RecurrencePicker({value,onChange,startDate,th}){
   const opts=useMemo(()=>[
     {rec:{type:"once"},label:"Une fois"},
     {rec:{type:"daily"},label:"Tous les jours"},
-    {rec:{type:"weekly",weekday:wd},label:"Toutes les semaines le "+DAYS[wd]},
-    {rec:{type:"monthly_nth_weekday",nth,weekday:wd},label:"Tous les mois, le "+(NTH[nth]||nth)+" "+DAYS[wd]},
-    {rec:{type:"annually"},label:"Annuellement le "+s.getDate()+" "+MONTHS[s.getMonth()]},
+    {rec:{type:"weekly",weekday:wd},label:"Toutes les semaines le "+DAYS_FR[wd]},
+    {rec:{type:"monthly_nth_weekday",nth,weekday:wd},label:"Tous les mois, le "+(NTH_FR[nth]||nth)+" "+DAYS_FR[wd]},
+    {rec:{type:"annually"},label:"Annuellement le "+s.getDate()+" "+MONTHS_FR[s.getMonth()]},
     {rec:{type:"weekdays"},label:"Jours de semaine (lun.-ven.)"},
     {rec:null,isCustom:true,label:"Personnaliser"},
   ],[s,wd,nth]);
@@ -431,11 +441,11 @@ function RecurrencePicker({value,onChange,startDate,th}){
             <span style={{fontSize:12,color:th.sub}}>Se répète tous les</span>
             <input type="number" min="1" value={ivRaw} onChange={e=>handleIv(e.target.value)} style={{width:52,padding:"5px 8px",fontSize:13,color:th.text,background:th.bg,border:"1px solid "+th.border,borderRadius:7,outline:"none",textAlign:"center"}}/>
             <select value={nr.unit||"week"} onChange={e=>onChange({...nr,unit:e.target.value})} style={{fontSize:13,color:th.text,background:th.bg,border:"1px solid "+th.border,borderRadius:7,padding:"5px 8px",outline:"none",cursor:"pointer"}}>
-              {UNITS.map(u=><option key={u.v} value={u.v}>{u.l}</option>)}
+              {UNITS_REC.map(u=><option key={u.v} value={u.v}>{u.l}</option>)}
             </select>
           </div>
           {(nr.unit||"week")==="week"&&(<div style={{display:"flex",gap:5,marginTop:12}}>
-            {DAYSS.map((d,di)=>{const wds=nr.weekdays||[wd],on=wds.includes(di);return(
+            {DS_FR.map((d,di)=>{const wds=nr.weekdays||[wd],on=wds.includes(di);return(
               <button key={di} onClick={()=>{let nw=on?wds.filter(x=>x!==di):[...wds,di];if(!nw.length)nw=[di];onChange({...nr,weekdays:nw});}} style={{width:33,height:33,borderRadius:"50%",fontSize:12,fontWeight:500,background:on?th.btnBg:th.bg,color:on?th.btnText:th.sub,border:"1.5px solid "+(on?th.btnBg:th.border),cursor:"pointer"}}>{d}</button>
             );})}
           </div>)}
@@ -484,9 +494,6 @@ function LoginScreen(){
 }
 
 function App(){
-  const MONTHS=["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
-  const DAYS=["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"];
-
   const[authLoading,setAuthLoading]=useState(true);
   const[session,setSession]=useState(null);
   const[txs,setTxs]=useState([]);
@@ -500,6 +507,7 @@ function App(){
   const[motd,setMotd]=useState("");
   const[motdVisible,setMotdVisible]=useState(false);
   const[motdFading,setMotdFading]=useState(false);
+  const[motdCountdown,setMotdCountdown]=useState(8);
   const[loaded,setLoaded]=useState(false);
   const[tab,setTab]=useState("home");
   const[subTab,setSubTab]=useState({});
@@ -551,36 +559,34 @@ function App(){
   const[copied,setCopied]=useState(false);
   const[activeTx,setActiveTx]=useState(null);
   const[dupMod,setDupMod]=useState(null);
-  const[motdCountdown,setMotdCountdown]=useState(8);
 
-  const balInputRef=useRef(null);
-  const balSettRef=useRef(null);
-  const dateInputRef=useRef(null);
-  const formModRef=useRef(null);
-  const lastTapRef=useRef(0);
-  const sbSaveTimer=useRef(null);
-  const cfgTimer=useRef(null);
-  const vClickTimer=useRef(null);
-  const touchStartX=useRef(null);
-  const syncHideTimer=useRef(null);
-  const syncFadeTimer=useRef(null);
-  const overrunTimer=useRef(null);
-  const motdCountdownRef=useRef(null);
-  const motdFadeTimer=useRef(null);
+  const balInputRef=useRef(null),balSettRef=useRef(null),dateInputRef=useRef(null);
+  const formModRef=useRef(null),lastTapRef=useRef(0),sbSaveTimer=useRef(null);
+  const cfgTimer=useRef(null),vClickTimer=useRef(null),touchStartX=useRef(null);
+  const syncHideTimer=useRef(null),syncFadeTimer=useRef(null);
+  const overrunTimer=useRef(null),motdFadeTimer=useRef(null),motdCountdownRef=useRef(null);
 
   const isDark=darkMode==="on"||(darkMode==="auto"&&sysDark);
   const th=useMemo(()=>mkTh(isDark),[isDark]);
   const lbl={fontSize:10,color:th.muted,letterSpacing:"0.12em",textTransform:"uppercase"};
   const iSt={display:"block",width:"100%",marginTop:6,padding:"8px 0",fontSize:14,color:th.text,background:"transparent",border:"none",borderBottom:"1px solid "+th.inputBorder,outline:"none",boxSizing:"border-box"};
   const f=(n,full=false)=>fA(n,full,showDecimals);
-
   formModRef.current=formMod;
 
+  // ─── Lookups O(1) via Map ──────────────────────────────────────────────────
   const allCats=useMemo(()=>[...CATS,...customCats],[customCats]);
-  const allSubcats=useMemo(()=>{const base=SUBCATS.map(sc=>subcatGroupOverrides[sc.id]?{...sc,group:subcatGroupOverrides[sc.id]}:sc);return[...base,...customSubcats];},[customSubcats,subcatGroupOverrides]);
-  const getCatName=useCallback(id=>CAT_NAMES[id]||customCats.find(c=>c.id===id)?.label||id,[customCats]);
-  const dynCatById=useCallback(id=>allCats.find(c=>c.id===id)||allCats[allCats.length-1],[allCats]);
-  const dynSubcatById=useCallback(id=>id?allSubcats.find(s=>s.id===id)||null:null,[allSubcats]);
+  const allSubcats=useMemo(()=>{
+    const base=SUBCATS.map(sc=>subcatGroupOverrides[sc.id]?{...sc,group:subcatGroupOverrides[sc.id]}:sc);
+    return[...base,...customSubcats];
+  },[customSubcats,subcatGroupOverrides]);
+
+  const catMap=useMemo(()=>{const m=new Map();allCats.forEach(c=>m.set(c.id,c));return m;},[allCats]);
+  const subcatMap=useMemo(()=>{const m=new Map();allSubcats.forEach(s=>m.set(s.id,s));return m;},[allSubcats]);
+  const catNameMap=useMemo(()=>{const m={...CAT_NAMES};customCats.forEach(c=>m[c.id]=c.label);return m;},[customCats]);
+
+  const getCatName=useCallback(id=>catNameMap[id]||id,[catNameMap]);
+  const dynCatById=useCallback(id=>catMap.get(id)||allCats[allCats.length-1],[catMap,allCats]);
+  const dynSubcatById=useCallback(id=>id?subcatMap.get(id)||null:null,[subcatMap]);
 
   const getBalAt=useMemo(()=>date=>{
     if(!balAnchor)return rawBalAt(txs,initBal,date);
@@ -596,13 +602,48 @@ function App(){
   const SUB_NAV={transactions:[{id:"historique",label:"Historique"},{id:"recurrent",label:"Récurrent"}],budget:[{id:"categories",label:"Budget par catégorie"},{id:"objectifs",label:"Objectifs"}],analyse:[{id:"statistiques",label:"Statistiques"},{id:"graphiques",label:"Graphiques"},{id:"controle",label:"Contrôle des coûts"}],troubleshoot:[{id:"connexions",label:"Connexions"}]};
   const DEFAULT_SUB={transactions:"historique",budget:"categories",analyse:"statistiques",troubleshoot:"connexions"};
   const curSub=subTab[tab]||(DEFAULT_SUB[tab]||null);
-
   const curBalVal=useMemo(()=>getBalAt(TODAY),[getBalAt]);
   const dim=new Date(yr,mo+1,0).getDate();
   const cells=useMemo(()=>{const fd=new Date(yr,mo,1).getDay();return[...Array(fd).fill(null),...Array.from({length:dim},(_,i)=>i+1)];},[yr,mo,dim]);
-  const dayData=useMemo(()=>{const d={};for(let day=1;day<=dim;day++){const dt=txs.filter(tx=>occsInMonth(tx,yr,mo).includes(day));d[day]={net:dt.reduce((s,tx)=>s+(tx.type==="income"?tx.amount:-tx.amount),0),bal:getBalAt(new Date(yr,mo,day)),count:dt.length,cats:dt.map(tx=>dynCatById(tx.category||"other"))};}return d;},[txs,yr,mo,dim,getBalAt,dynCatById]);
-  const monthStats=useMemo(()=>{let inc=0,exp=0;txs.forEach(tx=>{const n=occsInMonth(tx,yr,mo).length;if(tx.type==="income")inc+=tx.amount*n;else exp+=tx.amount*n;});return{inc,exp,net:inc-exp};},[txs,yr,mo]);
-  const catStats=useMemo(()=>{const s={};allCats.forEach(c=>s[c.id]={spent:0,income:0});txs.forEach(tx=>{const cat=tx.category||"other",n=occsInMonth(tx,yr,mo).length;if(!n)return;if(!s[cat])s[cat]={spent:0,income:0};if(tx.type==="income")s[cat].income+=tx.amount*n;else s[cat].spent+=tx.amount*n;});return s;},[txs,yr,mo,allCats]);
+
+  // ─── Passe unique : occurrences du mois courant ────────────────────────────
+  // Remplace 5 appels séparés à occsInMonth (dayData, monthStats, catStats, monthTxs, controleData)
+  const monthOccs=useMemo(()=>{
+    const m=new Map();
+    txs.forEach(tx=>{const days=occsInMonth(tx,yr,mo);if(days.length)m.set(tx.id,days);});
+    return m;
+  },[txs,yr,mo]);
+
+  // ─── dayData : solde incrémental (1 getBalAt au lieu de 31) ───────────────
+  const dayData=useMemo(()=>{
+    const d={};
+    // Solde à la fin du dernier jour du mois précédent (day 0 = dernier jour de mo-1)
+    let bal=getBalAt(new Date(yr,mo,0));
+    for(let day=1;day<=dim;day++){
+      const dayTxs=txs.filter(tx=>monthOccs.get(tx.id)?.includes(day));
+      let net=0;const cats=[];
+      dayTxs.forEach(tx=>{net+=tx.type==="income"?tx.amount:-tx.amount;cats.push(dynCatById(tx.category||"other"));});
+      bal+=net;
+      d[day]={net,bal,count:dayTxs.length,cats};
+    }
+    return d;
+  },[txs,yr,mo,dim,getBalAt,dynCatById,monthOccs]);
+
+  // ─── monthStats + catStats : passe combinée ────────────────────────────────
+  const{monthStats,catStats}=useMemo(()=>{
+    const ms={inc:0,exp:0,net:0};
+    const cs={};allCats.forEach(c=>cs[c.id]={spent:0,income:0});
+    txs.forEach(tx=>{
+      const n=monthOccs.get(tx.id)?.length||0;if(!n)return;
+      const cat=tx.category||"other";
+      if(!cs[cat])cs[cat]={spent:0,income:0};
+      if(tx.type==="income"){ms.inc+=tx.amount*n;cs[cat].income+=tx.amount*n;}
+      else{ms.exp+=tx.amount*n;cs[cat].spent+=tx.amount*n;}
+    });
+    ms.net=ms.inc-ms.exp;
+    return{monthStats:ms,catStats:cs};
+  },[txs,monthOccs,allCats]);
+
   const totalBudget=useMemo(()=>allCats.filter(c=>c.id!=="income").reduce((s,c)=>s+(budgets[c.id]||0),0),[budgets,allCats]);
   const totalSpent=useMemo(()=>allCats.filter(c=>c.id!=="income").reduce((s,c)=>s+(catStats[c.id]?.spent||0),0),[catStats,allCats]);
   const expenseCats=useMemo(()=>allCats.filter(c=>c.id!=="income"),[allCats]);
@@ -610,25 +651,73 @@ function App(){
   const hasSummary=disp.endBal||disp.revExp||disp.net;
   const savingsRate=monthStats.inc>0?Math.round(monthStats.net/monthStats.inc*100):null;
   const isTod=d=>d===TODAY.getDate()&&mo===TODAY.getMonth()&&yr===TODAY.getFullYear();
+
   const chart12End=useMemo(()=>addMths(yr,mo,chart12Offset),[yr,mo,chart12Offset]);
   const chart12Start=useMemo(()=>addMths(chart12End.yr,chart12End.mo,-11),[chart12End]);
-  const last12=useMemo(()=>{const ms=[];let y2=chart12Start.yr,m2=chart12Start.mo;for(let i=0;i<12;i++){const lastDay=new Date(y2,m2+1,0);let inc=0,exp=0;txs.forEach(tx=>{const n=occsInMonth(tx,y2,m2).length;if(tx.type==="income")inc+=tx.amount*n;else exp+=tx.amount*n;});ms.push({label:MONTHS[m2].slice(0,3),inc,exp,net:inc-exp,endBal:getBalAt(lastDay)});m2++;if(m2>11){m2=0;y2++;}}return ms;},[txs,getBalAt,chart12Start]);
-  const chart12Label=chart12Offset===0?"Ce mois":MONTHS[chart12End.mo].slice(0,3)+" "+chart12End.yr;
+  const last12=useMemo(()=>{
+    const ms=[];let y2=chart12Start.yr,m2=chart12Start.mo;
+    for(let i=0;i<12;i++){
+      const lastDay=new Date(y2,m2+1,0);let inc=0,exp=0;
+      txs.forEach(tx=>{const n=occsInMonth(tx,y2,m2).length;if(tx.type==="income")inc+=tx.amount*n;else exp+=tx.amount*n;});
+      ms.push({label:MONTHS_FR[m2].slice(0,3),inc,exp,net:inc-exp,endBal:getBalAt(lastDay)});
+      m2++;if(m2>11){m2=0;y2++;}
+    }
+    return ms;
+  },[txs,getBalAt,chart12Start]);
+  const chart12Label=chart12Offset===0?"Ce mois":MONTHS_FR[chart12End.mo].slice(0,3)+" "+chart12End.yr;
+
   const topCatEnd=useMemo(()=>addMths(yr,mo,topCatOffset),[yr,mo,topCatOffset]);
-  const topCatStats=useMemo(()=>{const s={};allCats.forEach(c=>{s[c.id]={spent:0};});txs.forEach(tx=>{if(tx.type==="income")return;const n=occsInMonth(tx,topCatEnd.yr,topCatEnd.mo).length;if(!n)return;const cat=tx.category||"other";if(!s[cat])s[cat]={spent:0};s[cat].spent+=tx.amount*n;});return s;},[txs,topCatEnd,allCats]);
-  const topCats=useMemo(()=>allCats.filter(c=>c.id!=="income").map(c=>({...c,spent:topCatStats[c.id]?.spent||0})).filter(c=>c.spent>0).sort((a,b)=>b.spent-a.spent).slice(0,5),[topCatStats,allCats]);
-  const topCatLabel=MONTHS[topCatEnd.mo].slice(0,3)+" "+topCatEnd.yr;
-  const statsKPIs=useMemo(()=>{const sr=monthStats.inc>0?Math.round(monthStats.net/monthStats.inc*100):null;const last3=last12.slice(-3),avgExp3=last3.length?last3.reduce((s,m)=>s+m.exp,0)/last3.length:0;const withData=last12.filter(m=>m.inc>0||m.exp>0),avgNet12=withData.length?withData.reduce((s,m)=>s+m.net,0)/withData.length:0;return{savingsRate:sr,avgExp3,avgNet12};},[monthStats,last12]);
-  const controleData=useMemo(()=>{const groups={essentiel:0,flexible:0,lifestyle:0,nonclasse:0},details={essentiel:[],flexible:[],lifestyle:[],nonclasse:[]};txs.forEach(tx=>{if(tx.type==="income")return;const n=occsInMonth(tx,yr,mo).length;if(!n)return;const total=tx.amount*n,sc=tx.subCategory?dynSubcatById(tx.subCategory):null,grp=sc?.group||"nonclasse";groups[grp]=(groups[grp]||0)+total;const bucket=details[grp]||(details[grp]=[]);const ex=bucket.find(d=>d.label===(sc?.label||"Non classé"));if(ex)ex.total+=total;else bucket.push({label:sc?.label||"Non classé",total});});Object.values(details).forEach(arr=>arr.sort((a,b)=>b.total-a.total));return{groups,details};},[txs,yr,mo,dynSubcatById]);
-  const monthTxs=useMemo(()=>{const q=searchQuery.toLowerCase().trim();return txs.filter(tx=>occsInMonth(tx,yr,mo).length>0&&(!q||tx.description.toLowerCase().includes(q)||(getCatName(tx.category||"other")).toLowerCase().includes(q))).sort((a,b)=>new Date(b.startDate)-new Date(a.startDate));},[txs,yr,mo,searchQuery,getCatName]);
-  const recurTxs=useMemo(()=>txs.filter(tx=>normRec(tx.recurrence,parseD(tx.startDate)).type!=="once").sort((a,b)=>new Date(b.startDate)-new Date(a.startDate)),[txs]);
+  const topCats=useMemo(()=>{
+    const s={};allCats.forEach(c=>{s[c.id]={spent:0};});
+    txs.forEach(tx=>{if(tx.type==="income")return;const n=occsInMonth(tx,topCatEnd.yr,topCatEnd.mo).length;if(!n)return;const cat=tx.category||"other";if(!s[cat])s[cat]={spent:0};s[cat].spent+=tx.amount*n;});
+    return allCats.filter(c=>c.id!=="income").map(c=>({...c,spent:s[c.id]?.spent||0})).filter(c=>c.spent>0).sort((a,b)=>b.spent-a.spent).slice(0,5);
+  },[txs,topCatEnd,allCats]);
+  const topCatLabel=MONTHS_FR[topCatEnd.mo].slice(0,3)+" "+topCatEnd.yr;
+
+  const statsKPIs=useMemo(()=>{
+    const sr=monthStats.inc>0?Math.round(monthStats.net/monthStats.inc*100):null;
+    const last3=last12.slice(-3),avgExp3=last3.length?last3.reduce((s,m)=>s+m.exp,0)/last3.length:0;
+    const withData=last12.filter(m=>m.inc>0||m.exp>0),avgNet12=withData.length?withData.reduce((s,m)=>s+m.net,0)/withData.length:0;
+    return{savingsRate:sr,avgExp3,avgNet12};
+  },[monthStats,last12]);
+
+  // monthTxs utilise monthOccs (pas de re-appel occsInMonth)
+  const monthTxs=useMemo(()=>{
+    const q=searchQuery.toLowerCase().trim();
+    return txs
+      .filter(tx=>{
+        if(!(monthOccs.get(tx.id)?.length))return false;
+        if(!q)return true;
+        return tx.description.toLowerCase().includes(q)||getCatName(tx.category||"other").toLowerCase().includes(q);
+      })
+      .sort((a,b)=>parseD(b.startDate)-parseD(a.startDate));
+  },[txs,monthOccs,searchQuery,getCatName]);
+
+  const recurTxs=useMemo(()=>txs.filter(tx=>normRec(tx.recurrence,parseD(tx.startDate)).type!=="once").sort((a,b)=>parseD(b.startDate)-parseD(a.startDate)),[txs]);
+
   const syncText=useMemo(()=>isSyncing?"Synchronisation...":relTimeStr(lastSync),[isSyncing,lastSync,tick]);
   const overrunCats=useMemo(()=>expenseCats.filter(c=>budgets[c.id]>0&&(catStats[c.id]?.spent||0)>budgets[c.id]),[expenseCats,budgets,catStats]);
   const overrunKey=yr+"-"+mo;
   const showOverrunAlert=overrunCats.length>0&&!acknowledgedOverruns.has(overrunKey)&&!overrunDismissing;
 
-  useEffect(()=>{if(tab!=="transactions")setActiveTx(null);},[tab]);
+  // controleData utilise monthOccs
+  const controleData=useMemo(()=>{
+    const groups={essentiel:0,flexible:0,lifestyle:0,nonclasse:0};
+    const details={essentiel:[],flexible:[],lifestyle:[],nonclasse:[]};
+    txs.forEach(tx=>{
+      if(tx.type==="income")return;
+      const n=monthOccs.get(tx.id)?.length||0;if(!n)return;
+      const total=tx.amount*n,sc=tx.subCategory?dynSubcatById(tx.subCategory):null,grp=sc?.group||"nonclasse";
+      groups[grp]=(groups[grp]||0)+total;
+      const bucket=details[grp]||(details[grp]=[]);
+      const ex=bucket.find(d=>d.label===(sc?.label||"Non classé"));
+      if(ex)ex.total+=total;else bucket.push({label:sc?.label||"Non classé",total});
+    });
+    Object.values(details).forEach(arr=>arr.sort((a,b)=>b.total-a.total));
+    return{groups,details};
+  },[txs,monthOccs,dynSubcatById]);
 
+  useEffect(()=>{if(tab!=="transactions")setActiveTx(null);},[tab]);
   useEffect(()=>{
     sb.auth.getSession().then(({data:{session}})=>{setSession(session);setAuthLoading(false);});
     const{data:{subscription}}=sb.auth.onAuthStateChange((_,session)=>{setSession(session);if(!session)setLoaded(false);});
@@ -639,15 +728,7 @@ function App(){
     window.history.pushState({b:true},"");
     const h=()=>{
       window.history.pushState({b:true},"");
-      if(formMod){setFormMod(null);return;}
-      if(dupMod){setDupMod(null);return;}
-      if(goalForm){setGoalForm(null);return;}
-      if(catsMod){setCatsMod(false);return;}
-      if(dayMod){setDayMod(null);setExpandedTx(null);setPendingDel(null);return;}
-      if(delMod){setDelMod(null);return;}
-      if(delAccMod){setDelAccMod(false);setDelAccInput("");return;}
-      if(exportMod){setExportMod(false);return;}
-      if(importMod){setImportMod(false);setImportText("");return;}
+      if(formMod){setFormMod(null);return;}if(dupMod){setDupMod(null);return;}if(goalForm){setGoalForm(null);return;}if(catsMod){setCatsMod(false);return;}if(dayMod){setDayMod(null);setExpandedTx(null);setPendingDel(null);return;}if(delMod){setDelMod(null);return;}if(delAccMod){setDelAccMod(false);setDelAccInput("");return;}if(exportMod){setExportMod(false);return;}if(importMod){setImportMod(false);setImportText("");return;}
       setTab("home");setMo(TODAY.getMonth());setYr(TODAY.getFullYear());
     };
     window.addEventListener("popstate",h);return()=>window.removeEventListener("popstate",h);
@@ -666,8 +747,7 @@ function App(){
       try{
         const res=await fetch(MOTD_URL+"?t="+Date.now());
         if(!res.ok)return;
-        const txt=(await res.text()).trim();
-        if(!txt)return;
+        const txt=(await res.text()).trim();if(!txt)return;
         setMotd(txt);setMotdVisible(true);setMotdFading(false);
         setMotdCountdown(8);
         clearInterval(motdCountdownRef.current);
@@ -678,7 +758,7 @@ function App(){
         },8000);
       }catch{}
     },10000);
-    return()=>{clearTimeout(t);clearTimeout(motdFadeTimer.current);};
+    return()=>{clearTimeout(t);clearTimeout(motdFadeTimer.current);clearInterval(motdCountdownRef.current);};
   },[loaded]);
   useEffect(()=>{
     if(!session)return;
@@ -694,12 +774,9 @@ function App(){
           if(Array.isArray(d.txs))setTxs(cleanTxs(d.txs));
           if(typeof d.initBal==="number")setInitBal(d.initBal);
           if(d.balAnchor!==undefined)setBalAnchor(d.balAnchor);
-          if(d.budgets)setBudgets(d.budgets);
-          if(d.disp)setDisp(d.disp);
-          if(d.darkMode)setDarkMode(d.darkMode);
+          if(d.budgets)setBudgets(d.budgets);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);
           if(d.showDecimals!==undefined)setShowDecimals(d.showDecimals);
-          if(d.customCats)setCustomCats(d.customCats);
-          if(d.customSubcats)setCustomSubcats(d.customSubcats);
+          if(d.customCats)setCustomCats(d.customCats);if(d.customSubcats)setCustomSubcats(d.customSubcats);
           if(d.subcatGroupOverrides)setSubcatGroupOverrides(d.subcatGroupOverrides);
           if(Array.isArray(d.goals))setGoals(d.goals);
           setLastSync(new Date(row.updated_at));
@@ -711,14 +788,11 @@ function App(){
   useEffect(()=>{
     if(!loaded)return;
     clearTimeout(cfgTimer.current);
-    cfgTimer.current=setTimeout(async()=>{
-      try{await window.storage.set("bgt9-cfg",JSON.stringify({disp,darkMode,mode,advancedCats,showDecimals}));}catch{}
-    },400);
+    cfgTimer.current=setTimeout(async()=>{try{await window.storage.set("bgt9-cfg",JSON.stringify({disp,darkMode,mode,advancedCats,showDecimals}));}catch{}},400);
   },[disp,darkMode,mode,advancedCats,showDecimals,loaded]);
   useEffect(()=>{
     if(!loaded||!session)return;
-    clearTimeout(sbSaveTimer.current);
-    setIsSyncing(true);
+    clearTimeout(sbSaveTimer.current);setIsSyncing(true);
     sbSaveTimer.current=setTimeout(async()=>{
       try{
         const snap={txs,initBal,balAnchor,disp,darkMode,showDecimals,budgets,customCats,customSubcats,subcatGroupOverrides,goals};
@@ -748,7 +822,7 @@ function App(){
   const handleDateChange=nd=>{if(!nd)return;setFormMod(m=>{const ns=parseD(nd),rec=m.form.rec;let nr=rec;if(rec.type==="weekly")nr={...rec,weekday:ns.getDay()};else if(rec.type==="monthly_nth_weekday")nr={...rec,nth:getNthWD(ns),weekday:ns.getDay()};return{...m,form:{...m.form,date:nd,rec:nr}};});};
   const saveForm=(forcedDate)=>{
     const mod=formModRef.current;if(!mod)return;
-    const{tx,editScope,editDateStr}=mod;const form=mod.form;
+    const{tx,editScope,editDateStr}=mod,form=mod.form;
     const amt=parseFloat(form.amt);if(!form.desc.trim()||isNaN(amt)||amt<=0)return;
     const finalDate=forcedDate||dateInputRef.current?.value||form.date;if(!finalDate)return;
     const data={description:form.desc,amount:amt,type:form.type,recurrence:form.rec,startDate:finalDate,category:form.cat,subCategory:form.subCat||undefined};
@@ -761,8 +835,7 @@ function App(){
   const handleDel=scope=>{const{tx,dateStr}=delMod;if(scope==="all"||normRec(tx.recurrence,parseD(tx.startDate)).type==="once")setTxs(prev=>prev.filter(t=>t.id!==tx.id));else if(scope==="this")setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,exceptions:[...(t.exceptions||[]),dateStr]}));else if(scope==="follow"){const ne=dayBef(dateStr);if(parseD(ne)<parseD(tx.startDate))setTxs(prev=>prev.filter(t=>t.id!==tx.id));else setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,endDate:ne}));}setDelMod(null);};
   const handleDirectMod=(tx,dateStr,scope)=>{
     setExpandedTx(null);setPendingDel(null);
-    const isOnce=normRec(tx.recurrence,parseD(tx.startDate)).type==="once";
-    const eff=(isOnce&&scope==="this")?"all":scope;
+    const isOnce=normRec(tx.recurrence,parseD(tx.startDate)).type==="once",eff=(isOnce&&scope==="this")?"all":scope;
     if(eff==="this"){setDayMod(null);setFormMod({tx,editScope:"this",editDateStr:dateStr,form:{desc:tx.description,amt:String(tx.amount),type:tx.type,rec:{type:"once"},date:dateStr,cat:tx.category||"other",subCat:tx.subCategory||null}});}
     else if(eff==="follow"){setDayMod(null);setFormMod({tx,editScope:"follow",editDateStr:dateStr,form:{desc:tx.description,amt:String(tx.amount),type:tx.type,rec:normRec(tx.recurrence,parseD(tx.startDate)),date:dateStr,cat:tx.category||"other",subCat:tx.subCategory||null}});}
     else if(eff==="all"){setDayMod(null);openForm(tx);}
@@ -796,7 +869,7 @@ function App(){
   const goToday=()=>{setSlideDir(null);setMo(TODAY.getMonth());setYr(TODAY.getFullYear());};
   const handleSwipe=dx=>{if(Math.abs(dx)<40)return;const dir=dx<0?1:-1;const subs=SUB_NAV[tab];if(subs&&subs.length>1){const idx=subs.findIndex(s=>s.id===curSub);const next=idx+dir;if(next>=0&&next<subs.length)setSubTab(prev=>({...prev,[tab]:subs[next].id}));}else{dir>0?nextMo():prevMo();}};
 
-  const dayModalList=dayMod?txs.filter(tx=>occsInMonth(tx,yr,mo).includes(dayMod.day)):[];
+  const dayModalList=dayMod?txs.filter(tx=>monthOccs.get(tx.id)?.includes(dayMod.day)):[];
   const dayModalDateStr=dayMod?yr+"-"+String(mo+1).padStart(2,"0")+"-"+String(dayMod.day).padStart(2,"0"):"";
   const showFabActions=activeTx&&tab==="transactions";
 
@@ -842,7 +915,6 @@ function App(){
         </div>
       )}
 
-      {/* Barre de statut */}
       <div style={{position:"fixed",top:0,left:0,right:0,zIndex:98,pointerEvents:isOverrun?"auto":"none",transform:barVisible&&!barFading?"translateY(0)":"translateY(-100%)",opacity:barFading?0:barVisible?1:0,transition:"transform 0.3s ease,opacity 0.5s ease",background:isOverrun?"#f97316":th.bg,borderBottom:"1px solid "+(isOverrun?"rgba(255,255,255,0.2)":th.border)}}>
         {isOverrun?(
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"5px 16px",gap:8}}>
@@ -868,29 +940,21 @@ function App(){
 
       {showFabActions&&<div onClick={()=>setActiveTx(null)} style={{position:"fixed",inset:0,zIndex:97,background:"transparent"}}/>}
 
-      {/* FAB + speed-dial */}
       <div style={{position:"fixed",bottom:80,right:16,zIndex:99}}>
         {showFabActions&&(<>
           <button title="Modifier" onClick={()=>{openForm(activeTx);setActiveTx(null);}}
-            style={{...fabBtn(th.btnBg,th.btnText),bottom:56+8,right:0,animation:"popIn 0.22s cubic-bezier(0.34,1.56,0.64,1) both"}}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-            </svg>
+            style={{...fabBtn(th.btnBg,th.btnText),bottom:64,right:0,animation:"popIn 0.22s cubic-bezier(0.34,1.56,0.64,1) both"}}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </button>
           <button title="Dupliquer" onClick={()=>{setDupMod({tx:activeTx,date:dStr(TODAY)});setActiveTx(null);}}
             style={{...fabBtn(th.btnBg,th.btnText),bottom:30,right:56,animation:"popIn 0.22s cubic-bezier(0.34,1.56,0.64,1) 0.06s both"}}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="9" y="9" width="13" height="13" rx="2"/>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-            </svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           </button>
         </>)}
         <button onClick={()=>{if(showFabActions){setActiveTx(null);}else{openForm();}}}
           style={{width:48,height:48,borderRadius:"50%",background:showFabActions?"#ef4444":th.btnBg,color:showFabActions?"#fff":th.btnText,border:"none",cursor:"pointer",fontSize:showFabActions?22:26,fontWeight:300,boxShadow:"0 4px 16px rgba(0,0,0,0.2)",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1,position:"relative",zIndex:1,transition:"background 0.18s,color 0.18s,transform 0.18s",transform:showFabActions?"rotate(45deg)":"rotate(0deg)"}}>+</button>
       </div>
 
-      {/* En-tête */}
       <div onMouseEnter={()=>setHeaderHovered(true)} onMouseLeave={()=>setHeaderHovered(false)} style={{padding:"36px 24px 20px",borderBottom:"1px solid "+th.border}}>
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
           <div>
@@ -910,7 +974,6 @@ function App(){
         </div>
       </div>
 
-      {/* Sous-navigation */}
       {SUB_NAV[tab]&&(
         <div style={{padding:"0 24px",borderBottom:"1px solid "+th.border,display:"flex",gap:0,overflowX:"auto",background:th.bgSub}}>
           {tab==="transactions"&&<button onClick={()=>openForm()} style={{fontSize:12,paddingBottom:10,paddingTop:12,paddingLeft:12,paddingRight:16,border:"none",background:"none",cursor:"pointer",borderBottom:"2px solid transparent",color:th.sub,whiteSpace:"nowrap",flexShrink:0,display:"flex",alignItems:"center",gap:4}}><span style={{fontSize:14,lineHeight:1}}>+</span> Ajouter</button>}
@@ -918,7 +981,6 @@ function App(){
         </div>
       )}
 
-      {/* Contenu principal */}
       <div key={tab+"-"+(curSub||"")+(tab==="home"?"-"+yr+"-"+mo:"")} style={{padding:"24px",paddingBottom:"176px",maxWidth:640,animation:tab==="home"&&slideDir?(slideDir==="left"?"slideInFromRight":"slideInFromLeft")+" 0.28s ease":"fadeIn 0.27s ease"}}>
 
         {tab==="home"&&(
@@ -938,7 +1000,7 @@ function App(){
               </div>
             )}
             <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",marginBottom:4}}>
-              {DAYS.map((d,i)=><div key={i} style={{textAlign:"center",fontSize:11,color:th.muted,padding:"4px 0"}}>{d.slice(0,3)}</div>)}
+              {DAYS_FR.map((d,i)=><div key={i} style={{textAlign:"center",fontSize:11,color:th.muted,padding:"4px 0"}}>{d.slice(0,3)}</div>)}
             </div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2}}>
               {cells.map((day,i)=>{
@@ -969,7 +1031,7 @@ function App(){
             </div>
             {monthTxs.length===0
               ?<div style={{textAlign:"center",padding:"60px 0"}}><p style={{fontSize:32,color:th.border,margin:"0 0 8px"}}>O</p><p style={{fontSize:13,color:th.muted}}>{searchQuery?"Aucun résultat":"Aucune transaction"}</p></div>
-              :monthTxs.map(tx=>{const n=occsInMonth(tx,yr,mo).length;return <TxRow key={tx.id} tx={tx} amount={tx.amount*n} recurrenceLabel={recLabel(tx)+(n>1?" x"+n:"")} cat={dynCatById(tx.category||"other")} sc={dynSubcatById(tx.subCategory)} isActive={activeTx?.id===tx.id} setActiveTx={setActiveTx} fmt={f} getCatName={getCatName} th={th}/>;})
+              :monthTxs.map(tx=>{const n=monthOccs.get(tx.id)?.length||1;return <TxRow key={tx.id} tx={tx} amount={tx.amount*n} recurrenceLabel={recLabel(tx)+(n>1?" x"+n:"")} cat={dynCatById(tx.category||"other")} sc={dynSubcatById(tx.subCategory)} isActive={activeTx?.id===tx.id} setActiveTx={setActiveTx} fmt={f} getCatName={getCatName} th={th}/>;})
             }
           </div>
         )}
@@ -1054,7 +1116,7 @@ function App(){
             {txs.length===0?<div style={{textAlign:"center",padding:"80px 0"}}><p style={{fontSize:40,marginBottom:12}}>📊</p><p style={{fontSize:14,color:th.muted}}>Pas encore assez de données</p></div>
             :<div style={{display:"flex",flexDirection:"column",gap:24}}>
               <div style={{display:"flex",flexWrap:"wrap",gap:10}}>
-                <StatCard label="Taux d'épargne" value={statsKPIs.savingsRate!==null?statsKPIs.savingsRate+"%":"--"} sub={MONTHS[mo]} color={statsKPIs.savingsRate===null?th.muted:statsKPIs.savingsRate>=0?"#059669":"#ef4444"} th={th}/>
+                <StatCard label="Taux d'épargne" value={statsKPIs.savingsRate!==null?statsKPIs.savingsRate+"%":"--"} sub={MONTHS_FR[mo]} color={statsKPIs.savingsRate===null?th.muted:statsKPIs.savingsRate>=0?"#059669":"#ef4444"} th={th}/>
                 <StatCard label="Moy. dépenses / mois" value={f(statsKPIs.avgExp3)} sub="3 mois" color="#ef4444" th={th}/>
                 <StatCard label="Net mensuel moyen" value={(statsKPIs.avgNet12>=0?"+":"-")+f(statsKPIs.avgNet12)} sub="12 derniers mois" color={statsKPIs.avgNet12>=0?"#059669":"#ef4444"} th={th}/>
               </div>
@@ -1148,13 +1210,12 @@ function App(){
               <button onClick={()=>{setDelAccMod(true);setDelAccInput("");}} style={{fontSize:13,color:th.danger,background:"none",border:"1px solid "+th.danger,borderRadius:10,padding:"8px 16px",cursor:"pointer"}}>Supprimer le compte</button>
             </div>
             <div style={{marginTop:32,paddingTop:20,borderTop:"1px solid "+th.border,textAlign:"center"}}>
-              <p onClick={handleVersionClick} style={{fontSize:11,color:showTroubleshoot?"#6366f1":th.muted,letterSpacing:"0.1em",cursor:"pointer",userSelect:"none"}}>v0.036</p>
+              <p onClick={handleVersionClick} style={{fontSize:11,color:showTroubleshoot?"#6366f1":th.muted,letterSpacing:"0.1em",cursor:"pointer",userSelect:"none"}}>v0.037</p>
             </div>
           </div>
         )}
       </div>
 
-      {/* Barre de navigation */}
       <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:100,background:th.bg,borderTop:"1px solid "+th.border,display:"flex",paddingBottom:"env(safe-area-inset-bottom,0px)"}}>
         {NAV_ITEMS.map(([k])=>(
           <button key={k} onClick={()=>setTab(k)} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"12px 0 8px",border:"none",background:"none",cursor:"pointer",color:tab===k?th.text:th.muted,transition:"color 0.15s",gap:5}}>
@@ -1164,7 +1225,6 @@ function App(){
         ))}
       </div>
 
-      {/* Modals */}
       {dupMod&&<Sheet onClose={()=>setDupMod(null)} th={th}>
         <SheetHead title="Dupliquer la transaction" onClose={()=>setDupMod(null)} th={th}/>
         <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 14px",background:th.surface,borderRadius:12,marginBottom:20}}>
@@ -1203,7 +1263,7 @@ function App(){
       </Sheet>}
 
       {dayMod&&<Sheet onClose={()=>{setDayMod(null);setExpandedTx(null);setPendingDel(null);}} th={th}>
-        <SheetHead title={MONTHS[mo]+" "+dayMod.day} onClose={()=>{setDayMod(null);setExpandedTx(null);setPendingDel(null);}} th={th} right={<button onClick={()=>{setDayMod(null);openForm(null,dayModalDateStr);}} style={{fontSize:12,color:th.sub,background:"none",border:"1px solid "+th.border,borderRadius:8,padding:"5px 11px",cursor:"pointer"}}>+ Ajouter</button>}/>
+        <SheetHead title={MONTHS_FR[mo]+" "+dayMod.day} onClose={()=>{setDayMod(null);setExpandedTx(null);setPendingDel(null);}} th={th} right={<button onClick={()=>{setDayMod(null);openForm(null,dayModalDateStr);}} style={{fontSize:12,color:th.sub,background:"none",border:"1px solid "+th.border,borderRadius:8,padding:"5px 11px",cursor:"pointer"}}>+ Ajouter</button>}/>
         {dayModalList.length===0?<div style={{textAlign:"center",padding:"32px 0"}}><p style={{fontSize:13,color:th.muted}}>Aucune transaction ce jour</p></div>
         :dayModalList.map(tx=>{const cat=dynCatById(tx.category||"other"),isExp=expandedTx===tx.id,sc=dynSubcatById(tx.subCategory);return(
           <div key={tx.id}>
@@ -1215,9 +1275,7 @@ function App(){
               <div style={{padding:"12px 0 16px",borderBottom:"1px solid "+th.border}}>
                 <p style={{fontSize:10,color:th.muted,letterSpacing:"0.1em",textTransform:"uppercase",margin:"0 0 6px",paddingLeft:2}}>Dupliquer</p>
                 <div style={{marginBottom:14}}>
-                  <button onClick={()=>{setDayMod(null);setDupMod({tx,date:dStr(TODAY)});}} style={{textAlign:"left",padding:"9px 12px",fontSize:13,color:th.text,background:th.surface,border:"none",borderRadius:9,cursor:"pointer",lineHeight:1.3,width:"100%"}}>
-                    Choisir une date et dupliquer
-                  </button>
+                  <button onClick={()=>{setDayMod(null);setDupMod({tx,date:dStr(TODAY)});}} style={{textAlign:"left",padding:"9px 12px",fontSize:13,color:th.text,background:th.surface,border:"none",borderRadius:9,cursor:"pointer",lineHeight:1.3,width:"100%"}}>Choisir une date et dupliquer</button>
                 </div>
                 <p style={{fontSize:10,color:th.muted,letterSpacing:"0.1em",textTransform:"uppercase",margin:"0 0 6px",paddingLeft:2}}>Modifier</p>
                 <div style={{display:"flex",flexDirection:"column",gap:3,marginBottom:14}}>
