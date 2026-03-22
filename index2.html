@@ -60,7 +60,6 @@ const{useState,useEffect,useMemo,useRef,useCallback}=React;
 const TODAY=new Date();TODAY.setHours(0,0,0,0);
 const sb=window._sb;
 
-// ─── Données de référence ─────────────────────────────────────────────────────
 const CATS=[
   {id:"income",emoji:"💰",color:"#22c55e"},
   {id:"housing",emoji:"🏠",color:"#3b82f6"},
@@ -154,21 +153,16 @@ const PRESET_COLORS=["#3b82f6","#f97316","#10b981","#8b5cf6","#ef4444","#06b6d4"
 const GOAL_EMOJIS=["🎯","✈️","🏠","🚗","💍","🎓","🏖️","💻","🛋️","🐾","🎸","⛵"];
 const MOTD_URL="https://maxallval.github.io/budget/messages/messages.txt";
 
-// ─── Constantes statiques (évite les re-créations) ────────────────────────────
+// ─── Constantes statiques ─────────────────────────────────────────────────────
 const DAYS_FR=["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"];
 const MONTHS_FR=["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
 const NTH_FR=["","1er","2e","3e","4e","5e"];
 const DS_FR=["D","L","M","M","J","V","S"];
 const UNITS_FR={day:"jours",week:"semaines",month:"mois",year:"années"};
 
-// ─── parseD avec cache (évite split/map répétés sur les mêmes strings) ────────
+// ─── parseD avec cache ────────────────────────────────────────────────────────
 const _pdCache=new Map();
-const parseD=s=>{
-  let v=_pdCache.get(s);
-  if(!v){const[y,m,d]=s.split("-").map(Number);v=[y,m-1,d];_pdCache.set(s,v);}
-  return new Date(v[0],v[1],v[2]);
-};
-// dayBef n'utilise pas le cache pour éviter toute mutation accidentelle
+const parseD=s=>{let v=_pdCache.get(s);if(!v){const[y,m,d]=s.split("-").map(Number);v=[y,m-1,d];_pdCache.set(s,v);}return new Date(v[0],v[1],v[2]);};
 const dayBef=s=>{const[y,m,d]=s.split("-").map(Number);const dt=new Date(y,m-1,d);dt.setDate(dt.getDate()-1);return dStr(dt);};
 const dStr=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const addMths=(yr,mo,n)=>{let m=mo+n,y=yr;while(m>11){m-=12;y++;}while(m<0){m+=12;y--;}return{yr:y,mo:m};};
@@ -181,7 +175,6 @@ const fA=(n,full=false,dec=true)=>{
 };
 function getNthWD(date){let c=0;const d=new Date(date.getFullYear(),date.getMonth(),1);while(d<=date){if(d.getDay()===date.getDay())c++;d.setDate(d.getDate()+1);}return c;}
 function normRec(rec,s){if(rec&&typeof rec==="object")return rec;const wd=s instanceof Date?s.getDay():parseD(String(s||"2024-01-01")).getDay();return({once:{type:"once"},daily:{type:"daily"},weekly:{type:"weekly",weekday:wd},monthly:{type:"monthly_day"},annual:{type:"annually"}})[rec]||{type:"once"};}
-
 function occsInMonth(tx,yr,mo){
   const ms=new Date(yr,mo,1),me=new Date(yr,mo+1,0);
   const s=parseD(tx.startDate),e=tx.endDate?parseD(tx.endDate):null;
@@ -204,7 +197,6 @@ function occsInMonth(tx,yr,mo){
     return res;}
   return[];
 }
-
 function countOccs(tx,upTo){
   const s=parseD(tx.startDate);if(s>upTo)return 0;
   let count=0,y=s.getFullYear(),m=s.getMonth(),its=0;
@@ -214,7 +206,6 @@ function countOccs(tx,upTo){
 }
 const rawBalAt=(txs,init,date)=>txs.reduce((b,tx)=>b+(tx.type==="income"?1:-1)*tx.amount*countOccs(tx,date),init);
 const cleanTxs=txs=>txs.filter(tx=>{const r=normRec(tx.recurrence,parseD(tx.startDate));return!(r.type==="once"&&new Set(tx.exceptions||[]).has(tx.startDate));});
-
 function relTimeStr(ls){
   if(!ls)return"Jamais synchronisé";
   const s=Math.floor((Date.now()-ls.getTime())/1000);
@@ -223,8 +214,6 @@ function relTimeStr(ls){
   const m=Math.floor(s/60);if(m<60)return"Synchronisé il y a "+m+"min";
   const h=Math.floor(m/60);return"Synchronisé il y a "+h+"h";
 }
-
-// recLabel utilise les constantes statiques du module
 function recLabel(tx){
   const s=parseD(tx.startDate),r=normRec(tx.recurrence,s),wd=r.weekday!==undefined?r.weekday:s.getDay();
   switch(r.type){
@@ -239,32 +228,34 @@ function recLabel(tx){
   }
 }
 
-// ─── FAB helper (stable, hors composant) ──────────────────────────────────────
-const fabBtn=(bg,color)=>({
-  position:"absolute",width:48,height:48,borderRadius:"50%",
-  background:bg,color,border:"none",cursor:"pointer",
-  display:"flex",alignItems:"center",justifyContent:"center",
-  boxShadow:"0 4px 16px rgba(0,0,0,0.22)",fontSize:19,lineHeight:1,
-});
+// ─── Helpers hors composant ───────────────────────────────────────────────────
+const fabBtn=(bg,color)=>({position:"absolute",width:48,height:48,borderRadius:"50%",background:bg,color,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(0,0,0,0.22)",fontSize:19,lineHeight:1});
 
-// ─── Composants UI ────────────────────────────────────────────────────────────
-const mkTh=d=>d
-  ?{bg:"#0d0d0d",bgSub:"#161616",surface:"#1c1c1c",border:"#252525",inputBorder:"#333",text:"#f0f0f0",sub:"#888",muted:"#444",btnBg:"#efefef",btnText:"#111",togOff:"#3a3a3a",sheetBg:"#161616",danger:"#f87171",cardBg:"#181818"}
-  :{bg:"#fff",bgSub:"#f9fafb",surface:"#f3f4f6",border:"#f0f0f0",inputBorder:"#e5e7eb",text:"#111",sub:"#6b7280",muted:"#9ca3af",btnBg:"#111",btnText:"#fff",togOff:"#d1d5db",sheetBg:"#fff",danger:"#ef4444",cardBg:"#fafafa"};
+// ─── ProGate : écran de verrouillage pour les fonctionnalités Pro ─────────────
+function ProGate({isPro,th,title,desc,children}){
+  if(isPro)return children;
+  return(
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"56px 32px",textAlign:"center"}}>
+      <div style={{width:64,height:64,borderRadius:20,background:"linear-gradient(135deg,#6366f1,#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:20,boxShadow:"0 8px 24px rgba(99,102,241,0.25)"}}>
+        <span style={{fontSize:28}}>🔒</span>
+      </div>
+      <p style={{fontSize:16,fontWeight:700,color:th.text,margin:"0 0 8px"}}>{title}</p>
+      <p style={{fontSize:13,color:th.muted,margin:"0 0 28px",lineHeight:1.7,maxWidth:280}}>{desc}</p>
+      <div style={{display:"inline-flex",alignItems:"center",gap:6,padding:"10px 22px",borderRadius:20,background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:600,boxShadow:"0 4px 14px rgba(99,102,241,0.35)"}}>
+        ✦ Passer à Pro
+      </div>
+    </div>
+  );
+}
 
 function StatusDot({ok,na,th}){
   return na?<span style={{fontSize:12,color:th.muted}}>-</span>:<span style={{fontSize:12,color:ok?"#10b981":"#ef4444",fontWeight:500}}>{ok?"OK":"Non"}</span>;
 }
 
-// React.memo évite les re-renders des lignes non modifiées
 const TxRow=React.memo(function TxRow({tx,amount,recurrenceLabel,cat,sc,isActive,setActiveTx,fmt,getCatName,th}){
   return(
-    <div
-      onPointerEnter={e=>{if(e.pointerType==="mouse")setActiveTx(tx);}}
-      onPointerLeave={e=>{if(e.pointerType==="mouse")setActiveTx(null);}}
-      onClick={()=>setActiveTx(tx)}
-      style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 10px",borderBottom:"1px solid "+th.border,borderRadius:10,cursor:"pointer",background:isActive?th.surface:"transparent",transition:"background 0.15s",margin:"0 -10px"}}
-    >
+    <div onPointerEnter={e=>{if(e.pointerType==="mouse")setActiveTx(tx);}} onPointerLeave={e=>{if(e.pointerType==="mouse")setActiveTx(null);}} onClick={()=>setActiveTx(tx)}
+      style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 10px",borderBottom:"1px solid "+th.border,borderRadius:10,cursor:"pointer",background:isActive?th.surface:"transparent",transition:"background 0.15s",margin:"0 -10px"}}>
       <div style={{display:"flex",alignItems:"center",gap:10}}>
         <div style={{width:34,height:34,borderRadius:9,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0,border:"2px solid "+(isActive?cat.color:"transparent"),transition:"border-color 0.15s"}}>{cat.emoji}</div>
         <div>
@@ -273,12 +264,15 @@ const TxRow=React.memo(function TxRow({tx,amount,recurrenceLabel,cat,sc,isActive
           <p style={{fontSize:11,color:th.muted,margin:"2px 0 0"}}>{recurrenceLabel}</p>
         </div>
       </div>
-      <span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:tx.type==="income"?"#059669":"#ef4444",flexShrink:0}}>
-        {tx.type==="income"?"+":"-"}{fmt(amount,true)}
-      </span>
+      <span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:tx.type==="income"?"#059669":"#ef4444",flexShrink:0}}>{tx.type==="income"?"+":"-"}{fmt(amount,true)}</span>
     </div>
   );
 });
+
+// ─── UI primitives ────────────────────────────────────────────────────────────
+const mkTh=d=>d
+  ?{bg:"#0d0d0d",bgSub:"#161616",surface:"#1c1c1c",border:"#252525",inputBorder:"#333",text:"#f0f0f0",sub:"#888",muted:"#444",btnBg:"#efefef",btnText:"#111",togOff:"#3a3a3a",sheetBg:"#161616",danger:"#f87171",cardBg:"#181818"}
+  :{bg:"#fff",bgSub:"#f9fafb",surface:"#f3f4f6",border:"#f0f0f0",inputBorder:"#e5e7eb",text:"#111",sub:"#6b7280",muted:"#9ca3af",btnBg:"#111",btnText:"#fff",togOff:"#d1d5db",sheetBg:"#fff",danger:"#ef4444",cardBg:"#fafafa"};
 
 const Tog=({label,sub,value,onChange,th})=>(
   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0",borderBottom:"1px solid "+th.border}}>
@@ -327,11 +321,9 @@ const FullSheetHead=({title,onClose,right,th})=>(
     <div style={{display:"flex",gap:8,alignItems:"center"}}>{right}</div>
   </div>
 );
-
-// M array static, hors composant
-const MonthNav=({yr,mo,onPrev,onNext,onDbl,th})=>(
+const MonthNav=({yr,mo,onPrev,onNext,onDbl,th,prevDisabled})=>(
   <div style={{display:"flex",alignItems:"center",gap:4}}>
-    <button onClick={onPrev} style={{width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:"none",border:"none",cursor:"pointer",fontSize:20,color:th.muted,borderRadius:8}}>&#8249;</button>
+    <button onClick={onPrev} disabled={prevDisabled} style={{width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:"none",border:"none",cursor:prevDisabled?"default":"pointer",fontSize:20,color:prevDisabled?th.border:th.muted,borderRadius:8}}>&#8249;</button>
     <span onDoubleClick={onDbl} style={{fontSize:15,color:th.text,fontWeight:500,minWidth:164,textAlign:"center",cursor:"default",userSelect:"none"}}>{MONTHS_FR[mo]} {yr}</span>
     <button onClick={onNext} style={{width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:"none",border:"none",cursor:"pointer",fontSize:20,color:th.muted,borderRadius:8}}>&#8250;</button>
   </div>
@@ -380,7 +372,6 @@ const StatCard=({label,value,sub,color,th})=>(
     {sub&&<p style={{fontSize:11,color:th.muted,margin:0}}>{sub}</p>}
   </div>
 );
-
 function CategoryPicker({value,onChange,th,allCats,getCatName}){
   return(<div>
     <label style={{fontSize:10,color:th.muted,letterSpacing:"0.1em",textTransform:"uppercase"}}>Catégorie</label>
@@ -407,8 +398,6 @@ function SubCategoryPicker({category,value,onChange,th,allSubcats}){
     </div>
   </div>);
 }
-
-// UNITS_FR et DAYS_FR/MONTHS_FR déjà à portée du module
 function RecurrencePicker({value,onChange,startDate,th}){
   const UNITS_REC=[{v:"day",l:"jours"},{v:"week",l:"semaines"},{v:"month",l:"mois"},{v:"year",l:"années"}];
   const s=useMemo(()=>parseD(startDate),[startDate]);
@@ -468,11 +457,7 @@ function LoginScreen(){
   const[loading,setLoading]=useState(false);
   const[err,setErr]=useState("");
   const th=mkTh(false);
-  const handleGoogle=async()=>{
-    setLoading(true);setErr("");
-    const{error}=await sb.auth.signInWithOAuth({provider:"google",options:{redirectTo:window.location.origin+window.location.pathname}});
-    if(error){setErr(error.message);setLoading(false);}
-  };
+  const handleGoogle=async()=>{setLoading(true);setErr("");const{error}=await sb.auth.signInWithOAuth({provider:"google",options:{redirectTo:window.location.origin+window.location.pathname}});if(error){setErr(error.message);setLoading(false);}};
   return(
     <div style={{minHeight:"100vh",background:th.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:32,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>
       <div style={{width:"100%",maxWidth:360,animation:"fadeIn 0.5s ease"}}>
@@ -482,8 +467,7 @@ function LoginScreen(){
           <p style={{fontSize:14,color:th.sub,margin:0}}>Gestion financière personnelle</p>
         </div>
         <button onClick={handleGoogle} disabled={loading} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:12,padding:"14px 20px",borderRadius:14,border:"1px solid "+th.border,background:th.bg,color:th.text,fontSize:15,fontWeight:600,cursor:loading?"default":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.06)",opacity:loading?0.7:1,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>
-          {loading?<span style={{width:20,height:20,borderRadius:"50%",border:"2px solid #e5e7eb",borderTopColor:"#6366f1",display:"inline-block",animation:"pulse 0.8s linear infinite"}}/>
-            :<svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>}
+          {loading?<span style={{width:20,height:20,borderRadius:"50%",border:"2px solid #e5e7eb",borderTopColor:"#6366f1",display:"inline-block",animation:"pulse 0.8s linear infinite"}}/>:<svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>}
           {loading?"Connexion...":"Continuer avec Google"}
         </button>
         {err&&<p style={{fontSize:12,color:"#ef4444",textAlign:"center",marginTop:12}}>{err}</p>}
@@ -559,6 +543,8 @@ function App(){
   const[copied,setCopied]=useState(false);
   const[activeTx,setActiveTx]=useState(null);
   const[dupMod,setDupMod]=useState(null);
+  // Plan : true = Pro, false = Gratuit (test seulement)
+  const[isPro,setIsPro]=useState(true);
 
   const balInputRef=useRef(null),balSettRef=useRef(null),dateInputRef=useRef(null);
   const formModRef=useRef(null),lastTapRef=useRef(0),sbSaveTimer=useRef(null);
@@ -573,17 +559,14 @@ function App(){
   const f=(n,full=false)=>fA(n,full,showDecimals);
   formModRef.current=formMod;
 
-  // ─── Lookups O(1) via Map ──────────────────────────────────────────────────
-  const allCats=useMemo(()=>[...CATS,...customCats],[customCats]);
-  const allSubcats=useMemo(()=>{
-    const base=SUBCATS.map(sc=>subcatGroupOverrides[sc.id]?{...sc,group:subcatGroupOverrides[sc.id]}:sc);
-    return[...base,...customSubcats];
-  },[customSubcats,subcatGroupOverrides]);
+  // Limite de mois en arrière pour la version gratuite (mois courant - 2)
+  const FREE_LIMIT=useMemo(()=>addMths(TODAY.getFullYear(),TODAY.getMonth(),-2),[]);
 
+  const allCats=useMemo(()=>[...CATS,...customCats],[customCats]);
+  const allSubcats=useMemo(()=>{const base=SUBCATS.map(sc=>subcatGroupOverrides[sc.id]?{...sc,group:subcatGroupOverrides[sc.id]}:sc);return[...base,...customSubcats];},[customSubcats,subcatGroupOverrides]);
   const catMap=useMemo(()=>{const m=new Map();allCats.forEach(c=>m.set(c.id,c));return m;},[allCats]);
   const subcatMap=useMemo(()=>{const m=new Map();allSubcats.forEach(s=>m.set(s.id,s));return m;},[allSubcats]);
   const catNameMap=useMemo(()=>{const m={...CAT_NAMES};customCats.forEach(c=>m[c.id]=c.label);return m;},[customCats]);
-
   const getCatName=useCallback(id=>catNameMap[id]||id,[catNameMap]);
   const dynCatById=useCallback(id=>catMap.get(id)||allCats[allCats.length-1],[catMap,allCats]);
   const dynSubcatById=useCallback(id=>id?subcatMap.get(id)||null:null,[subcatMap]);
@@ -606,42 +589,23 @@ function App(){
   const dim=new Date(yr,mo+1,0).getDate();
   const cells=useMemo(()=>{const fd=new Date(yr,mo,1).getDay();return[...Array(fd).fill(null),...Array.from({length:dim},(_,i)=>i+1)];},[yr,mo,dim]);
 
-  // ─── Passe unique : occurrences du mois courant ────────────────────────────
-  // Remplace 5 appels séparés à occsInMonth (dayData, monthStats, catStats, monthTxs, controleData)
-  const monthOccs=useMemo(()=>{
-    const m=new Map();
-    txs.forEach(tx=>{const days=occsInMonth(tx,yr,mo);if(days.length)m.set(tx.id,days);});
-    return m;
-  },[txs,yr,mo]);
+  const monthOccs=useMemo(()=>{const m=new Map();txs.forEach(tx=>{const days=occsInMonth(tx,yr,mo);if(days.length)m.set(tx.id,days);});return m;},[txs,yr,mo]);
 
-  // ─── dayData : solde incrémental (1 getBalAt au lieu de 31) ───────────────
   const dayData=useMemo(()=>{
-    const d={};
-    // Solde à la fin du dernier jour du mois précédent (day 0 = dernier jour de mo-1)
-    let bal=getBalAt(new Date(yr,mo,0));
+    const d={};let bal=getBalAt(new Date(yr,mo,0));
     for(let day=1;day<=dim;day++){
       const dayTxs=txs.filter(tx=>monthOccs.get(tx.id)?.includes(day));
       let net=0;const cats=[];
       dayTxs.forEach(tx=>{net+=tx.type==="income"?tx.amount:-tx.amount;cats.push(dynCatById(tx.category||"other"));});
-      bal+=net;
-      d[day]={net,bal,count:dayTxs.length,cats};
+      bal+=net;d[day]={net,bal,count:dayTxs.length,cats};
     }
     return d;
   },[txs,yr,mo,dim,getBalAt,dynCatById,monthOccs]);
 
-  // ─── monthStats + catStats : passe combinée ────────────────────────────────
   const{monthStats,catStats}=useMemo(()=>{
-    const ms={inc:0,exp:0,net:0};
-    const cs={};allCats.forEach(c=>cs[c.id]={spent:0,income:0});
-    txs.forEach(tx=>{
-      const n=monthOccs.get(tx.id)?.length||0;if(!n)return;
-      const cat=tx.category||"other";
-      if(!cs[cat])cs[cat]={spent:0,income:0};
-      if(tx.type==="income"){ms.inc+=tx.amount*n;cs[cat].income+=tx.amount*n;}
-      else{ms.exp+=tx.amount*n;cs[cat].spent+=tx.amount*n;}
-    });
-    ms.net=ms.inc-ms.exp;
-    return{monthStats:ms,catStats:cs};
+    const ms={inc:0,exp:0,net:0},cs={};allCats.forEach(c=>cs[c.id]={spent:0,income:0});
+    txs.forEach(tx=>{const n=monthOccs.get(tx.id)?.length||0;if(!n)return;const cat=tx.category||"other";if(!cs[cat])cs[cat]={spent:0,income:0};if(tx.type==="income"){ms.inc+=tx.amount*n;cs[cat].income+=tx.amount*n;}else{ms.exp+=tx.amount*n;cs[cat].spent+=tx.amount*n;}});
+    ms.net=ms.inc-ms.exp;return{monthStats:ms,catStats:cs};
   },[txs,monthOccs,allCats]);
 
   const totalBudget=useMemo(()=>allCats.filter(c=>c.id!=="income").reduce((s,c)=>s+(budgets[c.id]||0),0),[budgets,allCats]);
@@ -651,157 +615,68 @@ function App(){
   const hasSummary=disp.endBal||disp.revExp||disp.net;
   const savingsRate=monthStats.inc>0?Math.round(monthStats.net/monthStats.inc*100):null;
   const isTod=d=>d===TODAY.getDate()&&mo===TODAY.getMonth()&&yr===TODAY.getFullYear();
-
   const chart12End=useMemo(()=>addMths(yr,mo,chart12Offset),[yr,mo,chart12Offset]);
   const chart12Start=useMemo(()=>addMths(chart12End.yr,chart12End.mo,-11),[chart12End]);
-  const last12=useMemo(()=>{
-    const ms=[];let y2=chart12Start.yr,m2=chart12Start.mo;
-    for(let i=0;i<12;i++){
-      const lastDay=new Date(y2,m2+1,0);let inc=0,exp=0;
-      txs.forEach(tx=>{const n=occsInMonth(tx,y2,m2).length;if(tx.type==="income")inc+=tx.amount*n;else exp+=tx.amount*n;});
-      ms.push({label:MONTHS_FR[m2].slice(0,3),inc,exp,net:inc-exp,endBal:getBalAt(lastDay)});
-      m2++;if(m2>11){m2=0;y2++;}
-    }
-    return ms;
-  },[txs,getBalAt,chart12Start]);
+  const last12=useMemo(()=>{const ms=[];let y2=chart12Start.yr,m2=chart12Start.mo;for(let i=0;i<12;i++){const lastDay=new Date(y2,m2+1,0);let inc=0,exp=0;txs.forEach(tx=>{const n=occsInMonth(tx,y2,m2).length;if(tx.type==="income")inc+=tx.amount*n;else exp+=tx.amount*n;});ms.push({label:MONTHS_FR[m2].slice(0,3),inc,exp,net:inc-exp,endBal:getBalAt(lastDay)});m2++;if(m2>11){m2=0;y2++;}}return ms;},[txs,getBalAt,chart12Start]);
   const chart12Label=chart12Offset===0?"Ce mois":MONTHS_FR[chart12End.mo].slice(0,3)+" "+chart12End.yr;
-
   const topCatEnd=useMemo(()=>addMths(yr,mo,topCatOffset),[yr,mo,topCatOffset]);
-  const topCats=useMemo(()=>{
-    const s={};allCats.forEach(c=>{s[c.id]={spent:0};});
-    txs.forEach(tx=>{if(tx.type==="income")return;const n=occsInMonth(tx,topCatEnd.yr,topCatEnd.mo).length;if(!n)return;const cat=tx.category||"other";if(!s[cat])s[cat]={spent:0};s[cat].spent+=tx.amount*n;});
-    return allCats.filter(c=>c.id!=="income").map(c=>({...c,spent:s[c.id]?.spent||0})).filter(c=>c.spent>0).sort((a,b)=>b.spent-a.spent).slice(0,5);
-  },[txs,topCatEnd,allCats]);
+  const topCats=useMemo(()=>{const s={};allCats.forEach(c=>{s[c.id]={spent:0};});txs.forEach(tx=>{if(tx.type==="income")return;const n=occsInMonth(tx,topCatEnd.yr,topCatEnd.mo).length;if(!n)return;const cat=tx.category||"other";if(!s[cat])s[cat]={spent:0};s[cat].spent+=tx.amount*n;});return allCats.filter(c=>c.id!=="income").map(c=>({...c,spent:s[c.id]?.spent||0})).filter(c=>c.spent>0).sort((a,b)=>b.spent-a.spent).slice(0,5);},[txs,topCatEnd,allCats]);
   const topCatLabel=MONTHS_FR[topCatEnd.mo].slice(0,3)+" "+topCatEnd.yr;
-
-  const statsKPIs=useMemo(()=>{
-    const sr=monthStats.inc>0?Math.round(monthStats.net/monthStats.inc*100):null;
-    const last3=last12.slice(-3),avgExp3=last3.length?last3.reduce((s,m)=>s+m.exp,0)/last3.length:0;
-    const withData=last12.filter(m=>m.inc>0||m.exp>0),avgNet12=withData.length?withData.reduce((s,m)=>s+m.net,0)/withData.length:0;
-    return{savingsRate:sr,avgExp3,avgNet12};
-  },[monthStats,last12]);
-
-  // monthTxs utilise monthOccs (pas de re-appel occsInMonth)
-  const monthTxs=useMemo(()=>{
-    const q=searchQuery.toLowerCase().trim();
-    return txs
-      .filter(tx=>{
-        if(!(monthOccs.get(tx.id)?.length))return false;
-        if(!q)return true;
-        return tx.description.toLowerCase().includes(q)||getCatName(tx.category||"other").toLowerCase().includes(q);
-      })
-      .sort((a,b)=>parseD(b.startDate)-parseD(a.startDate));
-  },[txs,monthOccs,searchQuery,getCatName]);
-
+  const statsKPIs=useMemo(()=>{const sr=monthStats.inc>0?Math.round(monthStats.net/monthStats.inc*100):null;const last3=last12.slice(-3),avgExp3=last3.length?last3.reduce((s,m)=>s+m.exp,0)/last3.length:0;const withData=last12.filter(m=>m.inc>0||m.exp>0),avgNet12=withData.length?withData.reduce((s,m)=>s+m.net,0)/withData.length:0;return{savingsRate:sr,avgExp3,avgNet12};},[monthStats,last12]);
+  const monthTxs=useMemo(()=>{const q=searchQuery.toLowerCase().trim();return txs.filter(tx=>{if(!(monthOccs.get(tx.id)?.length))return false;if(!q)return true;return tx.description.toLowerCase().includes(q)||getCatName(tx.category||"other").toLowerCase().includes(q);}).sort((a,b)=>parseD(b.startDate)-parseD(a.startDate));},[txs,monthOccs,searchQuery,getCatName]);
   const recurTxs=useMemo(()=>txs.filter(tx=>normRec(tx.recurrence,parseD(tx.startDate)).type!=="once").sort((a,b)=>parseD(b.startDate)-parseD(a.startDate)),[txs]);
-
   const syncText=useMemo(()=>isSyncing?"Synchronisation...":relTimeStr(lastSync),[isSyncing,lastSync,tick]);
   const overrunCats=useMemo(()=>expenseCats.filter(c=>budgets[c.id]>0&&(catStats[c.id]?.spent||0)>budgets[c.id]),[expenseCats,budgets,catStats]);
   const overrunKey=yr+"-"+mo;
   const showOverrunAlert=overrunCats.length>0&&!acknowledgedOverruns.has(overrunKey)&&!overrunDismissing;
+  const controleData=useMemo(()=>{const groups={essentiel:0,flexible:0,lifestyle:0,nonclasse:0},details={essentiel:[],flexible:[],lifestyle:[],nonclasse:[]};txs.forEach(tx=>{if(tx.type==="income")return;const n=monthOccs.get(tx.id)?.length||0;if(!n)return;const total=tx.amount*n,sc=tx.subCategory?dynSubcatById(tx.subCategory):null,grp=sc?.group||"nonclasse";groups[grp]=(groups[grp]||0)+total;const bucket=details[grp]||(details[grp]=[]);const ex=bucket.find(d=>d.label===(sc?.label||"Non classé"));if(ex)ex.total+=total;else bucket.push({label:sc?.label||"Non classé",total});});Object.values(details).forEach(arr=>arr.sort((a,b)=>b.total-a.total));return{groups,details};},[txs,monthOccs,dynSubcatById]);
 
-  // controleData utilise monthOccs
-  const controleData=useMemo(()=>{
-    const groups={essentiel:0,flexible:0,lifestyle:0,nonclasse:0};
-    const details={essentiel:[],flexible:[],lifestyle:[],nonclasse:[]};
-    txs.forEach(tx=>{
-      if(tx.type==="income")return;
-      const n=monthOccs.get(tx.id)?.length||0;if(!n)return;
-      const total=tx.amount*n,sc=tx.subCategory?dynSubcatById(tx.subCategory):null,grp=sc?.group||"nonclasse";
-      groups[grp]=(groups[grp]||0)+total;
-      const bucket=details[grp]||(details[grp]=[]);
-      const ex=bucket.find(d=>d.label===(sc?.label||"Non classé"));
-      if(ex)ex.total+=total;else bucket.push({label:sc?.label||"Non classé",total});
-    });
-    Object.values(details).forEach(arr=>arr.sort((a,b)=>b.total-a.total));
-    return{groups,details};
-  },[txs,monthOccs,dynSubcatById]);
+  // Limite de navigation en arrière pour la version gratuite
+  const isPrevMoDisabled=!isPro&&(yr<FREE_LIMIT.yr||(yr===FREE_LIMIT.yr&&mo<=FREE_LIMIT.mo));
 
   useEffect(()=>{if(tab!=="transactions")setActiveTx(null);},[tab]);
-  useEffect(()=>{
-    sb.auth.getSession().then(({data:{session}})=>{setSession(session);setAuthLoading(false);});
-    const{data:{subscription}}=sb.auth.onAuthStateChange((_,session)=>{setSession(session);if(!session)setLoaded(false);});
-    return()=>subscription.unsubscribe();
-  },[]);
+  useEffect(()=>{sb.auth.getSession().then(({data:{session}})=>{setSession(session);setAuthLoading(false);});const{data:{subscription}}=sb.auth.onAuthStateChange((_,session)=>{setSession(session);if(!session)setLoaded(false);});return()=>subscription.unsubscribe();},[]);
   useEffect(()=>{const t=setTimeout(()=>setShowSplash(false),2250);return()=>clearTimeout(t);},[]);
   useEffect(()=>{
     window.history.pushState({b:true},"");
-    const h=()=>{
-      window.history.pushState({b:true},"");
-      if(formMod){setFormMod(null);return;}if(dupMod){setDupMod(null);return;}if(goalForm){setGoalForm(null);return;}if(catsMod){setCatsMod(false);return;}if(dayMod){setDayMod(null);setExpandedTx(null);setPendingDel(null);return;}if(delMod){setDelMod(null);return;}if(delAccMod){setDelAccMod(false);setDelAccInput("");return;}if(exportMod){setExportMod(false);return;}if(importMod){setImportMod(false);setImportText("");return;}
-      setTab("home");setMo(TODAY.getMonth());setYr(TODAY.getFullYear());
-    };
+    const h=()=>{window.history.pushState({b:true},"");if(formMod){setFormMod(null);return;}if(dupMod){setDupMod(null);return;}if(goalForm){setGoalForm(null);return;}if(catsMod){setCatsMod(false);return;}if(dayMod){setDayMod(null);setExpandedTx(null);setPendingDel(null);return;}if(delMod){setDelMod(null);return;}if(delAccMod){setDelAccMod(false);setDelAccInput("");return;}if(exportMod){setExportMod(false);return;}if(importMod){setImportMod(false);setImportText("");return;}setTab("home");setMo(TODAY.getMonth());setYr(TODAY.getFullYear());};
     window.addEventListener("popstate",h);return()=>window.removeEventListener("popstate",h);
   },[formMod,dupMod,goalForm,catsMod,dayMod,delMod,delAccMod,exportMod,importMod]);
   useEffect(()=>{const id=setInterval(()=>setTick(n=>n+1),15000);return()=>clearInterval(id);},[]);
   useEffect(()=>{const mq=window.matchMedia("(prefers-color-scheme:dark)");const h=e=>setSysDark(e.matches);mq.addEventListener("change",h);return()=>mq.removeEventListener("change",h);},[]);
   useEffect(()=>{const go=()=>setIsOnline(true);const off=()=>setIsOnline(false);window.addEventListener("online",go);window.addEventListener("offline",off);return()=>{window.removeEventListener("online",go);window.removeEventListener("offline",off);};},[]);
-  useEffect(()=>{
-    clearTimeout(syncHideTimer.current);clearTimeout(syncFadeTimer.current);
-    if(isSyncing){setSyncBarVisible(true);setSyncBarFading(false);}
-    else if(lastSync){setSyncBarVisible(true);setSyncBarFading(false);syncHideTimer.current=setTimeout(()=>{setSyncBarFading(true);syncFadeTimer.current=setTimeout(()=>{setSyncBarVisible(false);setSyncBarFading(false);},1000);},2000);}
-  },[isSyncing,lastSync]);
-  useEffect(()=>{
-    if(!loaded)return;
-    const t=setTimeout(async()=>{
-      try{
-        const res=await fetch(MOTD_URL+"?t="+Date.now());
-        if(!res.ok)return;
-        const txt=(await res.text()).trim();if(!txt)return;
-        setMotd(txt);setMotdVisible(true);setMotdFading(false);
-        setMotdCountdown(8);
-        clearInterval(motdCountdownRef.current);
-        motdCountdownRef.current=setInterval(()=>{setMotdCountdown(c=>{if(c<=1){clearInterval(motdCountdownRef.current);return 0;}return c-1;});},1000);
-        motdFadeTimer.current=setTimeout(()=>{
-          setMotdFading(true);
-          setTimeout(()=>{setMotdVisible(false);setMotdFading(false);},800);
-        },8000);
-      }catch{}
-    },10000);
-    return()=>{clearTimeout(t);clearTimeout(motdFadeTimer.current);clearInterval(motdCountdownRef.current);};
-  },[loaded]);
+  useEffect(()=>{clearTimeout(syncHideTimer.current);clearTimeout(syncFadeTimer.current);if(isSyncing){setSyncBarVisible(true);setSyncBarFading(false);}else if(lastSync){setSyncBarVisible(true);setSyncBarFading(false);syncHideTimer.current=setTimeout(()=>{setSyncBarFading(true);syncFadeTimer.current=setTimeout(()=>{setSyncBarVisible(false);setSyncBarFading(false);},1000);},2000);};},[isSyncing,lastSync]);
+  useEffect(()=>{if(!loaded)return;const t=setTimeout(async()=>{try{const res=await fetch(MOTD_URL+"?t="+Date.now());if(!res.ok)return;const txt=(await res.text()).trim();if(!txt)return;setMotd(txt);setMotdVisible(true);setMotdFading(false);setMotdCountdown(8);clearInterval(motdCountdownRef.current);motdCountdownRef.current=setInterval(()=>{setMotdCountdown(c=>{if(c<=1){clearInterval(motdCountdownRef.current);return 0;}return c-1;});},1000);motdFadeTimer.current=setTimeout(()=>{setMotdFading(true);setTimeout(()=>{setMotdVisible(false);setMotdFading(false);},800);},8000);}catch{}},10000);return()=>{clearTimeout(t);clearTimeout(motdFadeTimer.current);clearInterval(motdCountdownRef.current);};},[loaded]);
   useEffect(()=>{
     if(!session)return;
     (async()=>{
       let lR=false,lW=false;
       try{await window.storage.set("bgt9-ct","1");lR=!!(await window.storage.get("bgt9-ct"));lW=true;}catch{}
       setConnStatus({localRead:lR,localWrite:lW});
-      try{const r=await window.storage.get("bgt9-cfg");if(r){const c=JSON.parse(r.value);if(c.disp)setDisp(c.disp);if(c.darkMode)setDarkMode(c.darkMode);if(c.mode)setMode(c.mode);if(c.advancedCats!==undefined)setAdvancedCats(c.advancedCats);if(c.showDecimals!==undefined)setShowDecimals(c.showDecimals);}}catch{}
+      try{const r=await window.storage.get("bgt9-cfg");if(r){const c=JSON.parse(r.value);if(c.disp)setDisp(c.disp);if(c.darkMode)setDarkMode(c.darkMode);if(c.mode)setMode(c.mode);if(c.advancedCats!==undefined)setAdvancedCats(c.advancedCats);if(c.showDecimals!==undefined)setShowDecimals(c.showDecimals);if(c.isPro!==undefined)setIsPro(c.isPro);}}catch{}
       try{
         const{data:row}=await sb.from("user_data").select("data,updated_at").eq("user_id",session.user.id).single();
-        if(row?.data){
-          const d=row.data;
-          if(Array.isArray(d.txs))setTxs(cleanTxs(d.txs));
-          if(typeof d.initBal==="number")setInitBal(d.initBal);
-          if(d.balAnchor!==undefined)setBalAnchor(d.balAnchor);
-          if(d.budgets)setBudgets(d.budgets);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);
-          if(d.showDecimals!==undefined)setShowDecimals(d.showDecimals);
-          if(d.customCats)setCustomCats(d.customCats);if(d.customSubcats)setCustomSubcats(d.customSubcats);
-          if(d.subcatGroupOverrides)setSubcatGroupOverrides(d.subcatGroupOverrides);
-          if(Array.isArray(d.goals))setGoals(d.goals);
-          setLastSync(new Date(row.updated_at));
-        }
+        if(row?.data){const d=row.data;if(Array.isArray(d.txs))setTxs(cleanTxs(d.txs));if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.balAnchor!==undefined)setBalAnchor(d.balAnchor);if(d.budgets)setBudgets(d.budgets);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.showDecimals!==undefined)setShowDecimals(d.showDecimals);if(d.customCats)setCustomCats(d.customCats);if(d.customSubcats)setCustomSubcats(d.customSubcats);if(d.subcatGroupOverrides)setSubcatGroupOverrides(d.subcatGroupOverrides);if(Array.isArray(d.goals))setGoals(d.goals);setLastSync(new Date(row.updated_at));}
       }catch{}
       setLoaded(true);
     })();
   },[session]);
-  useEffect(()=>{
-    if(!loaded)return;
-    clearTimeout(cfgTimer.current);
-    cfgTimer.current=setTimeout(async()=>{try{await window.storage.set("bgt9-cfg",JSON.stringify({disp,darkMode,mode,advancedCats,showDecimals}));}catch{}},400);
-  },[disp,darkMode,mode,advancedCats,showDecimals,loaded]);
+  useEffect(()=>{if(!loaded)return;clearTimeout(cfgTimer.current);cfgTimer.current=setTimeout(async()=>{try{await window.storage.set("bgt9-cfg",JSON.stringify({disp,darkMode,mode,advancedCats,showDecimals,isPro}));}catch{}},400);},[disp,darkMode,mode,advancedCats,showDecimals,isPro,loaded]);
   useEffect(()=>{
     if(!loaded||!session)return;
     clearTimeout(sbSaveTimer.current);setIsSyncing(true);
     sbSaveTimer.current=setTimeout(async()=>{
       try{
-        const snap={txs,initBal,balAnchor,disp,darkMode,showDecimals,budgets,customCats,customSubcats,subcatGroupOverrides,goals};
-        await sb.from("user_data").upsert({user_id:session.user.id,data:snap,updated_at:new Date().toISOString()});
-        setLastSync(new Date());
+        // Version gratuite : pas de sync Supabase
+        if(isPro){
+          const snap={txs,initBal,balAnchor,disp,darkMode,showDecimals,budgets,customCats,customSubcats,subcatGroupOverrides,goals};
+          await sb.from("user_data").upsert({user_id:session.user.id,data:snap,updated_at:new Date().toISOString()});
+          setLastSync(new Date());
+        }
       }catch{}finally{setIsSyncing(false);}
     },3000);
     return()=>clearTimeout(sbSaveTimer.current);
-  },[txs,initBal,balAnchor,budgets,disp,darkMode,showDecimals,customCats,customSubcats,subcatGroupOverrides,goals,loaded,session]);
+  },[txs,initBal,balAnchor,budgets,disp,darkMode,showDecimals,customCats,customSubcats,subcatGroupOverrides,goals,loaded,session,isPro]);
 
   const handleLogout=async()=>{await sb.auth.signOut();setLoaded(false);setTxs([]);setInitBal(1000);setBalAnchor(null);setBudgets({});setGoals([]);};
   const deleteAccount=async()=>{if(session)try{await sb.from("user_data").delete().eq("user_id",session.user.id);}catch{}try{await window.storage.delete("bgt9-cfg");}catch{}await sb.auth.signOut();};
@@ -809,46 +684,15 @@ function App(){
   const commitEditBal=()=>{const v=parseFloat(balInput);if(!isNaN(v))setBalAnchor({dateStr:dStr(TODAY),amount:v});setEditingBal(false);};
   const startEditBalSett=()=>{setBalInputSett(String(curBalVal.toFixed(2)));setEditingBalSett(true);setTimeout(()=>{balSettRef.current?.focus();balSettRef.current?.select();},50);};
   const commitEditBalSett=()=>{const v=parseFloat(balInputSett);if(!isNaN(v))setBalAnchor({dateStr:dStr(TODAY),amount:v});setEditingBalSett(false);};
-  const openForm=(tx=null,prefill=null)=>{
-    const dt=prefill||dStr(TODAY);
-    setFormMod({tx,editScope:null,editDateStr:null,form:tx
-      ?{desc:tx.description,amt:String(tx.amount),type:tx.type,rec:normRec(tx.recurrence,parseD(tx.startDate)),date:tx.startDate,cat:tx.category||"other",subCat:tx.subCategory||null}
-      :{desc:"",amt:"",type:"expense",rec:{type:"once"},date:dt,cat:"other",subCat:null}
-    });
-  };
+  const openForm=(tx=null,prefill=null)=>{const dt=prefill||dStr(TODAY);setFormMod({tx,editScope:null,editDateStr:null,form:tx?{desc:tx.description,amt:String(tx.amount),type:tx.type,rec:normRec(tx.recurrence,parseD(tx.startDate)),date:tx.startDate,cat:tx.category||"other",subCat:tx.subCategory||null}:{desc:"",amt:"",type:"expense",rec:{type:"once"},date:dt,cat:"other",subCat:null}});};
   const setFF=k=>v=>setFormMod(m=>({...m,form:{...m.form,[k]:v}}));
   const handleTypeChange=v=>setFormMod(m=>({...m,form:{...m.form,type:v,cat:v==="income"?"income":"other",subCat:null}}));
   const handleCatChange=v=>setFormMod(m=>({...m,form:{...m.form,cat:v,subCat:null}}));
   const handleDateChange=nd=>{if(!nd)return;setFormMod(m=>{const ns=parseD(nd),rec=m.form.rec;let nr=rec;if(rec.type==="weekly")nr={...rec,weekday:ns.getDay()};else if(rec.type==="monthly_nth_weekday")nr={...rec,nth:getNthWD(ns),weekday:ns.getDay()};return{...m,form:{...m.form,date:nd,rec:nr}};});};
-  const saveForm=(forcedDate)=>{
-    const mod=formModRef.current;if(!mod)return;
-    const{tx,editScope,editDateStr}=mod,form=mod.form;
-    const amt=parseFloat(form.amt);if(!form.desc.trim()||isNaN(amt)||amt<=0)return;
-    const finalDate=forcedDate||dateInputRef.current?.value||form.date;if(!finalDate)return;
-    const data={description:form.desc,amount:amt,type:form.type,recurrence:form.rec,startDate:finalDate,category:form.cat,subCategory:form.subCat||undefined};
-    if(!tx)setTxs(prev=>[...prev,{id:Date.now().toString(),...data,exceptions:[]}]);
-    else if(editScope==="this")setTxs(prev=>{const upd=prev.map(t=>t.id!==tx.id?t:{...t,exceptions:[...(t.exceptions||[]),editDateStr]});return[...upd,{id:Date.now().toString(),...data,startDate:finalDate,recurrence:{type:"once"},exceptions:[]}];});
-    else if(editScope==="follow"){const ne=dayBef(editDateStr);setTxs(prev=>{const orig=prev.find(t=>t.id===tx.id),tooEarly=orig&&parseD(ne)<parseD(orig.startDate),base=tooEarly?prev.filter(t=>t.id!==tx.id):prev.map(t=>t.id!==tx.id?t:{...t,endDate:ne});return[...base,{id:Date.now().toString(),...data,startDate:finalDate,exceptions:[]}];});}
-    else setTxs(prev=>prev.map(t=>t.id===tx.id?{...t,...data}:t));
-    setFormMod(null);
-  };
+  const saveForm=(forcedDate)=>{const mod=formModRef.current;if(!mod)return;const{tx,editScope,editDateStr}=mod,form=mod.form;const amt=parseFloat(form.amt);if(!form.desc.trim()||isNaN(amt)||amt<=0)return;const finalDate=forcedDate||dateInputRef.current?.value||form.date;if(!finalDate)return;const data={description:form.desc,amount:amt,type:form.type,recurrence:form.rec,startDate:finalDate,category:form.cat,subCategory:form.subCat||undefined};if(!tx)setTxs(prev=>[...prev,{id:Date.now().toString(),...data,exceptions:[]}]);else if(editScope==="this")setTxs(prev=>{const upd=prev.map(t=>t.id!==tx.id?t:{...t,exceptions:[...(t.exceptions||[]),editDateStr]});return[...upd,{id:Date.now().toString(),...data,startDate:finalDate,recurrence:{type:"once"},exceptions:[]}];});else if(editScope==="follow"){const ne=dayBef(editDateStr);setTxs(prev=>{const orig=prev.find(t=>t.id===tx.id),tooEarly=orig&&parseD(ne)<parseD(orig.startDate),base=tooEarly?prev.filter(t=>t.id!==tx.id):prev.map(t=>t.id!==tx.id?t:{...t,endDate:ne});return[...base,{id:Date.now().toString(),...data,startDate:finalDate,exceptions:[]}];});}else setTxs(prev=>prev.map(t=>t.id===tx.id?{...t,...data}:t));setFormMod(null);};
   const handleDel=scope=>{const{tx,dateStr}=delMod;if(scope==="all"||normRec(tx.recurrence,parseD(tx.startDate)).type==="once")setTxs(prev=>prev.filter(t=>t.id!==tx.id));else if(scope==="this")setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,exceptions:[...(t.exceptions||[]),dateStr]}));else if(scope==="follow"){const ne=dayBef(dateStr);if(parseD(ne)<parseD(tx.startDate))setTxs(prev=>prev.filter(t=>t.id!==tx.id));else setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,endDate:ne}));}setDelMod(null);};
-  const handleDirectMod=(tx,dateStr,scope)=>{
-    setExpandedTx(null);setPendingDel(null);
-    const isOnce=normRec(tx.recurrence,parseD(tx.startDate)).type==="once",eff=(isOnce&&scope==="this")?"all":scope;
-    if(eff==="this"){setDayMod(null);setFormMod({tx,editScope:"this",editDateStr:dateStr,form:{desc:tx.description,amt:String(tx.amount),type:tx.type,rec:{type:"once"},date:dateStr,cat:tx.category||"other",subCat:tx.subCategory||null}});}
-    else if(eff==="follow"){setDayMod(null);setFormMod({tx,editScope:"follow",editDateStr:dateStr,form:{desc:tx.description,amt:String(tx.amount),type:tx.type,rec:normRec(tx.recurrence,parseD(tx.startDate)),date:dateStr,cat:tx.category||"other",subCat:tx.subCategory||null}});}
-    else if(eff==="all"){setDayMod(null);openForm(tx);}
-    else if(eff==="terminate")setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,endDate:dateStr}));
-  };
-  const handleDirectDel=(tx,dateStr,scope)=>{
-    const isOnce=normRec(tx.recurrence,parseD(tx.startDate)).type==="once";
-    if(scope==="this"){if(isOnce)setTxs(prev=>prev.filter(t=>t.id!==tx.id));else setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,exceptions:[...(t.exceptions||[]),dateStr]}));}
-    else if(scope==="follow"){const ne=dayBef(dateStr);if(isOnce||parseD(ne)<parseD(tx.startDate))setTxs(prev=>prev.filter(t=>t.id!==tx.id));else setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,endDate:ne}));}
-    else if(scope==="anterior"){if(isOnce)setTxs(prev=>prev.filter(t=>t.id!==tx.id));else setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,startDate:dateStr,exceptions:(t.exceptions||[]).filter(e=>e>=dateStr)}));}
-    else if(scope==="all")setTxs(prev=>prev.filter(t=>t.id!==tx.id));
-    setExpandedTx(null);setPendingDel(null);
-  };
+  const handleDirectMod=(tx,dateStr,scope)=>{setExpandedTx(null);setPendingDel(null);const isOnce=normRec(tx.recurrence,parseD(tx.startDate)).type==="once",eff=(isOnce&&scope==="this")?"all":scope;if(eff==="this"){setDayMod(null);setFormMod({tx,editScope:"this",editDateStr:dateStr,form:{desc:tx.description,amt:String(tx.amount),type:tx.type,rec:{type:"once"},date:dateStr,cat:tx.category||"other",subCat:tx.subCategory||null}});}else if(eff==="follow"){setDayMod(null);setFormMod({tx,editScope:"follow",editDateStr:dateStr,form:{desc:tx.description,amt:String(tx.amount),type:tx.type,rec:normRec(tx.recurrence,parseD(tx.startDate)),date:dateStr,cat:tx.category||"other",subCat:tx.subCategory||null}});}else if(eff==="all"){setDayMod(null);openForm(tx);}else if(eff==="terminate")setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,endDate:dateStr}));};
+  const handleDirectDel=(tx,dateStr,scope)=>{const isOnce=normRec(tx.recurrence,parseD(tx.startDate)).type==="once";if(scope==="this"){if(isOnce)setTxs(prev=>prev.filter(t=>t.id!==tx.id));else setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,exceptions:[...(t.exceptions||[]),dateStr]}));}else if(scope==="follow"){const ne=dayBef(dateStr);if(isOnce||parseD(ne)<parseD(tx.startDate))setTxs(prev=>prev.filter(t=>t.id!==tx.id));else setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,endDate:ne}));}else if(scope==="anterior"){if(isOnce)setTxs(prev=>prev.filter(t=>t.id!==tx.id));else setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,startDate:dateStr,exceptions:(t.exceptions||[]).filter(e=>e>=dateStr)}));}else if(scope==="all")setTxs(prev=>prev.filter(t=>t.id!==tx.id));setExpandedTx(null);setPendingDel(null);};
   const duplicateTx=(tx,dateStr)=>setTxs(prev=>[...prev,{...tx,id:Date.now().toString(),startDate:dateStr||dStr(TODAY),exceptions:[]}]);
   const acknowledgeOverruns=()=>{setOverrunDismissing(true);clearTimeout(overrunTimer.current);overrunTimer.current=setTimeout(()=>{setAcknowledgedOverruns(prev=>new Set([...prev,overrunKey]));setOverrunDismissing(false);},400);};
   const saveGoal=()=>{if(!goalForm?.label?.trim()||!goalForm?.target)return;const tgt=parseFloat(goalForm.target);if(isNaN(tgt)||tgt<=0)return;const sav=parseFloat(goalForm.saved||0)||0;if(goalForm.id)setGoals(prev=>prev.map(g=>g.id===goalForm.id?{...g,...goalForm,target:tgt,saved:sav}:g));else setGoals(prev=>[...prev,{...goalForm,id:"goal_"+Date.now(),target:tgt,saved:sav}]);setGoalForm(null);};
@@ -864,7 +708,7 @@ function App(){
   const handleImport=()=>{try{const d=JSON.parse(importText);if(Array.isArray(d.txs))setTxs(cleanTxs(d.txs));if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.balAnchor!==undefined)setBalAnchor(d.balAnchor);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.showDecimals!==undefined)setShowDecimals(d.showDecimals);if(d.budgets)setBudgets(d.budgets);if(d.customCats)setCustomCats(d.customCats);if(d.customSubcats)setCustomSubcats(d.customSubcats);if(d.subcatGroupOverrides)setSubcatGroupOverrides(d.subcatGroupOverrides);if(Array.isArray(d.goals))setGoals(d.goals);setImportMod(false);setImportText("");}catch{}};
   const handleTitleClick=e=>{e.stopPropagation();const now=Date.now();if(now-lastTapRef.current<350){setTab("home");setMo(TODAY.getMonth());setYr(TODAY.getFullYear());}lastTapRef.current=now;};
   const handleVersionClick=()=>{clearTimeout(vClickTimer.current);const next=versionClicks+1;setVersionClicks(next);if(next>=5){setShowTroubleshoot(true);setVersionClicks(0);}else vClickTimer.current=setTimeout(()=>setVersionClicks(0),3000);};
-  const prevMo=()=>{setSlideDir("right");mo===0?(setMo(11),setYr(y=>y-1)):setMo(m=>m-1);};
+  const prevMo=()=>{if(isPrevMoDisabled)return;setSlideDir("right");mo===0?(setMo(11),setYr(y=>y-1)):setMo(m=>m-1);};
   const nextMo=()=>{setSlideDir("left");mo===11?(setMo(0),setYr(y=>y+1)):setMo(m=>m+1);};
   const goToday=()=>{setSlideDir(null);setMo(TODAY.getMonth());setYr(TODAY.getFullYear());};
   const handleSwipe=dx=>{if(Math.abs(dx)<40)return;const dir=dx<0?1:-1;const subs=SUB_NAV[tab];if(subs&&subs.length>1){const idx=subs.findIndex(s=>s.id===curSub);const next=idx+dir;if(next>=0&&next<subs.length)setSubTab(prev=>({...prev,[tab]:subs[next].id}));}else{dir>0?nextMo():prevMo();}};
@@ -918,11 +762,7 @@ function App(){
       <div style={{position:"fixed",top:0,left:0,right:0,zIndex:98,pointerEvents:isOverrun?"auto":"none",transform:barVisible&&!barFading?"translateY(0)":"translateY(-100%)",opacity:barFading?0:barVisible?1:0,transition:"transform 0.3s ease,opacity 0.5s ease",background:isOverrun?"#f97316":th.bg,borderBottom:"1px solid "+(isOverrun?"rgba(255,255,255,0.2)":th.border)}}>
         {isOverrun?(
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"5px 16px",gap:8}}>
-            <div style={{display:"flex",alignItems:"center",gap:6,flex:1,minWidth:0,overflow:"hidden"}}>
-              <span style={{fontSize:12,flexShrink:0}}>⚠️</span>
-              <span style={{fontSize:11,fontWeight:700,color:"#fff",flexShrink:0}}>Budget dépassé</span>
-              <span style={{fontSize:11,color:"rgba(255,255,255,0.8)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>- {overrunCats.map(c=>getCatName(c.id)).join(", ")}</span>
-            </div>
+            <div style={{display:"flex",alignItems:"center",gap:6,flex:1,minWidth:0,overflow:"hidden"}}><span style={{fontSize:12,flexShrink:0}}>⚠️</span><span style={{fontSize:11,fontWeight:700,color:"#fff",flexShrink:0}}>Budget dépassé</span><span style={{fontSize:11,color:"rgba(255,255,255,0.8)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>- {overrunCats.map(c=>getCatName(c.id)).join(", ")}</span></div>
             <button onClick={acknowledgeOverruns} style={{fontSize:11,padding:"3px 10px",borderRadius:8,border:"none",background:"rgba(255,255,255,0.25)",color:"#fff",cursor:"pointer",fontWeight:600,flexShrink:0}}>Compris</button>
           </div>
         ):isMotd?(
@@ -942,17 +782,16 @@ function App(){
 
       <div style={{position:"fixed",bottom:80,right:16,zIndex:99}}>
         {showFabActions&&(<>
-          <button title="Modifier" onClick={()=>{openForm(activeTx);setActiveTx(null);}}
-            style={{...fabBtn(th.btnBg,th.btnText),bottom:64,right:0,animation:"popIn 0.22s cubic-bezier(0.34,1.56,0.64,1) both"}}>
+          <button title="Modifier" onClick={()=>{openForm(activeTx);setActiveTx(null);}} style={{...fabBtn(th.btnBg,th.btnText),bottom:64,right:0,animation:"popIn 0.22s cubic-bezier(0.34,1.56,0.64,1) both"}}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </button>
-          <button title="Dupliquer" onClick={()=>{setDupMod({tx:activeTx,date:dStr(TODAY)});setActiveTx(null);}}
-            style={{...fabBtn(th.btnBg,th.btnText),bottom:30,right:56,animation:"popIn 0.22s cubic-bezier(0.34,1.56,0.64,1) 0.06s both"}}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-          </button>
+          {isPro&&(
+            <button title="Dupliquer" onClick={()=>{setDupMod({tx:activeTx,date:dStr(TODAY)});setActiveTx(null);}} style={{...fabBtn(th.btnBg,th.btnText),bottom:30,right:56,animation:"popIn 0.22s cubic-bezier(0.34,1.56,0.64,1) 0.06s both"}}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          )}
         </>)}
-        <button onClick={()=>{if(showFabActions){setActiveTx(null);}else{openForm();}}}
-          style={{width:48,height:48,borderRadius:"50%",background:showFabActions?"#ef4444":th.btnBg,color:showFabActions?"#fff":th.btnText,border:"none",cursor:"pointer",fontSize:showFabActions?22:26,fontWeight:300,boxShadow:"0 4px 16px rgba(0,0,0,0.2)",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1,position:"relative",zIndex:1,transition:"background 0.18s,color 0.18s,transform 0.18s",transform:showFabActions?"rotate(45deg)":"rotate(0deg)"}}>+</button>
+        <button onClick={()=>{if(showFabActions){setActiveTx(null);}else{openForm();}}} style={{width:48,height:48,borderRadius:"50%",background:showFabActions?"#ef4444":th.btnBg,color:showFabActions?"#fff":th.btnText,border:"none",cursor:"pointer",fontSize:showFabActions?22:26,fontWeight:300,boxShadow:"0 4px 16px rgba(0,0,0,0.2)",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1,position:"relative",zIndex:1,transition:"background 0.18s,color 0.18s,transform 0.18s",transform:showFabActions?"rotate(45deg)":"rotate(0deg)"}}>+</button>
       </div>
 
       <div onMouseEnter={()=>setHeaderHovered(true)} onMouseLeave={()=>setHeaderHovered(false)} style={{padding:"36px 24px 20px",borderBottom:"1px solid "+th.border}}>
@@ -966,10 +805,7 @@ function App(){
           </div>
           <div style={{textAlign:"right",cursor:"pointer"}} onClick={!editingBal?startEditBal:undefined}>
             <p style={{...lbl,margin:"0 0 3px"}}>Solde actuel</p>
-            {editingBal
-              ?<input ref={balInputRef} type="number" inputMode="decimal" step="0.01" value={balInput} onChange={e=>setBalInput(e.target.value)} onBlur={commitEditBal} onKeyDown={e=>{if(e.key==="Enter")commitEditBal();if(e.key==="Escape")setEditingBal(false);}} style={{width:130,textAlign:"right",fontSize:20,fontWeight:600,color:th.text,background:"transparent",border:"none",borderBottom:"2px solid "+th.text,outline:"none",fontVariantNumeric:"tabular-nums"}}/>
-              :<p style={{fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",margin:0,color:curBalVal>=0?"#059669":"#ef4444"}}>{f(curBalVal,true)}</p>
-            }
+            {editingBal?<input ref={balInputRef} type="number" inputMode="decimal" step="0.01" value={balInput} onChange={e=>setBalInput(e.target.value)} onBlur={commitEditBal} onKeyDown={e=>{if(e.key==="Enter")commitEditBal();if(e.key==="Escape")setEditingBal(false);}} style={{width:130,textAlign:"right",fontSize:20,fontWeight:600,color:th.text,background:"transparent",border:"none",borderBottom:"2px solid "+th.text,outline:"none",fontVariantNumeric:"tabular-nums"}}/>:<p style={{fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",margin:0,color:curBalVal>=0?"#059669":"#ef4444"}}>{f(curBalVal,true)}</p>}
           </div>
         </div>
       </div>
@@ -986,34 +822,22 @@ function App(){
         {tab==="home"&&(
           <div>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-              <MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} th={th}/>
+              <MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} th={th} prevDisabled={isPrevMoDisabled}/>
               <SegCtrl options={[["daily","Journée"],["balance","Solde"]]} value={mode} onChange={setMode} th={th}/>
             </div>
             <div style={{display:"flex",justifyContent:"flex-end",marginBottom:hasSummary?12:16,minHeight:20}}>
               {savingsRate!==null&&<span style={{fontSize:11,padding:"3px 10px",borderRadius:20,background:savingsRate>=0?"rgba(5,150,105,0.1)":"rgba(239,68,68,0.1)",color:savingsRate>=0?"#059669":"#ef4444",fontWeight:500}}>{savingsRate>=0?"+":""}{savingsRate}% épargne</span>}
             </div>
-            {hasSummary&&(
-              <div style={{marginBottom:20,paddingBottom:20,borderBottom:"1px solid "+th.border,display:"flex",flexWrap:"wrap",gap:"16px 28px"}}>
-                {disp.endBal&&endBalVal!==null&&<div><p style={{...lbl,margin:"0 0 4px"}}>Fin du mois</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:endBalVal>=0?"#059669":"#ef4444"}}>{f(endBalVal,true)}</p></div>}
-                {disp.revExp&&<><div><p style={{...lbl,margin:"0 0 4px"}}>Revenus</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:"#059669"}}>+{f(monthStats.inc,true)}</p></div><div><p style={{...lbl,margin:"0 0 4px"}}>Dépenses</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:"#ef4444"}}>-{f(monthStats.exp,true)}</p></div></>}
-                {disp.net&&<div><p style={{...lbl,margin:"0 0 4px"}}>Net</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:monthStats.net>=0?"#059669":"#ef4444"}}>{monthStats.net>=0?"+":"-"}{f(monthStats.net,true)}</p></div>}
-              </div>
-            )}
+            {hasSummary&&(<div style={{marginBottom:20,paddingBottom:20,borderBottom:"1px solid "+th.border,display:"flex",flexWrap:"wrap",gap:"16px 28px"}}>
+              {disp.endBal&&endBalVal!==null&&<div><p style={{...lbl,margin:"0 0 4px"}}>Fin du mois</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:endBalVal>=0?"#059669":"#ef4444"}}>{f(endBalVal,true)}</p></div>}
+              {disp.revExp&&<><div><p style={{...lbl,margin:"0 0 4px"}}>Revenus</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:"#059669"}}>+{f(monthStats.inc,true)}</p></div><div><p style={{...lbl,margin:"0 0 4px"}}>Dépenses</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:"#ef4444"}}>-{f(monthStats.exp,true)}</p></div></>}
+              {disp.net&&<div><p style={{...lbl,margin:"0 0 4px"}}>Net</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:monthStats.net>=0?"#059669":"#ef4444"}}>{monthStats.net>=0?"+":"-"}{f(monthStats.net,true)}</p></div>}
+            </div>)}
             <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",marginBottom:4}}>
               {DAYS_FR.map((d,i)=><div key={i} style={{textAlign:"center",fontSize:11,color:th.muted,padding:"4px 0"}}>{d.slice(0,3)}</div>)}
             </div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2}}>
-              {cells.map((day,i)=>{
-                if(!day)return<div key={"e"+i} style={{paddingBottom:"100%"}}/>;
-                const data=dayData[day]||{net:0,bal:0,count:0,cats:[]},tod=isTod(day),val=mode==="daily"?data.net:data.bal,pos=val>0,neg=val<0;
-                return(<div key={day} onClick={()=>setDayMod({day})} style={{paddingBottom:"100%",position:"relative",borderRadius:10,cursor:"pointer",background:tod?th.surface:data.count>0?(data.net>0?"rgba(5,150,105,0.07)":data.net<0?"rgba(239,68,68,0.07)":"transparent"):"transparent",border:tod?"1.5px solid "+th.text:"1.5px solid transparent"}}>
-                  <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2}}>
-                    <span style={{fontSize:12,fontWeight:tod?700:400,color:tod?th.text:th.sub}}>{day}</span>
-                    {data.count>0&&<span style={{fontSize:10,fontWeight:500,fontVariantNumeric:"tabular-nums",lineHeight:1.2,color:pos?"#059669":neg?"#ef4444":th.muted}}>{mode==="daily"?(val>=0?"+":"-")+f(val):(val>=0?"":"-")+f(val)}</span>}
-                    {data.cats.length>0&&<div style={{display:"flex",gap:2,marginTop:1}}>{[...new Set(data.cats.map(c=>c.color))].slice(0,3).map((c,ci)=><div key={ci} style={{width:4,height:4,borderRadius:"50%",background:c}}/>)}</div>}
-                  </div>
-                </div>);
-              })}
+              {cells.map((day,i)=>{if(!day)return<div key={"e"+i} style={{paddingBottom:"100%"}}/>;const data=dayData[day]||{net:0,bal:0,count:0,cats:[]},tod=isTod(day),val=mode==="daily"?data.net:data.bal,pos=val>0,neg=val<0;return(<div key={day} onClick={()=>setDayMod({day})} style={{paddingBottom:"100%",position:"relative",borderRadius:10,cursor:"pointer",background:tod?th.surface:data.count>0?(data.net>0?"rgba(5,150,105,0.07)":data.net<0?"rgba(239,68,68,0.07)":"transparent"):"transparent",border:tod?"1.5px solid "+th.text:"1.5px solid transparent"}}><div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2}}><span style={{fontSize:12,fontWeight:tod?700:400,color:tod?th.text:th.sub}}>{day}</span>{data.count>0&&<span style={{fontSize:10,fontWeight:500,fontVariantNumeric:"tabular-nums",lineHeight:1.2,color:pos?"#059669":neg?"#ef4444":th.muted}}>{mode==="daily"?(val>=0?"+":"-")+f(val):(val>=0?"":"-")+f(val)}</span>}{data.cats.length>0&&<div style={{display:"flex",gap:2,marginTop:1}}>{[...new Set(data.cats.map(c=>c.color))].slice(0,3).map((c,ci)=><div key={ci} style={{width:4,height:4,borderRadius:"50%",background:c}}/>)}</div>}</div></div>);})}
             </div>
           </div>
         )}
@@ -1021,142 +845,141 @@ function App(){
         {tab==="transactions"&&curSub==="historique"&&(
           <div>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-              <MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} th={th}/>
+              <MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} th={th} prevDisabled={isPrevMoDisabled}/>
               <p style={{...lbl,margin:0}}>{monthTxs.length} transaction{monthTxs.length!==1?"s":""}</p>
             </div>
+            {!isPro&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:"#6366f118",borderRadius:10,marginBottom:14,border:"1px solid #6366f130"}}><span style={{fontSize:14}}>🔒</span><p style={{fontSize:12,color:"#6366f1",margin:0}}>Version gratuite — historique limité aux 3 derniers mois</p></div>}
             <div style={{position:"relative",marginBottom:16}}>
               <span style={{position:"absolute",left:11,top:"50%",transform:"translateY(-50%)",fontSize:14,color:th.muted,pointerEvents:"none"}}>🔍</span>
               <input type="text" value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} placeholder="Rechercher..." style={{display:"block",width:"100%",padding:"9px 36px",fontSize:13,color:th.text,background:th.surface,border:"1px solid "+th.border,borderRadius:10,outline:"none",boxSizing:"border-box"}}/>
               {searchQuery&&<button onClick={()=>setSearchQuery("")} style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",fontSize:13,color:th.muted,background:"none",border:"none",cursor:"pointer",padding:4}}>X</button>}
             </div>
-            {monthTxs.length===0
-              ?<div style={{textAlign:"center",padding:"60px 0"}}><p style={{fontSize:32,color:th.border,margin:"0 0 8px"}}>O</p><p style={{fontSize:13,color:th.muted}}>{searchQuery?"Aucun résultat":"Aucune transaction"}</p></div>
-              :monthTxs.map(tx=>{const n=monthOccs.get(tx.id)?.length||1;return <TxRow key={tx.id} tx={tx} amount={tx.amount*n} recurrenceLabel={recLabel(tx)+(n>1?" x"+n:"")} cat={dynCatById(tx.category||"other")} sc={dynSubcatById(tx.subCategory)} isActive={activeTx?.id===tx.id} setActiveTx={setActiveTx} fmt={f} getCatName={getCatName} th={th}/>;})
+            {monthTxs.length===0?<div style={{textAlign:"center",padding:"60px 0"}}><p style={{fontSize:32,color:th.border,margin:"0 0 8px"}}>O</p><p style={{fontSize:13,color:th.muted}}>{searchQuery?"Aucun résultat":"Aucune transaction"}</p></div>
+            :monthTxs.map(tx=>{const n=monthOccs.get(tx.id)?.length||1;return <TxRow key={tx.id} tx={tx} amount={tx.amount*n} recurrenceLabel={recLabel(tx)+(n>1?" x"+n:"")} cat={dynCatById(tx.category||"other")} sc={dynSubcatById(tx.subCategory)} isActive={activeTx?.id===tx.id} setActiveTx={setActiveTx} fmt={f} getCatName={getCatName} th={th}/>;})
             }
           </div>
         )}
 
         {tab==="transactions"&&curSub==="recurrent"&&(
           <div>
-            {recurTxs.length===0
-              ?<div style={{textAlign:"center",padding:"60px 0"}}><p style={{fontSize:32,color:th.border,margin:"0 0 8px"}}>O</p><p style={{fontSize:13,color:th.muted}}>Aucune transaction récurrente</p></div>
-              :recurTxs.map(tx=><TxRow key={tx.id} tx={tx} amount={tx.amount} recurrenceLabel={recLabel(tx)} cat={dynCatById(tx.category||"other")} sc={dynSubcatById(tx.subCategory)} isActive={activeTx?.id===tx.id} setActiveTx={setActiveTx} fmt={f} getCatName={getCatName} th={th}/>)
+            {recurTxs.length===0?<div style={{textAlign:"center",padding:"60px 0"}}><p style={{fontSize:32,color:th.border,margin:"0 0 8px"}}>O</p><p style={{fontSize:13,color:th.muted}}>Aucune transaction récurrente</p></div>
+            :recurTxs.map(tx=><TxRow key={tx.id} tx={tx} amount={tx.amount} recurrenceLabel={recLabel(tx)} cat={dynCatById(tx.category||"other")} sc={dynSubcatById(tx.subCategory)} isActive={activeTx?.id===tx.id} setActiveTx={setActiveTx} fmt={f} getCatName={getCatName} th={th}/>)
             }
           </div>
         )}
 
         {tab==="budget"&&curSub==="categories"&&(
           <div>
-            <div style={{display:"flex",alignItems:"center",marginBottom:20}}><MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} th={th}/></div>
+            <div style={{display:"flex",alignItems:"center",marginBottom:20}}><MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} th={th} prevDisabled={isPrevMoDisabled}/></div>
             {totalBudget>0&&<div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:"16px 18px",marginBottom:20}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}><span style={{fontSize:13,color:th.text,fontWeight:500}}>Total dépenses</span><span style={{fontSize:13,fontWeight:600,fontVariantNumeric:"tabular-nums",color:totalSpent>totalBudget?"#ef4444":"#059669"}}>{f(totalSpent,true)} <span style={{color:th.muted,fontWeight:400}}>sur {f(totalBudget,true)}</span></span></div><div style={{height:6,background:th.surface,borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",width:Math.min(totalSpent/totalBudget*100,100)+"%",borderRadius:3,background:totalSpent>totalBudget?"#ef4444":totalSpent/totalBudget>0.8?"#f59e0b":"#10b981",transition:"width 0.4s"}}/></div></div>}
-            {expenseCats.map(cat=>{const stats=catStats[cat.id]||{spent:0},budget=budgets[cat.id]||0,pct=budget>0?Math.min(stats.spent/budget*100,100):0,over=budget>0&&stats.spent>budget;return(
-              <div key={cat.id} style={{marginBottom:14,background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:"14px 16px",borderLeft:over?"3px solid #ef4444":"3px solid transparent"}}>
-                <div style={{display:"flex",alignItems:"center",gap:12}}>
-                  <div style={{width:38,height:38,borderRadius:10,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{cat.emoji}</div>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:6}}>
-                      <span style={{fontSize:13,color:th.text,fontWeight:500}}>{getCatName(cat.id)}</span>
-                      <div style={{display:"flex",alignItems:"center",gap:4,flexShrink:0}}><span style={{fontSize:13,fontVariantNumeric:"tabular-nums",color:over?"#ef4444":stats.spent>0?th.text:th.muted}}>{f(stats.spent,true)}</span>{budget>0&&<span style={{fontSize:12,color:th.muted}}>sur</span>}<input type="number" min={0} step={10} value={budget||""} onChange={e=>setBudgets(b=>({...b,[cat.id]:parseFloat(e.target.value)||0}))} placeholder="Illimité" style={{width:72,fontSize:12,textAlign:"right",color:"#2563eb",background:"transparent",border:"none",borderBottom:"1px dashed "+th.inputBorder,outline:"none",fontVariantNumeric:"tabular-nums"}}/></div>
-                    </div>
-                    <div style={{height:5,background:th.surface,borderRadius:2.5,overflow:"hidden"}}>{budget>0&&<div style={{height:"100%",width:pct+"%",background:over?"#ef4444":pct>80?"#f59e0b":"#10b981",borderRadius:2.5,transition:"width 0.4s"}}/>}</div>
-                  </div>
-                </div>
-              </div>
-            );})}
+            {expenseCats.map(cat=>{const stats=catStats[cat.id]||{spent:0},budget=budgets[cat.id]||0,pct=budget>0?Math.min(stats.spent/budget*100,100):0,over=budget>0&&stats.spent>budget;return(<div key={cat.id} style={{marginBottom:14,background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:"14px 16px",borderLeft:over?"3px solid #ef4444":"3px solid transparent"}}><div style={{display:"flex",alignItems:"center",gap:12}}><div style={{width:38,height:38,borderRadius:10,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{cat.emoji}</div><div style={{flex:1,minWidth:0}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:6}}><span style={{fontSize:13,color:th.text,fontWeight:500}}>{getCatName(cat.id)}</span><div style={{display:"flex",alignItems:"center",gap:4,flexShrink:0}}><span style={{fontSize:13,fontVariantNumeric:"tabular-nums",color:over?"#ef4444":stats.spent>0?th.text:th.muted}}>{f(stats.spent,true)}</span>{budget>0&&<span style={{fontSize:12,color:th.muted}}>sur</span>}<input type="number" min={0} step={10} value={budget||""} onChange={e=>setBudgets(b=>({...b,[cat.id]:parseFloat(e.target.value)||0}))} placeholder="Illimité" style={{width:72,fontSize:12,textAlign:"right",color:"#2563eb",background:"transparent",border:"none",borderBottom:"1px dashed "+th.inputBorder,outline:"none",fontVariantNumeric:"tabular-nums"}}/></div></div><div style={{height:5,background:th.surface,borderRadius:2.5,overflow:"hidden"}}>{budget>0&&<div style={{height:"100%",width:pct+"%",background:over?"#ef4444":pct>80?"#f59e0b":"#10b981",borderRadius:2.5,transition:"width 0.4s"}}/>}</div></div></div></div>);})}
             {monthStats.inc>0&&<div style={{marginTop:8,background:"#05966915",border:"1px solid #05966930",borderRadius:14,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}><div style={{width:38,height:38,borderRadius:10,background:"#05966922",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>💰</div><div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>Revenus ce mois</p><p style={{fontSize:12,color:"#059669",margin:"2px 0 0",fontWeight:600,fontVariantNumeric:"tabular-nums"}}>+{f(monthStats.inc,true)}</p></div></div>}
           </div>
         )}
 
         {tab==="budget"&&curSub==="objectifs"&&(
-          <div>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
-              <p style={{...lbl,margin:0}}>Objectifs d'épargne</p>
-              <button onClick={()=>setGoalForm({id:null,label:"",emoji:"🎯",target:"",saved:0,deadline:"",color:"#6366f1"})} style={{fontSize:12,padding:"7px 14px",borderRadius:10,border:"none",background:th.btnBg,color:th.btnText,cursor:"pointer",fontWeight:500}}>+ Ajouter</button>
-            </div>
-            {goals.length===0&&<div style={{textAlign:"center",padding:"60px 0"}}><p style={{fontSize:40,marginBottom:12}}>🎯</p><p style={{fontSize:14,color:th.muted,marginBottom:4}}>Aucun objectif</p><p style={{fontSize:12,color:th.muted}}>Fixe-toi un objectif d'épargne pour commencer.</p></div>}
-            <div style={{display:"flex",flexDirection:"column",gap:14}}>
-              {goals.map(g=>{
-                const pct=g.target>0?Math.min((g.saved||0)/g.target*100,100):0,done=pct>=100,remaining=Math.max(g.target-(g.saved||0),0);
-                return(
+          <ProGate isPro={isPro} th={th} title="Objectifs d'épargne" desc="Fixe-toi des objectifs financiers et suis ta progression. Fonctionnalité réservée à la version Pro.">
+            <div>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
+                <p style={{...lbl,margin:0}}>Objectifs d'épargne</p>
+                <button onClick={()=>setGoalForm({id:null,label:"",emoji:"🎯",target:"",saved:0,deadline:"",color:"#6366f1"})} style={{fontSize:12,padding:"7px 14px",borderRadius:10,border:"none",background:th.btnBg,color:th.btnText,cursor:"pointer",fontWeight:500}}>+ Ajouter</button>
+              </div>
+              {goals.length===0&&<div style={{textAlign:"center",padding:"60px 0"}}><p style={{fontSize:40,marginBottom:12}}>🎯</p><p style={{fontSize:14,color:th.muted,marginBottom:4}}>Aucun objectif</p><p style={{fontSize:12,color:th.muted}}>Fixe-toi un objectif d'épargne pour commencer.</p></div>}
+              <div style={{display:"flex",flexDirection:"column",gap:14}}>
+                {goals.map(g=>{const pct=g.target>0?Math.min((g.saved||0)/g.target*100,100):0,done=pct>=100,remaining=Math.max(g.target-(g.saved||0),0);return(
                   <div key={g.id} style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"16px",borderLeft:"3px solid "+g.color}}>
-                    <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:12}}>
-                      <div style={{display:"flex",alignItems:"center",gap:10}}>
-                        <div style={{width:38,height:38,borderRadius:10,background:g.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{g.emoji}</div>
-                        <div><p style={{fontSize:14,fontWeight:600,color:th.text,margin:"0 0 2px"}}>{g.label}</p>{g.deadline&&<p style={{fontSize:11,color:th.muted,margin:0}}>Avant le {new Date(g.deadline).toLocaleDateString("fr-CA",{year:"numeric",month:"long",day:"numeric"})}</p>}</div>
-                      </div>
-                      <div style={{display:"flex",gap:6,flexShrink:0}}>
-                        <button onClick={()=>setGoalForm({...g,target:String(g.target),saved:g.saved||0})} style={{fontSize:12,color:th.muted,background:"none",border:"none",cursor:"pointer",padding:4}}>&#9998;</button>
-                        <button onClick={()=>deleteGoal(g.id)} style={{fontSize:12,color:th.danger,background:"none",border:"none",cursor:"pointer",padding:4}}>X</button>
-                      </div>
-                    </div>
-                    <div style={{marginBottom:10}}>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:6}}>
-                        <div style={{display:"flex",alignItems:"center",gap:6}}>
-                          <span style={{fontSize:11,color:th.muted}}>Épargne</span>
-                          <input type="number" min="0" step="10" value={g.saved||0} onChange={e=>updateGoalSaved(g.id,e.target.value)} style={{width:80,fontSize:13,fontWeight:600,color:g.color,background:"transparent",border:"none",borderBottom:"1px dashed "+th.inputBorder,outline:"none",fontVariantNumeric:"tabular-nums",textAlign:"right"}}/>
-                          <span style={{fontSize:11,color:th.muted}}>$</span>
-                        </div>
-                        <span style={{fontSize:13,fontWeight:600,color:th.muted}}>sur {f(g.target,true)}</span>
-                      </div>
-                      <div style={{height:8,background:th.surface,borderRadius:4,overflow:"hidden"}}><div style={{height:"100%",width:pct+"%",borderRadius:4,background:done?"#059669":g.color,transition:"width 0.5s"}}/></div>
-                    </div>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                      <span style={{fontSize:12,color:done?"#059669":th.muted,fontWeight:done?600:400}}>{done?"Objectif atteint !":f(remaining,true)+" restants"}</span>
-                      <span style={{fontSize:12,fontWeight:600,color:done?"#059669":g.color}}>{pct.toFixed(0)}%</span>
-                    </div>
+                    <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:12}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:38,height:38,borderRadius:10,background:g.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{g.emoji}</div><div><p style={{fontSize:14,fontWeight:600,color:th.text,margin:"0 0 2px"}}>{g.label}</p>{g.deadline&&<p style={{fontSize:11,color:th.muted,margin:0}}>Avant le {new Date(g.deadline).toLocaleDateString("fr-CA",{year:"numeric",month:"long",day:"numeric"})}</p>}</div></div><div style={{display:"flex",gap:6,flexShrink:0}}><button onClick={()=>setGoalForm({...g,target:String(g.target),saved:g.saved||0})} style={{fontSize:12,color:th.muted,background:"none",border:"none",cursor:"pointer",padding:4}}>&#9998;</button><button onClick={()=>deleteGoal(g.id)} style={{fontSize:12,color:th.danger,background:"none",border:"none",cursor:"pointer",padding:4}}>X</button></div></div>
+                    <div style={{marginBottom:10}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:6}}><div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:11,color:th.muted}}>Épargne</span><input type="number" min="0" step="10" value={g.saved||0} onChange={e=>updateGoalSaved(g.id,e.target.value)} style={{width:80,fontSize:13,fontWeight:600,color:g.color,background:"transparent",border:"none",borderBottom:"1px dashed "+th.inputBorder,outline:"none",fontVariantNumeric:"tabular-nums",textAlign:"right"}}/><span style={{fontSize:11,color:th.muted}}>$</span></div><span style={{fontSize:13,fontWeight:600,color:th.muted}}>sur {f(g.target,true)}</span></div><div style={{height:8,background:th.surface,borderRadius:4,overflow:"hidden"}}><div style={{height:"100%",width:pct+"%",borderRadius:4,background:done?"#059669":g.color,transition:"width 0.5s"}}/></div></div>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:12,color:done?"#059669":th.muted,fontWeight:done?600:400}}>{done?"Objectif atteint !":f(remaining,true)+" restants"}</span><span style={{fontSize:12,fontWeight:600,color:done?"#059669":g.color}}>{pct.toFixed(0)}%</span></div>
                   </div>
-                );
-              })}
+                );})}
+              </div>
             </div>
-          </div>
+          </ProGate>
         )}
 
         {tab==="analyse"&&curSub==="statistiques"&&(
-          <div>
-            {txs.length===0?<div style={{textAlign:"center",padding:"80px 0"}}><p style={{fontSize:40,marginBottom:12}}>📊</p><p style={{fontSize:14,color:th.muted}}>Pas encore assez de données</p></div>
-            :<div style={{display:"flex",flexDirection:"column",gap:24}}>
-              <div style={{display:"flex",flexWrap:"wrap",gap:10}}>
-                <StatCard label="Taux d'épargne" value={statsKPIs.savingsRate!==null?statsKPIs.savingsRate+"%":"--"} sub={MONTHS_FR[mo]} color={statsKPIs.savingsRate===null?th.muted:statsKPIs.savingsRate>=0?"#059669":"#ef4444"} th={th}/>
-                <StatCard label="Moy. dépenses / mois" value={f(statsKPIs.avgExp3)} sub="3 mois" color="#ef4444" th={th}/>
-                <StatCard label="Net mensuel moyen" value={(statsKPIs.avgNet12>=0?"+":"-")+f(statsKPIs.avgNet12)} sub="12 derniers mois" color={statsKPIs.avgNet12>=0?"#059669":"#ef4444"} th={th}/>
-              </div>
-              <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}><p style={{fontSize:13,fontWeight:600,color:th.text,margin:0}}>Évolution du solde</p><MiniNav label={chart12Label} onPrev={()=>setChart12Offset(o=>o-1)} onNext={()=>setChart12Offset(o=>Math.min(o+1,12))} nextDisabled={chart12Offset>=12} th={th}/></div><LineChart data={last12.map(m=>({y:m.endBal,label:m.label}))} color={last12[last12.length-1]?.endBal>=0?"#10b981":"#ef4444"} th={th} height={130}/></div>
-              <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><p style={{fontSize:13,fontWeight:600,color:th.text,margin:0}}>Revenus vs Dépenses</p><MiniNav label={chart12Label} onPrev={()=>setChart12Offset(o=>o-1)} onNext={()=>setChart12Offset(o=>Math.min(o+1,12))} nextDisabled={chart12Offset>=12} th={th}/></div><BarChart2 data={last12.map(m=>({inc:m.inc,exp:m.exp,label:m.label}))} th={th} height={140}/></div>
-              {topCats.length>0&&(<div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}><p style={{fontSize:13,fontWeight:600,color:th.text,margin:0}}>Top catégories</p><MiniNav label={topCatLabel} onPrev={()=>setTopCatOffset(o=>o-1)} onNext={()=>setTopCatOffset(o=>Math.min(o+1,12))} nextDisabled={topCatOffset>=12} th={th}/></div><div style={{display:"flex",flexDirection:"column",gap:10}}>{topCats.map(cat=>{const pct=topCats[0].spent>0?cat.spent/topCats[0].spent*100:0;return(<div key={cat.id}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:5}}><div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:16}}>{cat.emoji}</span><span style={{fontSize:13,color:th.text}}>{getCatName(cat.id)}</span></div><span style={{fontSize:13,fontVariantNumeric:"tabular-nums",fontWeight:500,color:th.text}}>{f(cat.spent,true)}</span></div><div style={{height:6,background:th.surface,borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",width:pct+"%",background:cat.color,borderRadius:3,opacity:0.85}}/></div></div>);})}</div></div>)}
-            </div>}
-          </div>
+          <ProGate isPro={isPro} th={th} title="Statistiques" desc="Taux d'épargne, évolution du solde, moyennes sur 12 mois. Fonctionnalité réservée à la version Pro.">
+            <div>
+              {txs.length===0?<div style={{textAlign:"center",padding:"80px 0"}}><p style={{fontSize:40,marginBottom:12}}>📊</p><p style={{fontSize:14,color:th.muted}}>Pas encore assez de données</p></div>
+              :<div style={{display:"flex",flexDirection:"column",gap:24}}>
+                <div style={{display:"flex",flexWrap:"wrap",gap:10}}>
+                  <StatCard label="Taux d'épargne" value={statsKPIs.savingsRate!==null?statsKPIs.savingsRate+"%":"--"} sub={MONTHS_FR[mo]} color={statsKPIs.savingsRate===null?th.muted:statsKPIs.savingsRate>=0?"#059669":"#ef4444"} th={th}/>
+                  <StatCard label="Moy. dépenses / mois" value={f(statsKPIs.avgExp3)} sub="3 mois" color="#ef4444" th={th}/>
+                  <StatCard label="Net mensuel moyen" value={(statsKPIs.avgNet12>=0?"+":"-")+f(statsKPIs.avgNet12)} sub="12 derniers mois" color={statsKPIs.avgNet12>=0?"#059669":"#ef4444"} th={th}/>
+                </div>
+                <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}><p style={{fontSize:13,fontWeight:600,color:th.text,margin:0}}>Évolution du solde</p><MiniNav label={chart12Label} onPrev={()=>setChart12Offset(o=>o-1)} onNext={()=>setChart12Offset(o=>Math.min(o+1,12))} nextDisabled={chart12Offset>=12} th={th}/></div><LineChart data={last12.map(m=>({y:m.endBal,label:m.label}))} color={last12[last12.length-1]?.endBal>=0?"#10b981":"#ef4444"} th={th} height={130}/></div>
+                <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><p style={{fontSize:13,fontWeight:600,color:th.text,margin:0}}>Revenus vs Dépenses</p><MiniNav label={chart12Label} onPrev={()=>setChart12Offset(o=>o-1)} onNext={()=>setChart12Offset(o=>Math.min(o+1,12))} nextDisabled={chart12Offset>=12} th={th}/></div><BarChart2 data={last12.map(m=>({inc:m.inc,exp:m.exp,label:m.label}))} th={th} height={140}/></div>
+                {topCats.length>0&&(<div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}><p style={{fontSize:13,fontWeight:600,color:th.text,margin:0}}>Top catégories</p><MiniNav label={topCatLabel} onPrev={()=>setTopCatOffset(o=>o-1)} onNext={()=>setTopCatOffset(o=>Math.min(o+1,12))} nextDisabled={topCatOffset>=12} th={th}/></div><div style={{display:"flex",flexDirection:"column",gap:10}}>{topCats.map(cat=>{const pct=topCats[0].spent>0?cat.spent/topCats[0].spent*100:0;return(<div key={cat.id}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:5}}><div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:16}}>{cat.emoji}</span><span style={{fontSize:13,color:th.text}}>{getCatName(cat.id)}</span></div><span style={{fontSize:13,fontVariantNumeric:"tabular-nums",fontWeight:500,color:th.text}}>{f(cat.spent,true)}</span></div><div style={{height:6,background:th.surface,borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",width:pct+"%",background:cat.color,borderRadius:3,opacity:0.85}}/></div></div>);})}</div></div>)}
+              </div>}
+            </div>
+          </ProGate>
         )}
 
-        {tab==="analyse"&&curSub==="graphiques"&&<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"100px 0"}}><p style={{fontSize:40,marginBottom:12}}>📈</p><p style={{fontSize:22,color:th.muted,fontWeight:300}}>Graphiques</p></div>}
+        {tab==="analyse"&&curSub==="graphiques"&&(
+          <ProGate isPro={isPro} th={th} title="Graphiques" desc="Visualisations avancées de tes finances. Fonctionnalité réservée à la version Pro.">
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"100px 0"}}><p style={{fontSize:40,marginBottom:12}}>📈</p><p style={{fontSize:22,color:th.muted,fontWeight:300}}>Graphiques</p></div>
+          </ProGate>
+        )}
 
         {tab==="analyse"&&curSub==="controle"&&(
-          <div>
-            <div style={{display:"flex",alignItems:"center",marginBottom:20}}><MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} th={th}/></div>
-            {txs.length===0?<div style={{textAlign:"center",padding:"80px 0"}}><p style={{fontSize:40,marginBottom:12}}>📊</p><p style={{fontSize:14,color:th.muted}}>Pas encore assez de données</p></div>
-            :<div style={{display:"flex",flexDirection:"column",gap:14}}>
-              {SUBCAT_GROUPS.map(grp=>{const total=controleData.groups[grp.id]||0,items=controleData.details[grp.id]||[],totalAll=Object.values(controleData.groups).reduce((s,v)=>s+v,0),pct=totalAll>0?total/totalAll*100:0;return(
-                <div key={grp.id} style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"16px",borderLeft:"3px solid "+grp.color}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}><div><p style={{fontSize:14,fontWeight:600,color:grp.color,margin:"0 0 2px"}}>{grp.label}</p><p style={{fontSize:11,color:th.muted,margin:0}}>{grp.desc}</p></div><div style={{textAlign:"right"}}><p style={{fontSize:16,fontWeight:700,fontVariantNumeric:"tabular-nums",color:th.text,margin:"0 0 1px"}}>{f(total,true)}</p><p style={{fontSize:11,color:th.muted,margin:0}}>{pct.toFixed(0)}% des dépenses</p></div></div>
-                  <div style={{height:4,background:th.surface,borderRadius:2,overflow:"hidden",marginBottom:items.length?14:0}}><div style={{height:"100%",width:pct+"%",background:grp.color,borderRadius:2,opacity:0.7}}/></div>
-                  {items.length?<div style={{display:"flex",flexDirection:"column",gap:6}}>{items.map((item,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:6,borderTop:"1px solid "+th.border}}><span style={{fontSize:12,color:th.sub}}>{item.label}</span><span style={{fontSize:12,fontVariantNumeric:"tabular-nums",color:th.text,fontWeight:500}}>{f(item.total,true)}</span></div>)}</div>:<p style={{fontSize:12,color:th.muted,margin:0,textAlign:"center",paddingTop:4}}>Aucune transaction classifiée ce mois</p>}
-                </div>
-              );})}
-              {controleData.groups.nonclasse>0&&<div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"16px",borderLeft:"3px solid "+th.muted}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}><div><p style={{fontSize:14,fontWeight:600,color:th.sub,margin:"0 0 2px"}}>Non classé</p><p style={{fontSize:11,color:th.muted,margin:0}}>Sans sous-catégorie assignée</p></div><p style={{fontSize:16,fontWeight:700,fontVariantNumeric:"tabular-nums",color:th.text,margin:0}}>{f(controleData.groups.nonclasse,true)}</p></div><div style={{display:"flex",flexDirection:"column",gap:6}}>{(controleData.details.nonclasse||[]).map((item,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:6,borderTop:"1px solid "+th.border}}><span style={{fontSize:12,color:th.sub}}>{item.label}</span><span style={{fontSize:12,fontVariantNumeric:"tabular-nums",color:th.text,fontWeight:500}}>{f(item.total,true)}</span></div>)}</div></div>}
-            </div>}
-          </div>
+          <ProGate isPro={isPro} th={th} title="Contrôle des coûts" desc="Répartition essentiel / flexible / lifestyle de tes dépenses. Fonctionnalité réservée à la version Pro.">
+            <div>
+              <div style={{display:"flex",alignItems:"center",marginBottom:20}}><MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} th={th} prevDisabled={isPrevMoDisabled}/></div>
+              {txs.length===0?<div style={{textAlign:"center",padding:"80px 0"}}><p style={{fontSize:40,marginBottom:12}}>📊</p><p style={{fontSize:14,color:th.muted}}>Pas encore assez de données</p></div>
+              :<div style={{display:"flex",flexDirection:"column",gap:14}}>
+                {SUBCAT_GROUPS.map(grp=>{const total=controleData.groups[grp.id]||0,items=controleData.details[grp.id]||[],totalAll=Object.values(controleData.groups).reduce((s,v)=>s+v,0),pct=totalAll>0?total/totalAll*100:0;return(<div key={grp.id} style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"16px",borderLeft:"3px solid "+grp.color}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}><div><p style={{fontSize:14,fontWeight:600,color:grp.color,margin:"0 0 2px"}}>{grp.label}</p><p style={{fontSize:11,color:th.muted,margin:0}}>{grp.desc}</p></div><div style={{textAlign:"right"}}><p style={{fontSize:16,fontWeight:700,fontVariantNumeric:"tabular-nums",color:th.text,margin:"0 0 1px"}}>{f(total,true)}</p><p style={{fontSize:11,color:th.muted,margin:0}}>{pct.toFixed(0)}% des dépenses</p></div></div><div style={{height:4,background:th.surface,borderRadius:2,overflow:"hidden",marginBottom:items.length?14:0}}><div style={{height:"100%",width:pct+"%",background:grp.color,borderRadius:2,opacity:0.7}}/></div>{items.length?<div style={{display:"flex",flexDirection:"column",gap:6}}>{items.map((item,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:6,borderTop:"1px solid "+th.border}}><span style={{fontSize:12,color:th.sub}}>{item.label}</span><span style={{fontSize:12,fontVariantNumeric:"tabular-nums",color:th.text,fontWeight:500}}>{f(item.total,true)}</span></div>)}</div>:<p style={{fontSize:12,color:th.muted,margin:0,textAlign:"center",paddingTop:4}}>Aucune transaction classifiée ce mois</p>}</div>);})}
+                {controleData.groups.nonclasse>0&&<div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"16px",borderLeft:"3px solid "+th.muted}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}><div><p style={{fontSize:14,fontWeight:600,color:th.sub,margin:"0 0 2px"}}>Non classé</p><p style={{fontSize:11,color:th.muted,margin:0}}>Sans sous-catégorie assignée</p></div><p style={{fontSize:16,fontWeight:700,fontVariantNumeric:"tabular-nums",color:th.text,margin:0}}>{f(controleData.groups.nonclasse,true)}</p></div><div style={{display:"flex",flexDirection:"column",gap:6}}>{(controleData.details.nonclasse||[]).map((item,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:6,borderTop:"1px solid "+th.border}}><span style={{fontSize:12,color:th.sub}}>{item.label}</span><span style={{fontSize:12,fontVariantNumeric:"tabular-nums",color:th.text,fontWeight:500}}>{f(item.total,true)}</span></div>)}</div></div>}
+              </div>}
+            </div>
+          </ProGate>
         )}
 
         {tab==="troubleshoot"&&curSub==="connexions"&&(
           <div>
             <p style={{...lbl,marginBottom:20}}>Connexions</p>
             <div style={{display:"flex",flexDirection:"column",gap:14}}>
-              <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}>
-                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:36,height:36,borderRadius:10,background:"#10b98120",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>🟢</div><span style={{fontSize:14,fontWeight:600,color:th.text}}>Supabase</span></div><span style={{fontSize:11,padding:"3px 10px",borderRadius:20,background:"#10b98118",color:"#10b981",fontWeight:500}}>Actif</span></div>
-                <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingBottom:8,borderBottom:"1px solid "+th.border}}><span style={{fontSize:12,color:th.sub}}>Utilisateur</span><span style={{fontSize:12,color:th.text,maxWidth:200,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{session?.user?.email||"--"}</span></div>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:12,color:th.sub}}>Dernière sync</span><span style={{fontSize:12,color:th.text}}>{lastSync?lastSync.toLocaleTimeString("fr-CA",{hour:"2-digit",minute:"2-digit",second:"2-digit"}):"Jamais"}</span></div>
+
+              {/* ── Carte plan (test) ── */}
+              <div style={{background:th.cardBg,border:"2px solid "+(isPro?"#6366f1":"#f59e0b"),borderRadius:16,padding:"18px 16px"}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <div style={{width:36,height:36,borderRadius:10,background:isPro?"#6366f122":"#f59e0b22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>{isPro?"✦":"🔒"}</div>
+                    <div>
+                      <p style={{fontSize:14,fontWeight:700,color:isPro?"#6366f1":"#f59e0b",margin:0}}>Plan actuel</p>
+                      <p style={{fontSize:11,color:th.muted,margin:"2px 0 0"}}>Simulation — test seulement</p>
+                    </div>
+                  </div>
+                  <span style={{fontSize:12,padding:"4px 12px",borderRadius:20,background:isPro?"#6366f118":"#f59e0b18",color:isPro?"#6366f1":"#f59e0b",fontWeight:700,border:"1px solid "+(isPro?"#6366f130":"#f59e0b30")}}>{isPro?"Pro":"Gratuit"}</span>
+                </div>
+                <SegCtrl options={[["free","Gratuit"],["pro","Pro"]]} value={isPro?"pro":"free"} onChange={v=>setIsPro(v==="pro")} th={th}/>
+                <div style={{marginTop:14,display:"flex",flexDirection:"column",gap:6}}>
+                  {[
+                    {label:"Synchronisation Supabase",pro:true},
+                    {label:"Historique complet",pro:true},
+                    {label:"Analyse & statistiques",pro:true},
+                    {label:"Contrôle des coûts",pro:true},
+                    {label:"Objectifs d'épargne",pro:true},
+                    {label:"Sous-catégories & catégories perso.",pro:true},
+                    {label:"Export / Import JSON",pro:true},
+                    {label:"Duplication de transactions",pro:true},
+                  ].map((f,i)=>(
+                    <div key={i} style={{display:"flex",alignItems:"center",justifyContent:"space-between",paddingTop:6,borderTop:"1px solid "+th.border}}>
+                      <span style={{fontSize:12,color:th.sub}}>{f.label}</span>
+                      <span style={{fontSize:12,fontWeight:600,color:(!isPro&&f.pro)?"#f59e0b":"#10b981"}}>{(!isPro&&f.pro)?"🔒 Pro":"✓"}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
+
+              <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:36,height:36,borderRadius:10,background:"#10b98120",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>🟢</div><span style={{fontSize:14,fontWeight:600,color:th.text}}>Supabase</span></div><span style={{fontSize:11,padding:"3px 10px",borderRadius:20,background:isPro?"#10b98118":"#f59e0b18",color:isPro?"#10b981":"#f59e0b",fontWeight:500}}>{isPro?"Actif":"Désactivé (Gratuit)"}</span></div>
+                <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingBottom:8,borderBottom:"1px solid "+th.border}}><span style={{fontSize:12,color:th.sub}}>Utilisateur</span><span style={{fontSize:12,color:th.text,maxWidth:200,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{session?.user?.email||"--"}</span></div>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:12,color:th.sub}}>Dernière sync</span><span style={{fontSize:12,color:th.text}}>{isPro?(lastSync?lastSync.toLocaleTimeString("fr-CA",{hour:"2-digit",minute:"2-digit",second:"2-digit"}):"Jamais"):"—"}</span></div>
+                </div>
+              </div>
+
               <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}>
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:36,height:36,borderRadius:10,background:"#6366f120",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>💾</div><span style={{fontSize:14,fontWeight:600,color:th.text}}>Stockage local</span></div><span style={{fontSize:11,padding:"3px 10px",borderRadius:20,background:"#10b98118",color:"#10b981",fontWeight:500}}>Cache</span></div>
                 <div style={{display:"flex",flexDirection:"column",gap:10}}>
@@ -1173,21 +996,14 @@ function App(){
             <p style={{...lbl,marginBottom:8}}>Paramètres</p>
             <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:"14px 16px",marginBottom:20}}>
               <div style={{display:"flex",alignItems:"center",gap:12}}>
-                <div style={{width:42,height:42,borderRadius:12,background:"linear-gradient(135deg,#6366f1,#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>
-                  {session?.user?.user_metadata?.avatar_url?<img src={session.user.user_metadata.avatar_url} style={{width:42,height:42,borderRadius:12,objectFit:"cover"}} alt=""/>:"👤"}
-                </div>
-                <div style={{flex:1,minWidth:0}}>
-                  <p style={{fontSize:13,color:th.text,margin:0,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{session?.user?.user_metadata?.full_name||"Utilisateur"}</p>
-                  <p style={{fontSize:11,color:th.muted,margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{session?.user?.email}</p>
-                </div>
+                <div style={{width:42,height:42,borderRadius:12,background:"linear-gradient(135deg,#6366f1,#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{session?.user?.user_metadata?.avatar_url?<img src={session.user.user_metadata.avatar_url} style={{width:42,height:42,borderRadius:12,objectFit:"cover"}} alt=""/>:"👤"}</div>
+                <div style={{flex:1,minWidth:0}}><p style={{fontSize:13,color:th.text,margin:0,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{session?.user?.user_metadata?.full_name||"Utilisateur"}</p><p style={{fontSize:11,color:th.muted,margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{session?.user?.email}</p></div>
                 <button onClick={handleLogout} style={{fontSize:12,color:th.danger,background:"none",border:"1px solid "+th.danger+"66",borderRadius:8,padding:"6px 12px",cursor:"pointer",flexShrink:0,fontWeight:500}}>Déconnexion</button>
               </div>
             </div>
             <div style={{padding:"12px 0",borderBottom:"1px solid "+th.border,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>Solde actuel</p><p style={{fontSize:11,color:th.muted,margin:"3px 0 0"}}>Montant actuel dans le portefeuille</p></div>
-              <div style={{cursor:"pointer"}} onClick={!editingBalSett?startEditBalSett:undefined}>
-                {editingBalSett?<input ref={balSettRef} type="number" inputMode="decimal" step="0.01" value={balInputSett} onChange={e=>setBalInputSett(e.target.value)} onBlur={commitEditBalSett} onKeyDown={e=>{if(e.key==="Enter")commitEditBalSett();if(e.key==="Escape")setEditingBalSett(false);}} style={{width:110,textAlign:"right",fontSize:13,fontWeight:600,color:th.text,background:"transparent",border:"none",borderBottom:"2px solid "+th.text,outline:"none",fontVariantNumeric:"tabular-nums"}}/>:<span style={{fontSize:13,fontWeight:600,fontVariantNumeric:"tabular-nums",color:curBalVal>=0?"#059669":"#ef4444"}}>{f(curBalVal,true)}</span>}
-              </div>
+              <div style={{cursor:"pointer"}} onClick={!editingBalSett?startEditBalSett:undefined}>{editingBalSett?<input ref={balSettRef} type="number" inputMode="decimal" step="0.01" value={balInputSett} onChange={e=>setBalInputSett(e.target.value)} onBlur={commitEditBalSett} onKeyDown={e=>{if(e.key==="Enter")commitEditBalSett();if(e.key==="Escape")setEditingBalSett(false);}} style={{width:110,textAlign:"right",fontSize:13,fontWeight:600,color:th.text,background:"transparent",border:"none",borderBottom:"2px solid "+th.text,outline:"none",fontVariantNumeric:"tabular-nums"}}/>:<span style={{fontSize:13,fontWeight:600,fontVariantNumeric:"tabular-nums",color:curBalVal>=0?"#059669":"#ef4444"}}>{f(curBalVal,true)}</span>}</div>
             </div>
             <p style={{...lbl,margin:"24px 0 4px"}}>Affichage</p>
             <Tog label="Afficher les décimales" sub="Afficher les centimes dans les montants" value={showDecimals} onChange={setShowDecimals} th={th}/>
@@ -1200,10 +1016,19 @@ function App(){
             <Tog label="Gestion avancée des catégories" sub="Personnaliser et créer des catégories" value={advancedCats} onChange={setAdvancedCats} th={th}/>
             {advancedCats&&(<button onClick={()=>{setCatsMod(true);setCatsTab("cats");setAddCatForm(null);setAddSubcatForm(null);}} style={{display:"flex",alignItems:"center",justifyContent:"space-between",width:"100%",padding:"13px 16px",marginTop:10,background:th.cardBg,border:"1px solid "+th.border,borderRadius:12,cursor:"pointer",fontSize:13,color:th.text,textAlign:"left"}}><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:18}}>🗂️</span><span style={{fontWeight:500}}>Gérer les catégories</span></div><div style={{display:"flex",alignItems:"center",gap:8}}>{(customCats.length+customSubcats.length)>0&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:20,background:"#6366f118",color:"#6366f1",fontWeight:500}}>{customCats.length+customSubcats.length} perso.</span>}<span style={{color:th.muted,fontSize:16}}>›</span></div></button>)}
             <p style={{...lbl,margin:"24px 0 8px"}}>Données</p>
-            <div style={{display:"flex",gap:8,paddingBottom:20,borderBottom:"1px solid "+th.border}}>
-              <button onClick={()=>setExportMod(true)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:10,background:"none",color:th.text,cursor:"pointer"}}>Exporter</button>
-              <button onClick={()=>{setImportText("");setImportMod(true);}} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:10,background:"none",color:th.text,cursor:"pointer"}}>Importer</button>
-            </div>
+            {isPro?(
+              <div style={{display:"flex",gap:8,paddingBottom:20,borderBottom:"1px solid "+th.border}}>
+                <button onClick={()=>setExportMod(true)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:10,background:"none",color:th.text,cursor:"pointer"}}>Exporter</button>
+                <button onClick={()=>{setImportText("");setImportMod(true);}} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:10,background:"none",color:th.text,cursor:"pointer"}}>Importer</button>
+              </div>
+            ):(
+              <div style={{paddingBottom:20,borderBottom:"1px solid "+th.border}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,padding:"11px 14px",background:th.surface,borderRadius:10,border:"1px solid "+th.border}}>
+                  <span style={{fontSize:14}}>🔒</span>
+                  <p style={{fontSize:12,color:th.muted,margin:0}}>Export / Import réservé à la version Pro</p>
+                </div>
+              </div>
+            )}
             <div style={{marginTop:20,padding:"16px",background:isDark?"rgba(239,68,68,0.07)":"#fff5f5",border:"1px solid "+th.danger+"44",borderRadius:14}}>
               <p style={{fontSize:13,color:th.danger,margin:"0 0 2px",fontWeight:600}}>Supprimer le compte</p>
               <p style={{fontSize:11,color:th.muted,margin:"0 0 12px"}}>Efface toutes les données Supabase et déconnecte</p>
@@ -1229,10 +1054,7 @@ function App(){
         <SheetHead title="Dupliquer la transaction" onClose={()=>setDupMod(null)} th={th}/>
         <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 14px",background:th.surface,borderRadius:12,marginBottom:20}}>
           <div style={{width:36,height:36,borderRadius:9,background:dynCatById(dupMod.tx.category||"other").color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{dynCatById(dupMod.tx.category||"other").emoji}</div>
-          <div>
-            <p style={{fontSize:13,fontWeight:500,color:th.text,margin:0}}>{dupMod.tx.description}</p>
-            <p style={{fontSize:11,color:th.muted,margin:"2px 0 0"}}>{f(dupMod.tx.amount,true)} · {getCatName(dupMod.tx.category||"other")}</p>
-          </div>
+          <div><p style={{fontSize:13,fontWeight:500,color:th.text,margin:0}}>{dupMod.tx.description}</p><p style={{fontSize:11,color:th.muted,margin:"2px 0 0"}}>{f(dupMod.tx.amount,true)} · {getCatName(dupMod.tx.category||"other")}</p></div>
         </div>
         <label style={{...lbl,display:"block",marginBottom:8}}>Date de la copie</label>
         <input type="date" value={dupMod.date} onChange={e=>e.target.value&&setDupMod(m=>({...m,date:e.target.value}))} style={{display:"block",width:"100%",padding:"12px 14px",fontSize:15,color:th.text,background:th.surface,border:"1px solid "+th.inputBorder,borderRadius:12,outline:"none",boxSizing:"border-box",colorScheme:isDark?"dark":"light",marginBottom:20}}/>
@@ -1243,7 +1065,6 @@ function App(){
       </Sheet>}
 
       {exportMod&&<Sheet onClose={()=>setExportMod(false)} th={th}><SheetHead title="Exporter les données" onClose={()=>setExportMod(false)} th={th}/><p style={{fontSize:12,color:th.sub,marginBottom:12}}>Copiez ce JSON et conservez-le en lieu sûr.</p><textarea readOnly value={getExportJSON()} style={{width:"100%",height:180,padding:"10px 12px",fontSize:11,fontFamily:"monospace",color:th.sub,background:th.surface,border:"1px solid "+th.border,borderRadius:10,resize:"none",boxSizing:"border-box",lineHeight:1.5}}/><div style={{display:"flex",gap:8,marginTop:12}}><button onClick={()=>setExportMod(false)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>Fermer</button><button onClick={handleCopy} style={{flex:2,padding:"11px 0",fontSize:13,border:"none",borderRadius:12,background:copied?"#059669":th.btnBg,color:copied?"#fff":th.btnText,cursor:"pointer",fontWeight:500,transition:"background 0.2s"}}>{copied?"Copié":"Copier"}</button></div></Sheet>}
-
       {importMod&&<Sheet onClose={()=>setImportMod(false)} th={th}><SheetHead title="Importer les données" onClose={()=>setImportMod(false)} th={th}/><p style={{fontSize:12,color:th.sub,marginBottom:12}}>Collez un JSON exporté précédemment.</p><textarea value={importText} onChange={e=>setImportText(e.target.value)} placeholder="Collez votre JSON ici..." style={{width:"100%",height:200,padding:"10px 12px",fontSize:11,fontFamily:"monospace",color:th.text,background:th.surface,border:"1px solid "+th.border,borderRadius:10,resize:"none",boxSizing:"border-box",lineHeight:1.5}}/><div style={{display:"flex",gap:8,marginTop:12}}><button onClick={()=>setImportMod(false)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>Annuler</button><button onClick={handleImport} disabled={!importText.trim()} style={{flex:2,padding:"11px 0",fontSize:13,border:"none",borderRadius:12,background:importText.trim()?th.btnBg:th.surface,color:importText.trim()?th.btnText:th.muted,cursor:importText.trim()?"pointer":"default",fontWeight:500}}>Restaurer</button></div></Sheet>}
 
       {goalForm&&<Sheet onClose={()=>setGoalForm(null)} th={th}>
@@ -1273,21 +1094,14 @@ function App(){
             </div>
             {isExp&&(
               <div style={{padding:"12px 0 16px",borderBottom:"1px solid "+th.border}}>
-                <p style={{fontSize:10,color:th.muted,letterSpacing:"0.1em",textTransform:"uppercase",margin:"0 0 6px",paddingLeft:2}}>Dupliquer</p>
-                <div style={{marginBottom:14}}>
-                  <button onClick={()=>{setDayMod(null);setDupMod({tx,date:dStr(TODAY)});}} style={{textAlign:"left",padding:"9px 12px",fontSize:13,color:th.text,background:th.surface,border:"none",borderRadius:9,cursor:"pointer",lineHeight:1.3,width:"100%"}}>Choisir une date et dupliquer</button>
-                </div>
+                {isPro&&(<><p style={{fontSize:10,color:th.muted,letterSpacing:"0.1em",textTransform:"uppercase",margin:"0 0 6px",paddingLeft:2}}>Dupliquer</p><div style={{marginBottom:14}}><button onClick={()=>{setDayMod(null);setDupMod({tx,date:dStr(TODAY)});}} style={{textAlign:"left",padding:"9px 12px",fontSize:13,color:th.text,background:th.surface,border:"none",borderRadius:9,cursor:"pointer",lineHeight:1.3,width:"100%"}}>Choisir une date et dupliquer</button></div></>)}
                 <p style={{fontSize:10,color:th.muted,letterSpacing:"0.1em",textTransform:"uppercase",margin:"0 0 6px",paddingLeft:2}}>Modifier</p>
                 <div style={{display:"flex",flexDirection:"column",gap:3,marginBottom:14}}>
                   {(normRec(tx.recurrence,parseD(tx.startDate)).type==="once"?[["this","Cette occurrence"]]:[["this","Cette occurrence"],["follow","Cette occurrence et les suivantes"],["all","Toute la série"],["terminate","Terminé après cette date"]]).map(([sc2,lb])=><button key={sc2} onClick={()=>handleDirectMod(tx,dayModalDateStr,sc2)} style={{textAlign:"left",padding:"9px 12px",fontSize:13,color:th.text,background:th.surface,border:"none",borderRadius:9,cursor:"pointer",lineHeight:1.3}}>{lb}</button>)}
                 </div>
                 <p style={{fontSize:10,color:"#ef4444",letterSpacing:"0.1em",textTransform:"uppercase",margin:"0 0 6px",paddingLeft:2,opacity:0.8}}>Supprimer</p>
                 <div style={{display:"flex",flexDirection:"column",gap:3}}>
-                  {(normRec(tx.recurrence,parseD(tx.startDate)).type==="once"?[["this","Cette occurrence"]]:[["this","Cette occurrence"],["follow","Cette occurrence et les suivantes"],["anterior","Toutes les occurrences antérieures"],["all","Toutes les occurrences"]]).map(([sc2,lb])=>{const isPending=pendingDel?.txId===tx.id&&pendingDel?.scope===sc2;return(
-                    <button key={sc2} onClick={()=>{if(isPending){handleDirectDel(tx,dayModalDateStr,sc2);setPendingDel(null);}else setPendingDel({txId:tx.id,scope:sc2});}} style={{textAlign:"left",padding:"9px 12px",fontSize:13,color:"#ef4444",background:isPending?(isDark?"rgba(239,68,68,0.18)":"#fee2e2"):th.surface,border:"1px solid "+(isPending?"#ef4444":"transparent"),borderRadius:9,cursor:"pointer",lineHeight:1.3,transition:"all 0.15s"}}>
-                      {isPending?"Confirmer - "+lb:lb}
-                    </button>
-                  );})}
+                  {(normRec(tx.recurrence,parseD(tx.startDate)).type==="once"?[["this","Cette occurrence"]]:[["this","Cette occurrence"],["follow","Cette occurrence et les suivantes"],["anterior","Toutes les occurrences antérieures"],["all","Toutes les occurrences"]]).map(([sc2,lb])=>{const isPending=pendingDel?.txId===tx.id&&pendingDel?.scope===sc2;return(<button key={sc2} onClick={()=>{if(isPending){handleDirectDel(tx,dayModalDateStr,sc2);setPendingDel(null);}else setPendingDel({txId:tx.id,scope:sc2});}} style={{textAlign:"left",padding:"9px 12px",fontSize:13,color:"#ef4444",background:isPending?(isDark?"rgba(239,68,68,0.18)":"#fee2e2"):th.surface,border:"1px solid "+(isPending?"#ef4444":"transparent"),borderRadius:9,cursor:"pointer",lineHeight:1.3,transition:"all 0.15s"}}>{isPending?"Confirmer - "+lb:lb}</button>);})}
                 </div>
               </div>
             )}
@@ -1300,19 +1114,15 @@ function App(){
       {delAccMod&&<Sheet onClose={()=>{setDelAccMod(false);setDelAccInput("");}} th={th}><div style={{textAlign:"center",marginBottom:20}}><div style={{fontSize:40,marginBottom:12}}>⚠️</div><h3 style={{fontSize:16,color:th.text,fontWeight:700,margin:"0 0 8px"}}>Confirmer la suppression</h3><p style={{fontSize:13,color:th.sub,margin:0,lineHeight:1.6}}>Toutes vos données Supabase seront effacées. Tapez le mot ci-dessous :</p></div><div style={{background:th.surface,borderRadius:10,padding:"10px 14px",textAlign:"center",marginBottom:16}}><span style={{fontSize:16,fontWeight:700,letterSpacing:"0.1em",color:th.danger}}>SUPPRIMER</span></div><input type="text" value={delAccInput} onChange={e=>setDelAccInput(e.target.value)} placeholder="SUPPRIMER" style={{...iSt,textAlign:"center",fontSize:15,fontWeight:600,letterSpacing:"0.05em",borderColor:delAccInput==="SUPPRIMER"?"#059669":th.inputBorder,color:delAccInput==="SUPPRIMER"?"#059669":th.text,marginBottom:16}}/><div style={{display:"flex",gap:8}}><button onClick={()=>{setDelAccMod(false);setDelAccInput("");}} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>Annuler</button><button onClick={()=>{if(delAccInput==="SUPPRIMER"){deleteAccount();setDelAccMod(false);}}} disabled={delAccInput!=="SUPPRIMER"} style={{flex:2,padding:"11px 0",fontSize:13,border:"none",borderRadius:12,background:delAccInput==="SUPPRIMER"?"#ef4444":th.surface,color:delAccInput==="SUPPRIMER"?"#fff":th.muted,cursor:delAccInput==="SUPPRIMER"?"pointer":"default",fontWeight:500}}>Supprimer définitivement</button></div></Sheet>}
 
       {formMod&&(<FullSheet th={th}>
-        <FullSheetHead title={formMod.tx?"Modifier la transaction":"Nouvelle transaction"} onClose={()=>setFormMod(null)} th={th}
-          right={formMod.tx&&!formMod.editScope?<button onClick={()=>{setDelMod({tx:formMod.tx,dateStr:formMod.tx.startDate});setFormMod(null);}} style={{fontSize:13,color:"#f87171",background:"none",border:"none",cursor:"pointer",padding:"4px 8px"}}>Supprimer</button>:null}
-        />
-        <div style={{display:"flex",gap:8,marginBottom:24}}>
-          {[["expense","Dépense"],["income","Revenu"]].map(([v,l])=><button key={v} onClick={()=>handleTypeChange(v)} style={{flex:1,padding:"11px 0",fontSize:14,borderRadius:12,border:"none",cursor:"pointer",fontWeight:500,background:formMod.form.type===v?(v==="income"?(isDark?"rgba(16,185,129,0.15)":"#ecfdf5"):(isDark?"rgba(239,68,68,0.12)":"#fff5f5")):th.surface,color:formMod.form.type===v?(v==="income"?"#059669":"#ef4444"):th.muted}}>{l}</button>)}
-        </div>
+        <FullSheetHead title={formMod.tx?"Modifier la transaction":"Nouvelle transaction"} onClose={()=>setFormMod(null)} th={th} right={formMod.tx&&!formMod.editScope?<button onClick={()=>{setDelMod({tx:formMod.tx,dateStr:formMod.tx.startDate});setFormMod(null);}} style={{fontSize:13,color:"#f87171",background:"none",border:"none",cursor:"pointer",padding:"4px 8px"}}>Supprimer</button>:null}/>
+        <div style={{display:"flex",gap:8,marginBottom:24}}>{[["expense","Dépense"],["income","Revenu"]].map(([v,l])=><button key={v} onClick={()=>handleTypeChange(v)} style={{flex:1,padding:"11px 0",fontSize:14,borderRadius:12,border:"none",cursor:"pointer",fontWeight:500,background:formMod.form.type===v?(v==="income"?(isDark?"rgba(16,185,129,0.15)":"#ecfdf5"):(isDark?"rgba(239,68,68,0.12)":"#fff5f5")):th.surface,color:formMod.form.type===v?(v==="income"?"#059669":"#ef4444"):th.muted}}>{l}</button>)}</div>
         {formMod.editScope&&<div style={{background:th.surface,borderRadius:10,padding:"8px 12px",marginBottom:16}}><p style={{fontSize:11,color:th.muted,margin:0}}>{{this:"Cette occurrence seulement",follow:"Cette occurrence et les suivantes"}[formMod.editScope]||""}</p></div>}
         <div style={{display:"flex",flexDirection:"column",gap:20}}>
           <div><label style={lbl}>Description</label><input type="text" value={formMod.form.desc} onChange={e=>setFF("desc")(e.target.value)} style={{...iSt,fontSize:16}}/></div>
           <div><label style={lbl}>Montant</label><input type="number" value={formMod.form.amt} step="0.01" placeholder="0.00" onChange={e=>setFF("amt")(e.target.value)} style={{...iSt,fontSize:22,fontWeight:600,fontVariantNumeric:"tabular-nums"}}/></div>
           <div><label style={lbl}>Date de début</label><input ref={dateInputRef} type="date" value={formMod.form.date} onChange={e=>e.target.value&&handleDateChange(e.target.value)} onBlur={e=>e.target.value&&handleDateChange(e.target.value)} style={{...iSt,colorScheme:isDark?"dark":"light"}}/></div>
           <CategoryPicker value={formMod.form.cat} onChange={handleCatChange} th={th} allCats={allCats} getCatName={getCatName}/>
-          <SubCategoryPicker category={formMod.form.cat} value={formMod.form.subCat} onChange={v=>setFF("subCat")(v)} th={th} allSubcats={allSubcats}/>
+          {isPro?<SubCategoryPicker category={formMod.form.cat} value={formMod.form.subCat} onChange={v=>setFF("subCat")(v)} th={th} allSubcats={allSubcats}/>:<div style={{padding:"10px 12px",background:th.surface,borderRadius:10,display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:13}}>🔒</span><p style={{fontSize:12,color:th.muted,margin:0}}>Sous-catégories réservées à la version Pro</p></div>}
           {!formMod.editScope&&<RecurrencePicker value={formMod.form.rec} onChange={v=>setFF("rec")(v)} startDate={formMod.form.date||dStr(TODAY)} th={th}/>}
         </div>
         <div style={{position:"fixed",bottom:0,left:0,right:0,padding:"16px 24px",background:th.sheetBg,borderTop:"1px solid "+th.border,display:"flex",gap:10,zIndex:201,maxWidth:640,margin:"0 auto"}}>
@@ -1328,25 +1138,36 @@ function App(){
           <div>
             <p style={{...lbl,marginBottom:12}}>Intégrées</p>
             <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,overflow:"hidden",marginBottom:20}}>{CATS.map((cat,i)=><div key={cat.id} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 14px",borderBottom:i<CATS.length-1?"1px solid "+th.border:"none"}}><div style={{width:32,height:32,borderRadius:8,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{cat.emoji}</div><span style={{flex:1,fontSize:13,color:th.text}}>{getCatName(cat.id)}</span><span style={{fontSize:10,padding:"2px 8px",borderRadius:20,background:th.surface,color:th.muted}}>Intégrée</span></div>)}</div>
-            <p style={{...lbl,marginBottom:12}}>Personnalisées</p>
-            {!customCats.length&&!addCatForm&&<p style={{fontSize:13,color:th.muted,textAlign:"center",padding:"20px 0",marginBottom:12}}>Aucune catégorie personnalisée</p>}
-            {customCats.length>0&&<div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,overflow:"hidden",marginBottom:12}}>{customCats.map((cat,i)=><div key={cat.id} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 14px",borderBottom:i<customCats.length-1?"1px solid "+th.border:"none"}}><div style={{width:32,height:32,borderRadius:8,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{cat.emoji}</div><span style={{flex:1,fontSize:13,color:th.text}}>{cat.label}</span><button onClick={()=>deleteCustomCat(cat.id)} style={{fontSize:12,color:th.danger,background:"none",border:"none",cursor:"pointer",padding:"4px 8px",borderRadius:6}}>X</button></div>)}</div>}
-            {addCatForm?(<div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:"16px",marginBottom:12}}><p style={{...lbl,marginBottom:12}}>Nouvelle catégorie</p><div style={{display:"flex",gap:10,alignItems:"flex-end",marginBottom:14}}><div style={{flex:1}}><label style={{...lbl,display:"block",marginBottom:6}}>Nom</label><input type="text" value={addCatForm.label||""} onChange={e=>setAddCatForm(f=>({...f,label:e.target.value}))} placeholder="Nom de la catégorie" style={{display:"block",width:"100%",padding:"8px 0",fontSize:14,color:th.text,background:"transparent",border:"none",borderBottom:"1px solid "+th.inputBorder,outline:"none"}}/></div><div><label style={{...lbl,display:"block",marginBottom:6}}>Emoji</label><input type="text" value={addCatForm.emoji||""} onChange={e=>setAddCatForm(f=>({...f,emoji:e.target.value}))} placeholder="📦" style={{width:48,textAlign:"center",padding:"8px 4px",fontSize:18,color:th.text,background:"transparent",border:"none",borderBottom:"1px solid "+th.inputBorder,outline:"none"}}/></div></div><label style={{...lbl,display:"block",marginBottom:8}}>Couleur</label><div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:16}}>{PRESET_COLORS.map(c=><button key={c} onClick={()=>setAddCatForm(f=>({...f,color:c}))} style={{width:28,height:28,borderRadius:"50%",background:c,border:(addCatForm.color||"#6366f1")===c?"3px solid "+th.text:"3px solid transparent",cursor:"pointer"}}/>)}</div><div style={{display:"flex",gap:8}}><button onClick={()=>setAddCatForm(null)} style={{flex:1,padding:"10px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:10,background:"none",color:th.sub,cursor:"pointer"}}>Annuler</button><button onClick={addCustomCat} disabled={!addCatForm.label?.trim()} style={{flex:2,padding:"10px 0",fontSize:13,border:"none",borderRadius:10,background:addCatForm.label?.trim()?th.btnBg:th.surface,color:addCatForm.label?.trim()?th.btnText:th.muted,cursor:addCatForm.label?.trim()?"pointer":"default",fontWeight:500}}>Ajouter</button></div></div>)
-            :(<button onClick={()=>setAddCatForm({label:"",emoji:"📦",color:"#6366f1"})} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",padding:"12px 0",fontSize:13,border:"1px dashed "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer",marginBottom:8}}><span style={{fontSize:16,lineHeight:1}}>+</span> Ajouter une catégorie</button>)}
+            {isPro?(
+              <>
+                <p style={{...lbl,marginBottom:12}}>Personnalisées</p>
+                {!customCats.length&&!addCatForm&&<p style={{fontSize:13,color:th.muted,textAlign:"center",padding:"20px 0",marginBottom:12}}>Aucune catégorie personnalisée</p>}
+                {customCats.length>0&&<div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,overflow:"hidden",marginBottom:12}}>{customCats.map((cat,i)=><div key={cat.id} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 14px",borderBottom:i<customCats.length-1?"1px solid "+th.border:"none"}}><div style={{width:32,height:32,borderRadius:8,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{cat.emoji}</div><span style={{flex:1,fontSize:13,color:th.text}}>{cat.label}</span><button onClick={()=>deleteCustomCat(cat.id)} style={{fontSize:12,color:th.danger,background:"none",border:"none",cursor:"pointer",padding:"4px 8px",borderRadius:6}}>X</button></div>)}</div>}
+                {addCatForm?(<div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:"16px",marginBottom:12}}><p style={{...lbl,marginBottom:12}}>Nouvelle catégorie</p><div style={{display:"flex",gap:10,alignItems:"flex-end",marginBottom:14}}><div style={{flex:1}}><label style={{...lbl,display:"block",marginBottom:6}}>Nom</label><input type="text" value={addCatForm.label||""} onChange={e=>setAddCatForm(f=>({...f,label:e.target.value}))} placeholder="Nom de la catégorie" style={{display:"block",width:"100%",padding:"8px 0",fontSize:14,color:th.text,background:"transparent",border:"none",borderBottom:"1px solid "+th.inputBorder,outline:"none"}}/></div><div><label style={{...lbl,display:"block",marginBottom:6}}>Emoji</label><input type="text" value={addCatForm.emoji||""} onChange={e=>setAddCatForm(f=>({...f,emoji:e.target.value}))} placeholder="📦" style={{width:48,textAlign:"center",padding:"8px 4px",fontSize:18,color:th.text,background:"transparent",border:"none",borderBottom:"1px solid "+th.inputBorder,outline:"none"}}/></div></div><label style={{...lbl,display:"block",marginBottom:8}}>Couleur</label><div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:16}}>{PRESET_COLORS.map(c=><button key={c} onClick={()=>setAddCatForm(f=>({...f,color:c}))} style={{width:28,height:28,borderRadius:"50%",background:c,border:(addCatForm.color||"#6366f1")===c?"3px solid "+th.text:"3px solid transparent",cursor:"pointer"}}/>)}</div><div style={{display:"flex",gap:8}}><button onClick={()=>setAddCatForm(null)} style={{flex:1,padding:"10px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:10,background:"none",color:th.sub,cursor:"pointer"}}>Annuler</button><button onClick={addCustomCat} disabled={!addCatForm.label?.trim()} style={{flex:2,padding:"10px 0",fontSize:13,border:"none",borderRadius:10,background:addCatForm.label?.trim()?th.btnBg:th.surface,color:addCatForm.label?.trim()?th.btnText:th.muted,cursor:addCatForm.label?.trim()?"pointer":"default",fontWeight:500}}>Ajouter</button></div></div>):<button onClick={()=>setAddCatForm({label:"",emoji:"📦",color:"#6366f1"})} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",padding:"12px 0",fontSize:13,border:"1px dashed "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer",marginBottom:8}}><span style={{fontSize:16,lineHeight:1}}>+</span> Ajouter une catégorie</button>}
+              </>
+            ):(
+              <div style={{display:"flex",alignItems:"center",gap:8,padding:"12px 14px",background:th.surface,borderRadius:10,border:"1px solid "+th.border}}>
+                <span style={{fontSize:16}}>🔒</span>
+                <p style={{fontSize:12,color:th.muted,margin:0}}>Catégories personnalisées réservées à la version Pro</p>
+              </div>
+            )}
           </div>
         )}
         {catsTab==="subcats"&&(
-          <div>
-            <label style={{...lbl,display:"block",marginBottom:8}}>Catégorie</label>
-            <div style={{display:"flex",gap:6,overflowX:"auto",paddingBottom:8,marginBottom:20}}>{allCats.filter(c=>c.id!=="income").map(cat=><button key={cat.id} onClick={()=>setCatFilter(cat.id)} style={{flexShrink:0,display:"flex",alignItems:"center",gap:5,padding:"6px 12px",borderRadius:20,fontSize:12,border:"1.5px solid "+(catFilter===cat.id?cat.color:th.border),background:catFilter===cat.id?cat.color+"18":"none",color:catFilter===cat.id?cat.color:th.sub,cursor:"pointer",fontWeight:catFilter===cat.id?600:400}}><span>{cat.emoji}</span><span>{getCatName(cat.id)}</span></button>)}</div>
-            {(()=>{const visible=allSubcats.filter(sc=>sc.category===catFilter);return(
-              <div>
-                {visible.length>0&&<div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,overflow:"hidden",marginBottom:12}}>{visible.map((sc,i)=>{const isBuiltin=SUBCATS.some(s=>s.id===sc.id),hasOverride=isBuiltin&&subcatGroupOverrides[sc.id]!==undefined;return(<div key={sc.id} style={{padding:"12px 14px",borderBottom:i<visible.length-1?"1px solid "+th.border:"none"}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:sc.group!==null?8:0}}><div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:13,color:th.text,fontWeight:500}}>{sc.label}</span>{isBuiltin?<span style={{fontSize:9,padding:"1px 6px",borderRadius:10,background:th.surface,color:th.muted}}>Intégrée</span>:<span style={{fontSize:9,padding:"1px 6px",borderRadius:10,background:"#6366f118",color:"#6366f1"}}>Perso.</span>}</div>{!isBuiltin&&<button onClick={()=>deleteCustomSubcat(sc.id)} style={{fontSize:12,color:th.danger,background:"none",border:"none",cursor:"pointer",padding:"2px 6px",borderRadius:6}}>X</button>}</div>{sc.group!==null&&<div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>{SUBCAT_GROUPS.map(g=><button key={g.id} onClick={()=>setSubcatGroup(sc.id,g.id)} style={{padding:"4px 10px",borderRadius:20,fontSize:11,border:"1.5px solid "+(sc.group===g.id?g.color:th.border),background:sc.group===g.id?g.color+"18":"none",color:sc.group===g.id?g.color:th.muted,cursor:"pointer",fontWeight:sc.group===g.id?600:400}}>{g.label}</button>)}{hasOverride&&<button onClick={()=>resetSubcatGroup(sc.id)} style={{padding:"4px 10px",borderRadius:20,fontSize:11,border:"1px dashed "+th.border,background:"none",color:th.muted,cursor:"pointer"}}>Réinitialiser</button>}</div>}</div>);})}</div>}
-                {addSubcatForm&&addSubcatForm.cat===catFilter?(<div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:"16px",marginBottom:12}}><p style={{...lbl,marginBottom:12}}>Nouvelle sous-catégorie</p><div style={{marginBottom:14}}><label style={{...lbl,display:"block",marginBottom:6}}>Nom</label><input type="text" value={addSubcatForm.label||""} onChange={e=>setAddSubcatForm(f=>({...f,label:e.target.value}))} placeholder="Nom de la sous-catégorie" style={{display:"block",width:"100%",padding:"8px 0",fontSize:14,color:th.text,background:"transparent",border:"none",borderBottom:"1px solid "+th.inputBorder,outline:"none"}}/></div><div style={{marginBottom:14}}><label style={{...lbl,display:"block",marginBottom:8}}>Groupe</label><div style={{display:"flex",gap:6}}>{SUBCAT_GROUPS.map(g=><button key={g.id} onClick={()=>setAddSubcatForm(f=>({...f,group:g.id}))} style={{flex:1,padding:"7px 0",borderRadius:10,fontSize:12,border:"1.5px solid "+(addSubcatForm.group===g.id?g.color:th.border),background:addSubcatForm.group===g.id?g.color+"18":"none",color:addSubcatForm.group===g.id?g.color:th.muted,cursor:"pointer",fontWeight:addSubcatForm.group===g.id?600:400}}>{g.label}</button>)}</div></div><div style={{display:"flex",gap:8}}><button onClick={()=>setAddSubcatForm(null)} style={{flex:1,padding:"10px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:10,background:"none",color:th.sub,cursor:"pointer"}}>Annuler</button><button onClick={addCustomSubcat} disabled={!addSubcatForm.label?.trim()} style={{flex:2,padding:"10px 0",fontSize:13,border:"none",borderRadius:10,background:addSubcatForm.label?.trim()?th.btnBg:th.surface,color:addSubcatForm.label?.trim()?th.btnText:th.muted,cursor:addSubcatForm.label?.trim()?"pointer":"default",fontWeight:500}}>Ajouter</button></div></div>)
-                :(<button onClick={()=>setAddSubcatForm({label:"",cat:catFilter,group:"flexible"})} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",padding:"12px 0",fontSize:13,border:"1px dashed "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer",marginBottom:8}}><span style={{fontSize:16,lineHeight:1}}>+</span> Ajouter une sous-catégorie</button>)}
-              </div>
-            );})()}
-          </div>
+          isPro?(
+            <div>
+              <label style={{...lbl,display:"block",marginBottom:8}}>Catégorie</label>
+              <div style={{display:"flex",gap:6,overflowX:"auto",paddingBottom:8,marginBottom:20}}>{allCats.filter(c=>c.id!=="income").map(cat=><button key={cat.id} onClick={()=>setCatFilter(cat.id)} style={{flexShrink:0,display:"flex",alignItems:"center",gap:5,padding:"6px 12px",borderRadius:20,fontSize:12,border:"1.5px solid "+(catFilter===cat.id?cat.color:th.border),background:catFilter===cat.id?cat.color+"18":"none",color:catFilter===cat.id?cat.color:th.sub,cursor:"pointer",fontWeight:catFilter===cat.id?600:400}}><span>{cat.emoji}</span><span>{getCatName(cat.id)}</span></button>)}</div>
+              {(()=>{const visible=allSubcats.filter(sc=>sc.category===catFilter);return(<div>{visible.length>0&&<div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,overflow:"hidden",marginBottom:12}}>{visible.map((sc,i)=>{const isBuiltin=SUBCATS.some(s=>s.id===sc.id),hasOverride=isBuiltin&&subcatGroupOverrides[sc.id]!==undefined;return(<div key={sc.id} style={{padding:"12px 14px",borderBottom:i<visible.length-1?"1px solid "+th.border:"none"}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:sc.group!==null?8:0}}><div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:13,color:th.text,fontWeight:500}}>{sc.label}</span>{isBuiltin?<span style={{fontSize:9,padding:"1px 6px",borderRadius:10,background:th.surface,color:th.muted}}>Intégrée</span>:<span style={{fontSize:9,padding:"1px 6px",borderRadius:10,background:"#6366f118",color:"#6366f1"}}>Perso.</span>}</div>{!isBuiltin&&<button onClick={()=>deleteCustomSubcat(sc.id)} style={{fontSize:12,color:th.danger,background:"none",border:"none",cursor:"pointer",padding:"2px 6px",borderRadius:6}}>X</button>}</div>{sc.group!==null&&<div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>{SUBCAT_GROUPS.map(g=><button key={g.id} onClick={()=>setSubcatGroup(sc.id,g.id)} style={{padding:"4px 10px",borderRadius:20,fontSize:11,border:"1.5px solid "+(sc.group===g.id?g.color:th.border),background:sc.group===g.id?g.color+"18":"none",color:sc.group===g.id?g.color:th.muted,cursor:"pointer",fontWeight:sc.group===g.id?600:400}}>{g.label}</button>)}{hasOverride&&<button onClick={()=>resetSubcatGroup(sc.id)} style={{padding:"4px 10px",borderRadius:20,fontSize:11,border:"1px dashed "+th.border,background:"none",color:th.muted,cursor:"pointer"}}>Réinitialiser</button>}</div>}</div>);})}</div>}
+              {addSubcatForm&&addSubcatForm.cat===catFilter?(<div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:"16px",marginBottom:12}}><p style={{...lbl,marginBottom:12}}>Nouvelle sous-catégorie</p><div style={{marginBottom:14}}><label style={{...lbl,display:"block",marginBottom:6}}>Nom</label><input type="text" value={addSubcatForm.label||""} onChange={e=>setAddSubcatForm(f=>({...f,label:e.target.value}))} placeholder="Nom de la sous-catégorie" style={{display:"block",width:"100%",padding:"8px 0",fontSize:14,color:th.text,background:"transparent",border:"none",borderBottom:"1px solid "+th.inputBorder,outline:"none"}}/></div><div style={{marginBottom:14}}><label style={{...lbl,display:"block",marginBottom:8}}>Groupe</label><div style={{display:"flex",gap:6}}>{SUBCAT_GROUPS.map(g=><button key={g.id} onClick={()=>setAddSubcatForm(f=>({...f,group:g.id}))} style={{flex:1,padding:"7px 0",borderRadius:10,fontSize:12,border:"1.5px solid "+(addSubcatForm.group===g.id?g.color:th.border),background:addSubcatForm.group===g.id?g.color+"18":"none",color:addSubcatForm.group===g.id?g.color:th.muted,cursor:"pointer",fontWeight:addSubcatForm.group===g.id?600:400}}>{g.label}</button>)}</div></div><div style={{display:"flex",gap:8}}><button onClick={()=>setAddSubcatForm(null)} style={{flex:1,padding:"10px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:10,background:"none",color:th.sub,cursor:"pointer"}}>Annuler</button><button onClick={addCustomSubcat} disabled={!addSubcatForm.label?.trim()} style={{flex:2,padding:"10px 0",fontSize:13,border:"none",borderRadius:10,background:addSubcatForm.label?.trim()?th.btnBg:th.surface,color:addSubcatForm.label?.trim()?th.btnText:th.muted,cursor:addSubcatForm.label?.trim()?"pointer":"default",fontWeight:500}}>Ajouter</button></div></div>):<button onClick={()=>setAddSubcatForm({label:"",cat:catFilter,group:"flexible"})} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",padding:"12px 0",fontSize:13,border:"1px dashed "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer",marginBottom:8}}><span style={{fontSize:16,lineHeight:1}}>+</span> Ajouter une sous-catégorie</button>}
+              </div>);})()}
+            </div>
+          ):(
+            <div style={{display:"flex",alignItems:"center",gap:8,padding:"12px 14px",background:th.surface,borderRadius:10,border:"1px solid "+th.border}}>
+              <span style={{fontSize:16}}>🔒</span>
+              <p style={{fontSize:12,color:th.muted,margin:0}}>Sous-catégories réservées à la version Pro</p>
+            </div>
+          )
         )}
       </FullSheet>)}
 
