@@ -859,8 +859,12 @@ function App(){
                 :<span/>}
               <SegCtrl options={[["daily","Journée"],["balance","Solde"]]} value={mode} onChange={setMode} th={th}/>
             </div>
-            {/* Rangée 2 : ← Mois Année → */}
-            <div style={{display:"flex",alignItems:"center",justifyContent:"center",marginBottom:hasSummary?16:20}}>
+            {/* Rangée 2 : jours de la semaine */}
+            <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",marginBottom:6}}>
+              {DAYS_FR.map((d,i)=><div key={i} style={{textAlign:"center",fontSize:11,color:th.muted,padding:"4px 0"}}>{d.slice(0,3)}</div>)}
+            </div>
+            {/* Rangée 3 : ← Mois Année → */}
+            <div style={{display:"flex",alignItems:"center",justifyContent:"center",marginBottom:12}}>
               <MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} onToday={goToday} th={th} prevDisabled={isPrevMoDisabled} showLabel={true} showToday={false}/>
             </div>
             </div>
@@ -869,9 +873,7 @@ function App(){
               {disp.revExp&&<><div><p style={{...lbl,margin:"0 0 4px"}}>Revenus</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:"#059669"}}>+{f(monthStats.inc,true)}</p></div><div><p style={{...lbl,margin:"0 0 4px"}}>Dépenses</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:"#ef4444"}}>-{f(monthStats.exp,true)}</p></div></>}
               {disp.net&&<div><p style={{...lbl,margin:"0 0 4px"}}>Net</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:monthStats.net>=0?"#059669":"#ef4444"}}>{monthStats.net>=0?"+":"-"}{f(monthStats.net,true)}</p></div>}
             </div>)}
-            <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",marginBottom:4}}>
-              {DAYS_FR.map((d,i)=><div key={i} style={{textAlign:"center",fontSize:11,color:th.muted,padding:"4px 0"}}>{d.slice(0,3)}</div>)}
-            </div>
+            {/* Rangée 4 : grille */}
             <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4}}>
               {cells.map((day,i)=>{if(!day)return<div key={"e"+i} style={{paddingBottom:"115%"}}/>;const data=dayData[day]||{net:0,bal:0,count:0,cats:[]},tod=isTod(day),val=mode==="daily"?data.net:data.bal,pos=val>0,neg=val<0;const pressed=pressedDay===day;return(<div key={day} onPointerDown={()=>setPressedDay(day)} onPointerUp={()=>setPressedDay(null)} onPointerLeave={()=>setPressedDay(null)} onClick={()=>setDayMod({day})} style={{paddingBottom:"115%",position:"relative",borderRadius:10,cursor:"pointer",background:pressed?th.surface:tod?th.surface:data.count>0?(data.net>0?"rgba(5,150,105,0.07)":data.net<0?"rgba(239,68,68,0.07)":"transparent"):"transparent",border:tod?"1.5px solid "+th.text:"1.5px solid transparent",transform:pressed?"scale(0.9)":"scale(1)",transition:"transform 0.1s ease,background 0.1s"}}><div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2}}><span style={{fontSize:12,fontWeight:tod?700:400,color:tod?th.text:th.sub}}>{day}</span>{data.count>0&&<span style={{fontSize:10,fontWeight:500,fontVariantNumeric:"tabular-nums",lineHeight:1.2,color:pos?"#059669":neg?"#ef4444":th.muted}}>{mode==="daily"?(val>=0?"+":"-")+fA(val,false,showDecimals).replace(" $",""):(val>=0?"":"-")+fA(Math.abs(val),false,showDecimals).replace(" $","")}</span>}{data.cats.length>0&&<div style={{display:"flex",gap:2,marginTop:1}}>{[...new Set(data.cats.map(c=>c.color))].slice(0,3).map((c,ci)=><div key={ci} style={{width:4,height:4,borderRadius:"50%",background:c}}/>)}</div>}</div></div>);})}
             </div>
