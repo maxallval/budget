@@ -195,7 +195,7 @@ const fabBtn=(bg,color)=>({position:"absolute",width:48,height:48,borderRadius:"
 
 // ─── Thème ────────────────────────────────────────────────────────────────────
 const mkTh=d=>d
-  ?{bg:"#0d0d0d",bgSub:"#161616",surface:"#1c1c1c",border:"#252525",inputBorder:"#333",text:"#f0f0f0",sub:"#888",muted:"#444",btnBg:"#efefef",btnText:"#111",togOff:"#3a3a3a",sheetBg:"#161616",danger:"#f87171",cardBg:"#181818"}
+  ?{bg:"#0d0d0d",bgSub:"#161616",surface:"#1c1c1c",border:"#252525",inputBorder:"#333",text:"#f0f0f0",sub:"#888",muted:"#444",btnBg:"#efefef",btnText:"#111",togOff:"#3a3a3a",sheetBg:"#161616",danger:"#f87171",cardBg:"#202020"}
   :{bg:"#fff",bgSub:"#f9fafb",surface:"#f3f4f6",border:"#f0f0f0",inputBorder:"#e5e7eb",text:"#111",sub:"#6b7280",muted:"#9ca3af",btnBg:"#111",btnText:"#fff",togOff:"#d1d5db",sheetBg:"#fff",danger:"#ef4444",cardBg:"#fafafa"};
 
 // ─── Composants UI ────────────────────────────────────────────────────────────
@@ -976,22 +976,20 @@ function App(){
         <button onClick={()=>{if(showFabActions)setActiveTx(null);else openForm();}} style={{width:48,height:48,borderRadius:"50%",background:showFabActions?"#ef4444":th.btnBg,color:showFabActions?"#fff":th.btnText,border:"none",cursor:"pointer",fontSize:showFabActions?22:26,fontWeight:300,boxShadow:"0 4px 16px rgba(0,0,0,0.2)",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1,position:"relative",zIndex:1,transition:"background 0.18s,color 0.18s,transform 0.18s",transform:showFabActions?"rotate(45deg)":"rotate(0deg)"}}>+</button>
       </div>
 
-      {/* ── Header ── */}
-      <div onMouseEnter={()=>setHeaderHovered(true)} onMouseLeave={()=>setHeaderHovered(false)} style={{padding:"36px 24px 20px",borderBottom:"1px solid "+th.border}}>
-        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
-          <div>
-            <p style={{...lbl,marginBottom:4}}>Gestion financière</p>
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <h1 onClick={handleTitleClick} style={{fontSize:20,color:th.text,fontWeight:700,margin:0,cursor:"pointer",userSelect:"none"}}>Budget</h1>
-              {!isOnline&&<span style={{fontSize:10,padding:"2px 8px",borderRadius:20,background:"#ef444422",color:"#ef4444",border:"1px solid #ef444440",fontWeight:500}}>HORS LIGNE</span>}
-            </div>
-          </div>
-          <div style={{textAlign:"right",cursor:"pointer"}} onClick={!editingBal?startEditBal:undefined}>
-            <p style={{...lbl,margin:"0 0 3px"}}>Solde actuel</p>
-            {editingBal
-              ?<input ref={balInputRef} type="number" inputMode="decimal" step="0.01" value={balInput} onChange={e=>setBalInput(e.target.value)} onBlur={commitEditBal} onKeyDown={e=>{if(e.key==="Enter")commitEditBal();if(e.key==="Escape")setEditingBal(false);}} style={{width:130,textAlign:"right",fontSize:20,fontWeight:600,color:th.text,background:"transparent",border:"none",borderBottom:"2px solid "+th.text,outline:"none",fontVariantNumeric:"tabular-nums"}}/>
-              :<p style={{fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",margin:0,color:curBalVal>=0?"#059669":"#ef4444"}}>{f(curBalVal,true)}</p>}
-          </div>
+      {/* ── Header fixe ── */}
+      <div
+        onMouseEnter={()=>setHeaderHovered(true)}
+        onMouseLeave={()=>setHeaderHovered(false)}
+        style={{position:"fixed",top:0,left:0,right:0,zIndex:97,background:th.bg,borderBottom:"1px solid "+th.border,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 24px",height:48}}
+      >
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <h1 onClick={handleTitleClick} style={{fontSize:16,color:th.text,fontWeight:700,margin:0,cursor:"pointer",userSelect:"none"}}>Budget</h1>
+          {!isOnline&&<span style={{fontSize:10,padding:"2px 8px",borderRadius:20,background:"#ef444422",color:"#ef4444",border:"1px solid #ef444440",fontWeight:500}}>HORS LIGNE</span>}
+        </div>
+        <div style={{textAlign:"right",cursor:"pointer"}} onClick={!editingBal?startEditBal:undefined}>
+          {editingBal
+            ?<input ref={balInputRef} type="number" inputMode="decimal" step="0.01" value={balInput} onChange={e=>setBalInput(e.target.value)} onBlur={commitEditBal} onKeyDown={e=>{if(e.key==="Enter")commitEditBal();if(e.key==="Escape")setEditingBal(false);}} style={{width:110,textAlign:"right",fontSize:16,fontWeight:600,color:th.text,background:"transparent",border:"none",borderBottom:"2px solid "+th.text,outline:"none",fontVariantNumeric:"tabular-nums"}}/>
+            :<p style={{fontSize:16,fontWeight:700,fontVariantNumeric:"tabular-nums",margin:0,color:curBalVal>=0?"#059669":"#ef4444"}}>{f(curBalVal,true)}</p>}
         </div>
       </div>
 
@@ -1572,7 +1570,13 @@ function App(){
           )}
           <div style={{display:"flex",flexDirection:"column",gap:20}}>
             <div><label style={lbl}>Description</label><input type="text" value={formMod.form.desc} onChange={e=>setFF("desc")(e.target.value)} style={{...iSt,fontSize:16}}/></div>
-            <div><label style={lbl}>Montant</label><input type="number" value={formMod.form.amt} step="0.01" placeholder="0.00" onChange={e=>setFF("amt")(e.target.value)} style={{...iSt,fontSize:22,fontWeight:600,fontVariantNumeric:"tabular-nums"}}/></div>
+            <div>
+              <label style={lbl}>Montant</label>
+              <input type="number" value={formMod.form.amt} step="0.01" placeholder="0.00" onChange={e=>setFF("amt")(e.target.value)}
+                style={{...iSt,fontSize:22,fontWeight:600,fontVariantNumeric:"tabular-nums",
+                  borderBottomColor:formMod.form.amt&&(isNaN(parseFloat(formMod.form.amt))||parseFloat(formMod.form.amt)<=0)?"#ef4444":th.inputBorder,
+                  transition:"border-color 0.2s"}}/>
+            </div>
             {!formMod.editScope&&<RecurrencePicker value={formMod.form.rec} onChange={v=>setFF("rec")(v)} startDate={formMod.form.date||dStr(TODAY)} th={th}/>}
             <div><label style={lbl}>Date de début</label><input ref={dateInputRef} type="date" value={formMod.form.date} onChange={e=>e.target.value&&handleDateChange(e.target.value)} onBlur={e=>e.target.value&&handleDateChange(e.target.value)} style={{...iSt,colorScheme:isDark?"dark":"light"}}/></div>
             <CategoryPicker value={formMod.form.cat} onChange={handleCatChange} th={th} allCats={allCats} getCatName={getCatName}/>
@@ -1580,10 +1584,12 @@ function App(){
               ?<SubCategoryPicker category={formMod.form.cat} value={formMod.form.subCat} onChange={v=>setFF("subCat")(v)} th={th} allSubcats={allSubcats}/>
               :<div style={{padding:"10px 12px",background:th.surface,borderRadius:10,display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:13}}>🔒</span><p style={{fontSize:12,color:th.muted,margin:0}}>Sous-catégories réservées à la version Pro</p></div>}
           </div>
-          <div style={{position:"fixed",bottom:0,left:0,right:0,padding:"16px 24px",background:th.sheetBg,borderTop:"1px solid "+th.border,display:"flex",gap:10,zIndex:201,maxWidth:640,margin:"0 auto"}}>
-            <button onClick={()=>setFormMod(null)} style={{flex:1,padding:"13px 0",fontSize:14,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>Annuler</button>
-            <button onClick={()=>saveForm(dateInputRef.current?.value)} style={{flex:3,padding:"13px 0",fontSize:14,border:"none",borderRadius:12,background:th.btnBg,color:th.btnText,cursor:"pointer",fontWeight:600}}>{formMod.tx?"Enregistrer":"Ajouter"}</button>
-          </div>
+          {(()=>{const amt=parseFloat(formMod.form.amt),valid=formMod.form.desc.trim().length>0&&!isNaN(amt)&&amt>0;return(
+            <div style={{position:"fixed",bottom:0,left:0,right:0,padding:"16px 24px",background:th.sheetBg,borderTop:"1px solid "+th.border,display:"flex",gap:10,zIndex:201,maxWidth:640,margin:"0 auto"}}>
+              <button onClick={()=>setFormMod(null)} style={{flex:1,padding:"13px 0",fontSize:14,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>Annuler</button>
+              <button onClick={()=>{if(valid)saveForm(dateInputRef.current?.value);}} style={{flex:3,padding:"13px 0",fontSize:14,border:"none",borderRadius:12,background:valid?th.btnBg:th.surface,color:valid?th.btnText:th.muted,cursor:valid?"pointer":"default",fontWeight:600,transition:"background 0.2s,color 0.2s"}}>{formMod.tx?"Enregistrer":"Ajouter"}</button>
+            </div>
+          );})()}
         </FullSheet>
       )}
 
