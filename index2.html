@@ -849,17 +849,17 @@ function App(){
         {tab==="home"&&(
           <div>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-              <MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} onToday={goToday} th={th} prevDisabled={isPrevMoDisabled} showLabel={false} showToday={false}/>
-              <SegCtrl options={[["daily","Journée"],["balance","Solde"]]} value={mode} onChange={setMode} th={th}/>
+              <MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} onToday={goToday} th={th} prevDisabled={isPrevMoDisabled} showLabel={true} showToday={false}/>
             </div>
+            {/* Rangée 2 : épargne — Aujourd'hui — Journée/Solde */}
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:hasSummary?12:16,minHeight:24}}>
-              {yr!==TODAY.getFullYear()||mo!==TODAY.getMonth()
-                ?<button onClick={goToday} style={{fontSize:11,padding:"3px 9px",borderRadius:8,border:"1px solid "+th.border,background:"none",color:th.sub,cursor:"pointer",whiteSpace:"nowrap"}}>Aujourd'hui</button>
-                :<span style={{width:74}}/>}
-              <span style={{fontSize:17,fontWeight:600,color:th.text,letterSpacing:"-0.01em"}}>{MONTHS_FR[mo]} {yr}</span>
               {savingsRate!==null
                 ?<span style={{fontSize:11,padding:"3px 10px",borderRadius:20,background:savingsRate>=0?"rgba(5,150,105,0.1)":"rgba(239,68,68,0.1)",color:savingsRate>=0?"#059669":"#ef4444",fontWeight:500}}>{savingsRate>=0?"+":""}{savingsRate}% épargne</span>
-                :<span style={{width:74}}/>}
+                :<span/>}
+              {yr!==TODAY.getFullYear()||mo!==TODAY.getMonth()
+                ?<button onClick={goToday} style={{fontSize:11,padding:"3px 9px",borderRadius:8,border:"1px solid "+th.border,background:"none",color:th.sub,cursor:"pointer",whiteSpace:"nowrap"}}>Aujourd'hui</button>
+                :<span/>}
+              <SegCtrl options={[["daily","Journée"],["balance","Solde"]]} value={mode} onChange={setMode} th={th}/>
             </div>
             {hasSummary&&(<div style={{marginBottom:20,paddingBottom:20,borderBottom:"1px solid "+th.border,display:"flex",flexWrap:"wrap",gap:"16px 28px"}}>
               {disp.endBal&&endBalVal!==null&&<div><p style={{...lbl,margin:"0 0 4px"}}>Fin du mois</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:endBalVal>=0?"#059669":"#ef4444"}}>{f(endBalVal,true)}</p></div>}
