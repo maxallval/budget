@@ -326,7 +326,7 @@ const MonthNav=({yr,mo,onPrev,onNext,onDbl,onToday,th,prevDisabled,showLabel=tru
   return(
     <div style={{display:"flex",alignItems:"center",gap:4}}>
       <button onClick={onPrev} disabled={prevDisabled} style={{width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:"none",border:"none",cursor:prevDisabled?"default":"pointer",fontSize:20,color:prevDisabled?th.border:th.muted,borderRadius:8}}>&#8249;</button>
-      {showLabel&&<span onDoubleClick={onDbl} style={{fontSize:15,color:th.text,fontWeight:500,minWidth:130,textAlign:"center",cursor:"default",userSelect:"none"}}>{MONTHS_FR[mo]} {yr}</span>}
+      <span onDoubleClick={onDbl} style={{fontSize:19,color:th.text,fontWeight:700,minWidth:150,textAlign:"center",cursor:"default",userSelect:"none"}}>{MONTHS_FR[mo]} {yr}</span>
       <button onClick={onNext} style={{width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:"none",border:"none",cursor:"pointer",fontSize:20,color:th.muted,borderRadius:8}}>&#8250;</button>
       {showToday&&!isCurrent&&(
         <button onClick={onToday||onDbl} style={{fontSize:11,padding:"3px 9px",borderRadius:8,border:"1px solid "+th.border,background:"none",color:th.sub,cursor:"pointer",whiteSpace:"nowrap",marginLeft:2,transition:"background 0.15s"}}>
@@ -849,10 +849,8 @@ function App(){
         {tab==="home"&&(
           <div>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-              <MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} onToday={goToday} th={th} prevDisabled={isPrevMoDisabled} showLabel={true} showToday={false}/>
-            </div>
-            {/* Rangée 2 : épargne — Aujourd'hui — Journée/Solde */}
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:hasSummary?12:16,minHeight:24}}>
+              {/* Rangée 1 : épargne — Aujourd'hui — Journée/Solde */}
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
               {savingsRate!==null
                 ?<span style={{fontSize:11,padding:"3px 10px",borderRadius:20,background:savingsRate>=0?"rgba(5,150,105,0.1)":"rgba(239,68,68,0.1)",color:savingsRate>=0?"#059669":"#ef4444",fontWeight:500}}>{savingsRate>=0?"+":""}{savingsRate}% épargne</span>
                 :<span/>}
@@ -860,6 +858,11 @@ function App(){
                 ?<button onClick={goToday} style={{fontSize:11,padding:"3px 9px",borderRadius:8,border:"1px solid "+th.border,background:"none",color:th.sub,cursor:"pointer",whiteSpace:"nowrap"}}>Aujourd'hui</button>
                 :<span/>}
               <SegCtrl options={[["daily","Journée"],["balance","Solde"]]} value={mode} onChange={setMode} th={th}/>
+            </div>
+            {/* Rangée 2 : ← Mois Année → */}
+            <div style={{display:"flex",alignItems:"center",justifyContent:"center",marginBottom:hasSummary?16:20}}>
+              <MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} onToday={goToday} th={th} prevDisabled={isPrevMoDisabled} showLabel={true} showToday={false}/>
+            </div>
             </div>
             {hasSummary&&(<div style={{marginBottom:20,paddingBottom:20,borderBottom:"1px solid "+th.border,display:"flex",flexWrap:"wrap",gap:"16px 28px"}}>
               {disp.endBal&&endBalVal!==null&&<div><p style={{...lbl,margin:"0 0 4px"}}>Fin du mois</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:endBalVal>=0?"#059669":"#ef4444"}}>{f(endBalVal,true)}</p></div>}
@@ -869,8 +872,8 @@ function App(){
             <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",marginBottom:4}}>
               {DAYS_FR.map((d,i)=><div key={i} style={{textAlign:"center",fontSize:11,color:th.muted,padding:"4px 0"}}>{d.slice(0,3)}</div>)}
             </div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2}}>
-              {cells.map((day,i)=>{if(!day)return<div key={"e"+i} style={{paddingBottom:"100%"}}/>;const data=dayData[day]||{net:0,bal:0,count:0,cats:[]},tod=isTod(day),val=mode==="daily"?data.net:data.bal,pos=val>0,neg=val<0;const pressed=pressedDay===day;return(<div key={day} onPointerDown={()=>setPressedDay(day)} onPointerUp={()=>setPressedDay(null)} onPointerLeave={()=>setPressedDay(null)} onClick={()=>setDayMod({day})} style={{paddingBottom:"100%",position:"relative",borderRadius:10,cursor:"pointer",background:pressed?th.surface:tod?th.surface:data.count>0?(data.net>0?"rgba(5,150,105,0.07)":data.net<0?"rgba(239,68,68,0.07)":"transparent"):"transparent",border:tod?"1.5px solid "+th.text:"1.5px solid transparent",transform:pressed?"scale(0.9)":"scale(1)",transition:"transform 0.1s ease,background 0.1s"}}><div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2}}><span style={{fontSize:12,fontWeight:tod?700:400,color:tod?th.text:th.sub}}>{day}</span>{data.count>0&&<span style={{fontSize:10,fontWeight:500,fontVariantNumeric:"tabular-nums",lineHeight:1.2,color:pos?"#059669":neg?"#ef4444":th.muted}}>{mode==="daily"?(val>=0?"+":"-")+fA(val,false,showDecimals).replace(" $",""):(val>=0?"":"-")+fA(Math.abs(val),false,showDecimals).replace(" $","")}</span>}{data.cats.length>0&&<div style={{display:"flex",gap:2,marginTop:1}}>{[...new Set(data.cats.map(c=>c.color))].slice(0,3).map((c,ci)=><div key={ci} style={{width:4,height:4,borderRadius:"50%",background:c}}/>)}</div>}</div></div>);})}
+            <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4}}>
+              {cells.map((day,i)=>{if(!day)return<div key={"e"+i} style={{paddingBottom:"115%"}}/>;const data=dayData[day]||{net:0,bal:0,count:0,cats:[]},tod=isTod(day),val=mode==="daily"?data.net:data.bal,pos=val>0,neg=val<0;const pressed=pressedDay===day;return(<div key={day} onPointerDown={()=>setPressedDay(day)} onPointerUp={()=>setPressedDay(null)} onPointerLeave={()=>setPressedDay(null)} onClick={()=>setDayMod({day})} style={{paddingBottom:"115%",position:"relative",borderRadius:10,cursor:"pointer",background:pressed?th.surface:tod?th.surface:data.count>0?(data.net>0?"rgba(5,150,105,0.07)":data.net<0?"rgba(239,68,68,0.07)":"transparent"):"transparent",border:tod?"1.5px solid "+th.text:"1.5px solid transparent",transform:pressed?"scale(0.9)":"scale(1)",transition:"transform 0.1s ease,background 0.1s"}}><div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2}}><span style={{fontSize:12,fontWeight:tod?700:400,color:tod?th.text:th.sub}}>{day}</span>{data.count>0&&<span style={{fontSize:10,fontWeight:500,fontVariantNumeric:"tabular-nums",lineHeight:1.2,color:pos?"#059669":neg?"#ef4444":th.muted}}>{mode==="daily"?(val>=0?"+":"-")+fA(val,false,showDecimals).replace(" $",""):(val>=0?"":"-")+fA(Math.abs(val),false,showDecimals).replace(" $","")}</span>}{data.cats.length>0&&<div style={{display:"flex",gap:2,marginTop:1}}>{[...new Set(data.cats.map(c=>c.color))].slice(0,3).map((c,ci)=><div key={ci} style={{width:4,height:4,borderRadius:"50%",background:c}}/>)}</div>}</div></div>);})}
             </div>
           </div>
         )}
