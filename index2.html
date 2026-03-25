@@ -153,14 +153,12 @@ const PRESET_COLORS=["#3b82f6","#f97316","#10b981","#8b5cf6","#ef4444","#06b6d4"
 const GOAL_EMOJIS=["🎯","✈️","🏠","🚗","💍","🎓","🏖️","💻","🛋️","🐾","🎸","⛵"];
 const MOTD_URL="https://maxallval.github.io/budget/messages/messages.txt";
 
-// ─── Constantes statiques ─────────────────────────────────────────────────────
 const DAYS_FR=["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"];
 const MONTHS_FR=["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
 const NTH_FR=["","1er","2e","3e","4e","5e"];
 const DS_FR=["D","L","M","M","J","V","S"];
 const UNITS_FR={day:"jours",week:"semaines",month:"mois",year:"années"};
 
-// ─── parseD avec cache ────────────────────────────────────────────────────────
 const _pdCache=new Map();
 const parseD=s=>{let v=_pdCache.get(s);if(!v){const[y,m,d]=s.split("-").map(Number);v=[y,m-1,d];_pdCache.set(s,v);}return new Date(v[0],v[1],v[2]);};
 const dayBef=s=>{const[y,m,d]=s.split("-").map(Number);const dt=new Date(y,m-1,d);dt.setDate(dt.getDate()-1);return dStr(dt);};
@@ -228,10 +226,8 @@ function recLabel(tx){
   }
 }
 
-// ─── Helpers hors composant ───────────────────────────────────────────────────
 const fabBtn=(bg,color)=>({position:"absolute",width:48,height:48,borderRadius:"50%",background:bg,color,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(0,0,0,0.22)",fontSize:19,lineHeight:1});
 
-// ─── ProGate : écran de verrouillage pour les fonctionnalités Pro ─────────────
 function ProGate({isPro,th,title,desc,children}){
   if(isPro)return children;
   return(
@@ -269,7 +265,6 @@ const TxRow=React.memo(function TxRow({tx,amount,recurrenceLabel,cat,sc,isActive
   );
 });
 
-// ─── UI primitives ────────────────────────────────────────────────────────────
 const mkTh=d=>d
   ?{bg:"#0d0d0d",bgSub:"#161616",surface:"#1c1c1c",border:"#252525",inputBorder:"#333",text:"#f0f0f0",sub:"#888",muted:"#444",btnBg:"#efefef",btnText:"#111",togOff:"#3a3a3a",sheetBg:"#161616",danger:"#f87171",cardBg:"#181818"}
   :{bg:"#fff",bgSub:"#f9fafb",surface:"#f3f4f6",border:"#f0f0f0",inputBorder:"#e5e7eb",text:"#111",sub:"#6b7280",muted:"#9ca3af",btnBg:"#111",btnText:"#fff",togOff:"#d1d5db",sheetBg:"#fff",danger:"#ef4444",cardBg:"#fafafa"};
@@ -321,13 +316,26 @@ const FullSheetHead=({title,onClose,right,th})=>(
     <div style={{display:"flex",gap:8,alignItems:"center"}}>{right}</div>
   </div>
 );
-const MonthNav=({yr,mo,onPrev,onNext,onDbl,th,prevDisabled})=>(
-  <div style={{display:"flex",alignItems:"center",gap:4}}>
-    <button onClick={onPrev} disabled={prevDisabled} style={{width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:"none",border:"none",cursor:prevDisabled?"default":"pointer",fontSize:20,color:prevDisabled?th.border:th.muted,borderRadius:8}}>&#8249;</button>
-    <span onDoubleClick={onDbl} style={{fontSize:15,color:th.text,fontWeight:500,minWidth:164,textAlign:"center",cursor:"default",userSelect:"none"}}>{MONTHS_FR[mo]} {yr}</span>
-    <button onClick={onNext} style={{width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:"none",border:"none",cursor:"pointer",fontSize:20,color:th.muted,borderRadius:8}}>&#8250;</button>
-  </div>
-);
+
+// ── CHANGEMENT 1 : MonthNav avec bouton "Aujourd'hui" visible ─────────────────
+// Avant : arrow function simple, double-tap caché, minWidth:164
+// Après : fonction nommée, bouton visible quand pas sur le mois courant
+const MonthNav=({yr,mo,onPrev,onNext,onDbl,onToday,th,prevDisabled})=>{
+  const isCurrent=yr===TODAY.getFullYear()&&mo===TODAY.getMonth();
+  return(
+    <div style={{display:"flex",alignItems:"center",gap:4}}>
+      <button onClick={onPrev} disabled={prevDisabled} style={{width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:"none",border:"none",cursor:prevDisabled?"default":"pointer",fontSize:20,color:prevDisabled?th.border:th.muted,borderRadius:8}}>&#8249;</button>
+      <span onDoubleClick={onDbl} style={{fontSize:15,color:th.text,fontWeight:500,minWidth:130,textAlign:"center",cursor:"default",userSelect:"none"}}>{MONTHS_FR[mo]} {yr}</span>
+      <button onClick={onNext} style={{width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:"none",border:"none",cursor:"pointer",fontSize:20,color:th.muted,borderRadius:8}}>&#8250;</button>
+      {!isCurrent&&(
+        <button onClick={onToday||onDbl} style={{fontSize:11,padding:"3px 9px",borderRadius:8,border:"1px solid "+th.border,background:"none",color:th.sub,cursor:"pointer",whiteSpace:"nowrap",marginLeft:2,transition:"background 0.15s"}}>
+          Aujourd'hui
+        </button>
+      )}
+    </div>
+  );
+};
+
 const MiniNav=({label,onPrev,onNext,nextDisabled,th})=>(
   <div style={{display:"flex",alignItems:"center",gap:2}}>
     <button onClick={onPrev} style={{width:26,height:26,display:"flex",alignItems:"center",justifyContent:"center",background:"none",border:"none",cursor:"pointer",fontSize:18,color:th.muted,borderRadius:6}}>&#8249;</button>
@@ -543,7 +551,6 @@ function App(){
   const[copied,setCopied]=useState(false);
   const[activeTx,setActiveTx]=useState(null);
   const[dupMod,setDupMod]=useState(null);
-  // Plan : true = Pro, false = Gratuit (test seulement)
   const[isPro,setIsPro]=useState(true);
 
   const balInputRef=useRef(null),balSettRef=useRef(null),dateInputRef=useRef(null);
@@ -559,9 +566,7 @@ function App(){
   const f=(n,full=false)=>fA(n,full,showDecimals);
   formModRef.current=formMod;
 
-  // Limite de mois en arrière pour la version gratuite (mois courant - 2)
   const FREE_LIMIT=useMemo(()=>addMths(TODAY.getFullYear(),TODAY.getMonth(),-2),[]);
-
   const allCats=useMemo(()=>[...CATS,...customCats],[customCats]);
   const allSubcats=useMemo(()=>{const base=SUBCATS.map(sc=>subcatGroupOverrides[sc.id]?{...sc,group:subcatGroupOverrides[sc.id]}:sc);return[...base,...customSubcats];},[customSubcats,subcatGroupOverrides]);
   const catMap=useMemo(()=>{const m=new Map();allCats.forEach(c=>m.set(c.id,c));return m;},[allCats]);
@@ -588,9 +593,7 @@ function App(){
   const curBalVal=useMemo(()=>getBalAt(TODAY),[getBalAt]);
   const dim=new Date(yr,mo+1,0).getDate();
   const cells=useMemo(()=>{const fd=new Date(yr,mo,1).getDay();return[...Array(fd).fill(null),...Array.from({length:dim},(_,i)=>i+1)];},[yr,mo,dim]);
-
   const monthOccs=useMemo(()=>{const m=new Map();txs.forEach(tx=>{const days=occsInMonth(tx,yr,mo);if(days.length)m.set(tx.id,days);});return m;},[txs,yr,mo]);
-
   const dayData=useMemo(()=>{
     const d={};let bal=getBalAt(new Date(yr,mo,0));
     for(let day=1;day<=dim;day++){
@@ -601,13 +604,11 @@ function App(){
     }
     return d;
   },[txs,yr,mo,dim,getBalAt,dynCatById,monthOccs]);
-
   const{monthStats,catStats}=useMemo(()=>{
     const ms={inc:0,exp:0,net:0},cs={};allCats.forEach(c=>cs[c.id]={spent:0,income:0});
     txs.forEach(tx=>{const n=monthOccs.get(tx.id)?.length||0;if(!n)return;const cat=tx.category||"other";if(!cs[cat])cs[cat]={spent:0,income:0};if(tx.type==="income"){ms.inc+=tx.amount*n;cs[cat].income+=tx.amount*n;}else{ms.exp+=tx.amount*n;cs[cat].spent+=tx.amount*n;}});
     ms.net=ms.inc-ms.exp;return{monthStats:ms,catStats:cs};
   },[txs,monthOccs,allCats]);
-
   const totalBudget=useMemo(()=>allCats.filter(c=>c.id!=="income").reduce((s,c)=>s+(budgets[c.id]||0),0),[budgets,allCats]);
   const totalSpent=useMemo(()=>allCats.filter(c=>c.id!=="income").reduce((s,c)=>s+(catStats[c.id]?.spent||0),0),[catStats,allCats]);
   const expenseCats=useMemo(()=>allCats.filter(c=>c.id!=="income"),[allCats]);
@@ -630,8 +631,6 @@ function App(){
   const overrunKey=yr+"-"+mo;
   const showOverrunAlert=overrunCats.length>0&&!acknowledgedOverruns.has(overrunKey)&&!overrunDismissing;
   const controleData=useMemo(()=>{const groups={essentiel:0,flexible:0,lifestyle:0,nonclasse:0},details={essentiel:[],flexible:[],lifestyle:[],nonclasse:[]};txs.forEach(tx=>{if(tx.type==="income")return;const n=monthOccs.get(tx.id)?.length||0;if(!n)return;const total=tx.amount*n,sc=tx.subCategory?dynSubcatById(tx.subCategory):null,grp=sc?.group||"nonclasse";groups[grp]=(groups[grp]||0)+total;const bucket=details[grp]||(details[grp]=[]);const ex=bucket.find(d=>d.label===(sc?.label||"Non classé"));if(ex)ex.total+=total;else bucket.push({label:sc?.label||"Non classé",total});});Object.values(details).forEach(arr=>arr.sort((a,b)=>b.total-a.total));return{groups,details};},[txs,monthOccs,dynSubcatById]);
-
-  // Limite de navigation en arrière pour la version gratuite
   const isPrevMoDisabled=!isPro&&(yr<FREE_LIMIT.yr||(yr===FREE_LIMIT.yr&&mo<=FREE_LIMIT.mo));
 
   useEffect(()=>{if(tab!=="transactions")setActiveTx(null);},[tab]);
@@ -667,7 +666,6 @@ function App(){
     clearTimeout(sbSaveTimer.current);setIsSyncing(true);
     sbSaveTimer.current=setTimeout(async()=>{
       try{
-        // Version gratuite : pas de sync Supabase
         if(isPro){
           const snap={txs,initBal,balAnchor,disp,darkMode,showDecimals,budgets,customCats,customSubcats,subcatGroupOverrides,goals};
           await sb.from("user_data").upsert({user_id:session.user.id,data:snap,updated_at:new Date().toISOString()});
@@ -726,6 +724,11 @@ function App(){
   const isMotd=motdVisible&&!syncShow&&!isOverrun;
   const barVisible=syncShow||isOverrun||isMotd;
   const barFading=syncFade||(overrunDismissing&&!syncShow)||(motdFading&&isMotd);
+
+  // ── CHANGEMENT 2 : dots de pagination — indicateur visuel du swipe ────────
+  // Pill large = onglet actif, petits points = autres onglets accessibles
+  const curSubNav=SUB_NAV[tab];
+  const showDots=curSubNav&&curSubNav.length>1;
 
   return(
     <div onTouchStart={e=>{touchStartX.current=e.touches[0].clientX;}} onTouchEnd={e=>{if(touchStartX.current===null)return;const dx=e.changedTouches[0].clientX-touchStartX.current;touchStartX.current=null;handleSwipe(dx);}} style={{minHeight:"100vh",background:th.bg,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>
@@ -810,10 +813,19 @@ function App(){
         </div>
       </div>
 
-      {SUB_NAV[tab]&&(
-        <div style={{padding:"0 24px",borderBottom:"1px solid "+th.border,display:"flex",gap:0,overflowX:"auto",background:th.bgSub}}>
-          {tab==="transactions"&&<button onClick={()=>openForm()} style={{fontSize:12,paddingBottom:10,paddingTop:12,paddingLeft:12,paddingRight:16,border:"none",background:"none",cursor:"pointer",borderBottom:"2px solid transparent",color:th.sub,whiteSpace:"nowrap",flexShrink:0,display:"flex",alignItems:"center",gap:4}}><span style={{fontSize:14,lineHeight:1}}>+</span> Ajouter</button>}
-          {SUB_NAV[tab].map(s=><button key={s.id} onClick={()=>setSubTab(prev=>({...prev,[tab]:s.id}))} style={{fontSize:12,paddingBottom:10,paddingTop:12,paddingLeft:12,paddingRight:12,border:"none",background:"none",cursor:"pointer",borderBottom:curSub===s.id?"2px solid "+th.sub:"2px solid transparent",color:curSub===s.id?th.text:th.sub,fontWeight:curSub===s.id?600:400,whiteSpace:"nowrap",flexShrink:0}}>{s.label}</button>)}
+      {/* ── Sub-nav + dots de pagination ─────────────────────────────────── */}
+      {curSubNav&&(
+        <div>
+          <div style={{padding:"0 24px",borderBottom:"none",display:"flex",gap:0,overflowX:"auto",background:th.bgSub}}>
+            {tab==="transactions"&&<button onClick={()=>openForm()} style={{fontSize:12,paddingBottom:10,paddingTop:12,paddingLeft:12,paddingRight:16,border:"none",background:"none",cursor:"pointer",borderBottom:"2px solid transparent",color:th.sub,whiteSpace:"nowrap",flexShrink:0,display:"flex",alignItems:"center",gap:4}}><span style={{fontSize:14,lineHeight:1}}>+</span> Ajouter</button>}
+            {curSubNav.map(s=><button key={s.id} onClick={()=>setSubTab(prev=>({...prev,[tab]:s.id}))} style={{fontSize:12,paddingBottom:10,paddingTop:12,paddingLeft:12,paddingRight:12,border:"none",background:"none",cursor:"pointer",borderBottom:curSub===s.id?"2px solid "+th.sub:"2px solid transparent",color:curSub===s.id?th.text:th.sub,fontWeight:curSub===s.id?600:400,whiteSpace:"nowrap",flexShrink:0}}>{s.label}</button>)}
+          </div>
+          {/* Dots : pill large = actif, petits points = swipeable */}
+          <div style={{borderBottom:"1px solid "+th.border,background:th.bgSub,display:"flex",justifyContent:"center",alignItems:"center",gap:5,padding:"5px 0"}}>
+            {showDots&&curSubNav.map(s=>(
+              <div key={s.id} onClick={()=>setSubTab(prev=>({...prev,[tab]:s.id}))} style={{width:curSub===s.id?18:5,height:5,borderRadius:3,background:curSub===s.id?th.text:th.muted,opacity:curSub===s.id?1:0.3,transition:"all 0.22s ease",cursor:"pointer"}}/>
+            ))}
+          </div>
         </div>
       )}
 
@@ -822,7 +834,7 @@ function App(){
         {tab==="home"&&(
           <div>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-              <MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} th={th} prevDisabled={isPrevMoDisabled}/>
+              <MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} onToday={goToday} th={th} prevDisabled={isPrevMoDisabled}/>
               <SegCtrl options={[["daily","Journée"],["balance","Solde"]]} value={mode} onChange={setMode} th={th}/>
             </div>
             <div style={{display:"flex",justifyContent:"flex-end",marginBottom:hasSummary?12:16,minHeight:20}}>
@@ -845,7 +857,7 @@ function App(){
         {tab==="transactions"&&curSub==="historique"&&(
           <div>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-              <MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} th={th} prevDisabled={isPrevMoDisabled}/>
+              <MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} onToday={goToday} th={th} prevDisabled={isPrevMoDisabled}/>
               <p style={{...lbl,margin:0}}>{monthTxs.length} transaction{monthTxs.length!==1?"s":""}</p>
             </div>
             {!isPro&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:"#6366f118",borderRadius:10,marginBottom:14,border:"1px solid #6366f130"}}><span style={{fontSize:14}}>🔒</span><p style={{fontSize:12,color:"#6366f1",margin:0}}>Version gratuite — historique limité aux 3 derniers mois</p></div>}
@@ -870,7 +882,7 @@ function App(){
 
         {tab==="budget"&&curSub==="categories"&&(
           <div>
-            <div style={{display:"flex",alignItems:"center",marginBottom:20}}><MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} th={th} prevDisabled={isPrevMoDisabled}/></div>
+            <div style={{display:"flex",alignItems:"center",marginBottom:20}}><MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} onToday={goToday} th={th} prevDisabled={isPrevMoDisabled}/></div>
             {totalBudget>0&&<div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:"16px 18px",marginBottom:20}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}><span style={{fontSize:13,color:th.text,fontWeight:500}}>Total dépenses</span><span style={{fontSize:13,fontWeight:600,fontVariantNumeric:"tabular-nums",color:totalSpent>totalBudget?"#ef4444":"#059669"}}>{f(totalSpent,true)} <span style={{color:th.muted,fontWeight:400}}>sur {f(totalBudget,true)}</span></span></div><div style={{height:6,background:th.surface,borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",width:Math.min(totalSpent/totalBudget*100,100)+"%",borderRadius:3,background:totalSpent>totalBudget?"#ef4444":totalSpent/totalBudget>0.8?"#f59e0b":"#10b981",transition:"width 0.4s"}}/></div></div>}
             {expenseCats.map(cat=>{const stats=catStats[cat.id]||{spent:0},budget=budgets[cat.id]||0,pct=budget>0?Math.min(stats.spent/budget*100,100):0,over=budget>0&&stats.spent>budget;return(<div key={cat.id} style={{marginBottom:14,background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:"14px 16px",borderLeft:over?"3px solid #ef4444":"3px solid transparent"}}><div style={{display:"flex",alignItems:"center",gap:12}}><div style={{width:38,height:38,borderRadius:10,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{cat.emoji}</div><div style={{flex:1,minWidth:0}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:6}}><span style={{fontSize:13,color:th.text,fontWeight:500}}>{getCatName(cat.id)}</span><div style={{display:"flex",alignItems:"center",gap:4,flexShrink:0}}><span style={{fontSize:13,fontVariantNumeric:"tabular-nums",color:over?"#ef4444":stats.spent>0?th.text:th.muted}}>{f(stats.spent,true)}</span>{budget>0&&<span style={{fontSize:12,color:th.muted}}>sur</span>}<input type="number" min={0} step={10} value={budget||""} onChange={e=>setBudgets(b=>({...b,[cat.id]:parseFloat(e.target.value)||0}))} placeholder="Illimité" style={{width:72,fontSize:12,textAlign:"right",color:"#2563eb",background:"transparent",border:"none",borderBottom:"1px dashed "+th.inputBorder,outline:"none",fontVariantNumeric:"tabular-nums"}}/></div></div><div style={{height:5,background:th.surface,borderRadius:2.5,overflow:"hidden"}}>{budget>0&&<div style={{height:"100%",width:pct+"%",background:over?"#ef4444":pct>80?"#f59e0b":"#10b981",borderRadius:2.5,transition:"width 0.4s"}}/>}</div></div></div></div>);})}
             {monthStats.inc>0&&<div style={{marginTop:8,background:"#05966915",border:"1px solid #05966930",borderRadius:14,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}><div style={{width:38,height:38,borderRadius:10,background:"#05966922",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>💰</div><div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>Revenus ce mois</p><p style={{fontSize:12,color:"#059669",margin:"2px 0 0",fontWeight:600,fontVariantNumeric:"tabular-nums"}}>+{f(monthStats.inc,true)}</p></div></div>}
@@ -925,7 +937,7 @@ function App(){
         {tab==="analyse"&&curSub==="controle"&&(
           <ProGate isPro={isPro} th={th} title="Contrôle des coûts" desc="Répartition essentiel / flexible / lifestyle de tes dépenses. Fonctionnalité réservée à la version Pro.">
             <div>
-              <div style={{display:"flex",alignItems:"center",marginBottom:20}}><MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} th={th} prevDisabled={isPrevMoDisabled}/></div>
+              <div style={{display:"flex",alignItems:"center",marginBottom:20}}><MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} onToday={goToday} th={th} prevDisabled={isPrevMoDisabled}/></div>
               {txs.length===0?<div style={{textAlign:"center",padding:"80px 0"}}><p style={{fontSize:40,marginBottom:12}}>📊</p><p style={{fontSize:14,color:th.muted}}>Pas encore assez de données</p></div>
               :<div style={{display:"flex",flexDirection:"column",gap:14}}>
                 {SUBCAT_GROUPS.map(grp=>{const total=controleData.groups[grp.id]||0,items=controleData.details[grp.id]||[],totalAll=Object.values(controleData.groups).reduce((s,v)=>s+v,0),pct=totalAll>0?total/totalAll*100:0;return(<div key={grp.id} style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"16px",borderLeft:"3px solid "+grp.color}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}><div><p style={{fontSize:14,fontWeight:600,color:grp.color,margin:"0 0 2px"}}>{grp.label}</p><p style={{fontSize:11,color:th.muted,margin:0}}>{grp.desc}</p></div><div style={{textAlign:"right"}}><p style={{fontSize:16,fontWeight:700,fontVariantNumeric:"tabular-nums",color:th.text,margin:"0 0 1px"}}>{f(total,true)}</p><p style={{fontSize:11,color:th.muted,margin:0}}>{pct.toFixed(0)}% des dépenses</p></div></div><div style={{height:4,background:th.surface,borderRadius:2,overflow:"hidden",marginBottom:items.length?14:0}}><div style={{height:"100%",width:pct+"%",background:grp.color,borderRadius:2,opacity:0.7}}/></div>{items.length?<div style={{display:"flex",flexDirection:"column",gap:6}}>{items.map((item,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:6,borderTop:"1px solid "+th.border}}><span style={{fontSize:12,color:th.sub}}>{item.label}</span><span style={{fontSize:12,fontVariantNumeric:"tabular-nums",color:th.text,fontWeight:500}}>{f(item.total,true)}</span></div>)}</div>:<p style={{fontSize:12,color:th.muted,margin:0,textAlign:"center",paddingTop:4}}>Aucune transaction classifiée ce mois</p>}</div>);})}
@@ -939,8 +951,6 @@ function App(){
           <div>
             <p style={{...lbl,marginBottom:20}}>Connexions</p>
             <div style={{display:"flex",flexDirection:"column",gap:14}}>
-
-              {/* ── Carte plan (test) ── */}
               <div style={{background:th.cardBg,border:"2px solid "+(isPro?"#6366f1":"#f59e0b"),borderRadius:16,padding:"18px 16px"}}>
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
                   <div style={{display:"flex",alignItems:"center",gap:10}}>
@@ -954,24 +964,14 @@ function App(){
                 </div>
                 <SegCtrl options={[["free","Gratuit"],["pro","Pro"]]} value={isPro?"pro":"free"} onChange={v=>setIsPro(v==="pro")} th={th}/>
                 <div style={{marginTop:14,display:"flex",flexDirection:"column",gap:6}}>
-                  {[
-                    {label:"Synchronisation Supabase",pro:true},
-                    {label:"Historique complet",pro:true},
-                    {label:"Analyse & statistiques",pro:true},
-                    {label:"Contrôle des coûts",pro:true},
-                    {label:"Objectifs d'épargne",pro:true},
-                    {label:"Sous-catégories & catégories perso.",pro:true},
-                    {label:"Export / Import JSON",pro:true},
-                    {label:"Duplication de transactions",pro:true},
-                  ].map((f,i)=>(
+                  {[{label:"Synchronisation Supabase"},{label:"Historique complet"},{label:"Analyse & statistiques"},{label:"Contrôle des coûts"},{label:"Objectifs d'épargne"},{label:"Sous-catégories & catégories perso."},{label:"Export / Import JSON"},{label:"Duplication de transactions"}].map((feat,i)=>(
                     <div key={i} style={{display:"flex",alignItems:"center",justifyContent:"space-between",paddingTop:6,borderTop:"1px solid "+th.border}}>
-                      <span style={{fontSize:12,color:th.sub}}>{f.label}</span>
-                      <span style={{fontSize:12,fontWeight:600,color:(!isPro&&f.pro)?"#f59e0b":"#10b981"}}>{(!isPro&&f.pro)?"🔒 Pro":"✓"}</span>
+                      <span style={{fontSize:12,color:th.sub}}>{feat.label}</span>
+                      <span style={{fontSize:12,fontWeight:600,color:isPro?"#10b981":"#f59e0b"}}>{isPro?"✓":"🔒 Pro"}</span>
                     </div>
                   ))}
                 </div>
               </div>
-
               <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}>
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:36,height:36,borderRadius:10,background:"#10b98120",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>🟢</div><span style={{fontSize:14,fontWeight:600,color:th.text}}>Supabase</span></div><span style={{fontSize:11,padding:"3px 10px",borderRadius:20,background:isPro?"#10b98118":"#f59e0b18",color:isPro?"#10b981":"#f59e0b",fontWeight:500}}>{isPro?"Actif":"Désactivé (Gratuit)"}</span></div>
                 <div style={{display:"flex",flexDirection:"column",gap:10}}>
@@ -979,7 +979,6 @@ function App(){
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:12,color:th.sub}}>Dernière sync</span><span style={{fontSize:12,color:th.text}}>{isPro?(lastSync?lastSync.toLocaleTimeString("fr-CA",{hour:"2-digit",minute:"2-digit",second:"2-digit"}):"Jamais"):"—"}</span></div>
                 </div>
               </div>
-
               <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}>
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:36,height:36,borderRadius:10,background:"#6366f120",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>💾</div><span style={{fontSize:14,fontWeight:600,color:th.text}}>Stockage local</span></div><span style={{fontSize:11,padding:"3px 10px",borderRadius:20,background:"#10b98118",color:"#10b981",fontWeight:500}}>Cache</span></div>
                 <div style={{display:"flex",flexDirection:"column",gap:10}}>
@@ -1035,7 +1034,7 @@ function App(){
               <button onClick={()=>{setDelAccMod(true);setDelAccInput("");}} style={{fontSize:13,color:th.danger,background:"none",border:"1px solid "+th.danger,borderRadius:10,padding:"8px 16px",cursor:"pointer"}}>Supprimer le compte</button>
             </div>
             <div style={{marginTop:32,paddingTop:20,borderTop:"1px solid "+th.border,textAlign:"center"}}>
-              <p onClick={handleVersionClick} style={{fontSize:11,color:showTroubleshoot?"#6366f1":th.muted,letterSpacing:"0.1em",cursor:"pointer",userSelect:"none"}}>v0.037</p>
+              <p onClick={handleVersionClick} style={{fontSize:11,color:showTroubleshoot?"#6366f1":th.muted,letterSpacing:"0.1em",cursor:"pointer",userSelect:"none"}}>v0.038</p>
             </div>
           </div>
         )}
