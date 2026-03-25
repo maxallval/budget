@@ -990,7 +990,7 @@ function App(){
                 :<span/>}
               {isNotToday
                 ?<button onClick={goToday} style={{fontSize:11,padding:"3px 9px",borderRadius:8,border:"1px solid "+th.border,background:"none",color:th.sub,cursor:"pointer",whiteSpace:"nowrap"}}>Aujourd'hui</button>
-                :<span/>}
+                :<button style={{fontSize:11,padding:"3px 9px",borderRadius:8,border:"1px solid transparent",background:"none",color:"transparent",cursor:"default",whiteSpace:"nowrap",pointerEvents:"none"}}>Aujourd'hui</button>}
               <SegCtrl options={[["daily","Journée"],["balance","Solde"]]} value={mode} onChange={setMode} th={th}/>
             </div>
             {/* Rangée 2 : résumé mensuel (optionnel) */}
@@ -1002,7 +1002,7 @@ function App(){
               </div>
             )}
             {/* Rangée 3 : ← Mois Année → */}
-            <div style={{display:"flex",alignItems:"center",justifyContent:"center",marginTop:10,marginBottom:10}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"center",marginTop:30,marginBottom:10}}>
               <MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} onToday={goToday} th={th} prevDisabled={isPrevMoDisabled} showToday={false}/>
             </div>
             {/* Rangée 4 : jours de la semaine */}
@@ -1504,7 +1504,7 @@ function App(){
           <div style={{textAlign:"center",marginBottom:20}}>
             <div style={{fontSize:40,marginBottom:12}}>⚠️</div>
             <h3 style={{fontSize:16,color:th.text,fontWeight:700,margin:"0 0 8px"}}>Confirmer la suppression</h3>
-            <p style={{fontSize:13,color:th.sub,margin:0,lineHeight:1.6}}>Toutes vos données Supabase seront effacées. Tapez le mot ci-dessous :</p>
+            <p style={{fontSize:13,color:th.sub,margin:0,lineHeight:1.6}}>Toutes vos données Supabase seront effacées.<br/>Tapez le mot ci-dessous :</p>
           </div>
           <div style={{background:th.surface,borderRadius:10,padding:"10px 14px",textAlign:"center",marginBottom:16}}>
             <span style={{fontSize:16,fontWeight:700,letterSpacing:"0.1em",color:th.danger}}>SUPPRIMER</span>
