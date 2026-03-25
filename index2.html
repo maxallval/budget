@@ -993,22 +993,22 @@ function App(){
                 :<span/>}
               <SegCtrl options={[["daily","Journée"],["balance","Solde"]]} value={mode} onChange={setMode} th={th}/>
             </div>
-            {/* Rangée 2 : ← Mois Année → */}
-            <div style={{display:"flex",alignItems:"center",justifyContent:"center",marginBottom:10}}>
-              <MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} onToday={goToday} th={th} prevDisabled={isPrevMoDisabled} showToday={false}/>
-            </div>
-            {/* Rangée 3 : jours de la semaine */}
-            <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",marginBottom:6}}>
-              {DAYS_FR.map((d,i)=><div key={i} style={{textAlign:"center",fontSize:11,color:th.muted,padding:"4px 0"}}>{d.slice(0,3)}</div>)}
-            </div>
-            {/* Rangée 4 : résumé mensuel (optionnel) */}
+            {/* Rangée 2 : résumé mensuel (optionnel) */}
             {hasSummary&&(
-              <div style={{marginBottom:16,paddingBottom:16,borderBottom:"1px solid "+th.border,display:"flex",flexWrap:"wrap",gap:"16px 28px"}}>
+              <div style={{marginBottom:0,paddingTop:10,paddingBottom:16,borderTop:"1px solid "+th.border,borderBottom:"1px solid "+th.border,display:"flex",flexWrap:"wrap",gap:"16px 28px"}}>
                 {disp.endBal&&endBalVal!==null&&<div><p style={{...lbl,margin:"0 0 4px"}}>Fin du mois</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:endBalVal>=0?"#059669":"#ef4444"}}>{f(endBalVal,true)}</p></div>}
                 {disp.revExp&&<><div><p style={{...lbl,margin:"0 0 4px"}}>Revenus</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:"#059669"}}>+{f(monthStats.inc,true)}</p></div><div><p style={{...lbl,margin:"0 0 4px"}}>Dépenses</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:"#ef4444"}}>-{f(monthStats.exp,true)}</p></div></>}
                 {disp.net&&<div><p style={{...lbl,margin:"0 0 4px"}}>Net</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:monthStats.net>=0?"#059669":"#ef4444"}}>{monthStats.net>=0?"+":"-"}{f(monthStats.net,true)}</p></div>}
               </div>
             )}
+            {/* Rangée 3 : ← Mois Année → */}
+            <div style={{display:"flex",alignItems:"center",justifyContent:"center",marginTop:10,marginBottom:10}}>
+              <MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} onToday={goToday} th={th} prevDisabled={isPrevMoDisabled} showToday={false}/>
+            </div>
+            {/* Rangée 4 : jours de la semaine */}
+            <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",marginBottom:6}}>
+              {DAYS_FR.map((d,i)=><div key={i} style={{textAlign:"center",fontSize:11,color:th.muted,padding:"4px 0"}}>{d.slice(0,3)}</div>)}
+            </div>
             {/* Rangée 5 : grille calendrier */}
             <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4}}>
               {cells.map((day,i)=>{
