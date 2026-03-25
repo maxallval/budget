@@ -321,14 +321,14 @@ const FullSheetHead=({title,onClose,right,th})=>(
 // ── CHANGEMENT 1 : MonthNav avec bouton "Aujourd'hui" visible ─────────────────
 // Avant : arrow function simple, double-tap caché, minWidth:164
 // Après : fonction nommée, bouton visible quand pas sur le mois courant
-const MonthNav=({yr,mo,onPrev,onNext,onDbl,onToday,th,prevDisabled})=>{
+const MonthNav=({yr,mo,onPrev,onNext,onDbl,onToday,th,prevDisabled,showToday=true})=>{
   const isCurrent=yr===TODAY.getFullYear()&&mo===TODAY.getMonth();
   return(
     <div style={{display:"flex",alignItems:"center",gap:4}}>
       <button onClick={onPrev} disabled={prevDisabled} style={{width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:"none",border:"none",cursor:prevDisabled?"default":"pointer",fontSize:20,color:prevDisabled?th.border:th.muted,borderRadius:8}}>&#8249;</button>
       <span onDoubleClick={onDbl} style={{fontSize:15,color:th.text,fontWeight:500,minWidth:130,textAlign:"center",cursor:"default",userSelect:"none"}}>{MONTHS_FR[mo]} {yr}</span>
       <button onClick={onNext} style={{width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:"none",border:"none",cursor:"pointer",fontSize:20,color:th.muted,borderRadius:8}}>&#8250;</button>
-      {!isCurrent&&(
+      {showToday&&!isCurrent&&(
         <button onClick={onToday||onDbl} style={{fontSize:11,padding:"3px 9px",borderRadius:8,border:"1px solid "+th.border,background:"none",color:th.sub,cursor:"pointer",whiteSpace:"nowrap",marginLeft:2,transition:"background 0.15s"}}>
           Aujourd'hui
         </button>
@@ -849,10 +849,13 @@ function App(){
         {tab==="home"&&(
           <div>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-              <MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} onToday={goToday} th={th} prevDisabled={isPrevMoDisabled}/>
+              <MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} onToday={goToday} th={th} prevDisabled={isPrevMoDisabled} showToday={false}/>
               <SegCtrl options={[["daily","Journée"],["balance","Solde"]]} value={mode} onChange={setMode} th={th}/>
             </div>
-            <div style={{display:"flex",justifyContent:"flex-end",marginBottom:hasSummary?12:16,minHeight:20}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:hasSummary?12:16,minHeight:20}}>
+              {yr!==TODAY.getFullYear()||mo!==TODAY.getMonth()
+                ?<button onClick={goToday} style={{fontSize:11,padding:"3px 9px",borderRadius:8,border:"1px solid "+th.border,background:"none",color:th.sub,cursor:"pointer",whiteSpace:"nowrap"}}>Aujourd'hui</button>
+                :<span/>}
               {savingsRate!==null&&<span style={{fontSize:11,padding:"3px 10px",borderRadius:20,background:savingsRate>=0?"rgba(5,150,105,0.1)":"rgba(239,68,68,0.1)",color:savingsRate>=0?"#059669":"#ef4444",fontWeight:500}}>{savingsRate>=0?"+":""}{savingsRate}% épargne</span>}
             </div>
             {hasSummary&&(<div style={{marginBottom:20,paddingBottom:20,borderBottom:"1px solid "+th.border,display:"flex",flexWrap:"wrap",gap:"16px 28px"}}>
