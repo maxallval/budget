@@ -36,6 +36,7 @@
     @keyframes slideInFromRight{from{transform:translateX(56px);opacity:0}to{transform:translateX(0);opacity:1}}
     @keyframes slideInFromLeft{from{transform:translateX(-56px);opacity:0}to{transform:translateX(0);opacity:1}}
     @keyframes popIn{0%{opacity:0;transform:scale(0.4)}70%{transform:scale(1.1)}100%{opacity:1;transform:scale(1)}}
+    @keyframes slideOut{from{transform:translateX(0);opacity:1;max-height:120px}to{transform:translateX(-60px);opacity:0;max-height:0;padding:0;margin:0;border:none}}
   </style>
 </head>
 <body>
@@ -553,6 +554,7 @@ function App(){
   const[dupMod,setDupMod]=useState(null);
   const[isPro,setIsPro]=useState(true);
   const[pressedDay,setPressedDay]=useState(null);
+  const[deletingTxId,setDeletingTxId]=useState(null);
 
   const balInputRef=useRef(null),balSettRef=useRef(null),dateInputRef=useRef(null);
   const formModRef=useRef(null),lastTapRef=useRef(0),sbSaveTimer=useRef(null);
@@ -589,6 +591,8 @@ function App(){
 
   const NAV_ITEMS=useMemo(()=>{const b=[["home","Accueil"],["transactions","Transactions"],["budget","Budget"],["analyse","Analyse"],["settings","Paramètres"]];if(showTroubleshoot)b.push(["troubleshoot","Troubleshoot"]);return b;},[showTroubleshoot]);
   const SUB_NAV={transactions:[{id:"historique",label:"Historique"},{id:"recurrent",label:"Récurrent"}],budget:[{id:"categories",label:"Budget par catégorie"},{id:"objectifs",label:"Objectifs"}],analyse:[{id:"statistiques",label:"Statistiques"},{id:"graphiques",label:"Graphiques"},{id:"controle",label:"Contrôle des coûts"}],troubleshoot:[{id:"connexions",label:"Connexions"}]};
+  const LOCKED_SUB_IDS=useMemo(()=>new Set(["objectifs","statistiques","graphiques","controle"]),[]);
+  const isSubLocked=useCallback(id=>!isPro&&LOCKED_SUB_IDS.has(id),[isPro,LOCKED_SUB_IDS]);
   const DEFAULT_SUB={transactions:"historique",budget:"categories",analyse:"statistiques",troubleshoot:"connexions"};
   const curSub=subTab[tab]||(DEFAULT_SUB[tab]||null);
   const curBalVal=useMemo(()=>getBalAt(TODAY),[getBalAt]);
@@ -691,7 +695,17 @@ function App(){
   const saveForm=(forcedDate)=>{const mod=formModRef.current;if(!mod)return;const{tx,editScope,editDateStr}=mod,form=mod.form;const amt=parseFloat(form.amt);if(!form.desc.trim()||isNaN(amt)||amt<=0)return;const finalDate=forcedDate||dateInputRef.current?.value||form.date;if(!finalDate)return;const data={description:form.desc,amount:amt,type:form.type,recurrence:form.rec,startDate:finalDate,category:form.cat,subCategory:form.subCat||undefined};if(!tx)setTxs(prev=>[...prev,{id:Date.now().toString(),...data,exceptions:[]}]);else if(editScope==="this")setTxs(prev=>{const upd=prev.map(t=>t.id!==tx.id?t:{...t,exceptions:[...(t.exceptions||[]),editDateStr]});return[...upd,{id:Date.now().toString(),...data,startDate:finalDate,recurrence:{type:"once"},exceptions:[]}];});else if(editScope==="follow"){const ne=dayBef(editDateStr);setTxs(prev=>{const orig=prev.find(t=>t.id===tx.id),tooEarly=orig&&parseD(ne)<parseD(orig.startDate),base=tooEarly?prev.filter(t=>t.id!==tx.id):prev.map(t=>t.id!==tx.id?t:{...t,endDate:ne});return[...base,{id:Date.now().toString(),...data,startDate:finalDate,exceptions:[]}];});}else setTxs(prev=>prev.map(t=>t.id===tx.id?{...t,...data}:t));setFormMod(null);};
   const handleDel=scope=>{const{tx,dateStr}=delMod;if(scope==="all"||normRec(tx.recurrence,parseD(tx.startDate)).type==="once")setTxs(prev=>prev.filter(t=>t.id!==tx.id));else if(scope==="this")setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,exceptions:[...(t.exceptions||[]),dateStr]}));else if(scope==="follow"){const ne=dayBef(dateStr);if(parseD(ne)<parseD(tx.startDate))setTxs(prev=>prev.filter(t=>t.id!==tx.id));else setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,endDate:ne}));}setDelMod(null);};
   const handleDirectMod=(tx,dateStr,scope)=>{setExpandedTx(null);setPendingDel(null);const isOnce=normRec(tx.recurrence,parseD(tx.startDate)).type==="once",eff=(isOnce&&scope==="this")?"all":scope;if(eff==="this"){setDayMod(null);setFormMod({tx,editScope:"this",editDateStr:dateStr,form:{desc:tx.description,amt:String(tx.amount),type:tx.type,rec:{type:"once"},date:dateStr,cat:tx.category||"other",subCat:tx.subCategory||null}});}else if(eff==="follow"){setDayMod(null);setFormMod({tx,editScope:"follow",editDateStr:dateStr,form:{desc:tx.description,amt:String(tx.amount),type:tx.type,rec:normRec(tx.recurrence,parseD(tx.startDate)),date:dateStr,cat:tx.category||"other",subCat:tx.subCategory||null}});}else if(eff==="all"){setDayMod(null);openForm(tx);}else if(eff==="terminate")setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,endDate:dateStr}));};
-  const handleDirectDel=(tx,dateStr,scope)=>{const isOnce=normRec(tx.recurrence,parseD(tx.startDate)).type==="once";if(scope==="this"){if(isOnce)setTxs(prev=>prev.filter(t=>t.id!==tx.id));else setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,exceptions:[...(t.exceptions||[]),dateStr]}));}else if(scope==="follow"){const ne=dayBef(dateStr);if(isOnce||parseD(ne)<parseD(tx.startDate))setTxs(prev=>prev.filter(t=>t.id!==tx.id));else setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,endDate:ne}));}else if(scope==="anterior"){if(isOnce)setTxs(prev=>prev.filter(t=>t.id!==tx.id));else setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,startDate:dateStr,exceptions:(t.exceptions||[]).filter(e=>e>=dateStr)}));}else if(scope==="all")setTxs(prev=>prev.filter(t=>t.id!==tx.id));setExpandedTx(null);setPendingDel(null);};
+  const handleDirectDel=(tx,dateStr,scope)=>{
+    setDeletingTxId(tx.id);
+    setTimeout(()=>{
+      const isOnce=normRec(tx.recurrence,parseD(tx.startDate)).type==="once";
+      if(scope==="this"){if(isOnce)setTxs(prev=>prev.filter(t=>t.id!==tx.id));else setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,exceptions:[...(t.exceptions||[]),dateStr]}));}
+      else if(scope==="follow"){const ne=dayBef(dateStr);if(isOnce||parseD(ne)<parseD(tx.startDate))setTxs(prev=>prev.filter(t=>t.id!==tx.id));else setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,endDate:ne}));}
+      else if(scope==="anterior"){if(isOnce)setTxs(prev=>prev.filter(t=>t.id!==tx.id));else setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,startDate:dateStr,exceptions:(t.exceptions||[]).filter(e=>e>=dateStr)}));}
+      else if(scope==="all")setTxs(prev=>prev.filter(t=>t.id!==tx.id));
+      setDeletingTxId(null);setExpandedTx(null);setPendingDel(null);
+    },300);
+  };
   const duplicateTx=(tx,dateStr)=>setTxs(prev=>[...prev,{...tx,id:Date.now().toString(),startDate:dateStr||dStr(TODAY),exceptions:[]}]);
   const acknowledgeOverruns=()=>{setOverrunDismissing(true);clearTimeout(overrunTimer.current);overrunTimer.current=setTimeout(()=>{setAcknowledgedOverruns(prev=>new Set([...prev,overrunKey]));setOverrunDismissing(false);},400);};
   const saveGoal=()=>{if(!goalForm?.label?.trim()||!goalForm?.target)return;const tgt=parseFloat(goalForm.target);if(isNaN(tgt)||tgt<=0)return;const sav=parseFloat(goalForm.saved||0)||0;if(goalForm.id)setGoals(prev=>prev.map(g=>g.id===goalForm.id?{...g,...goalForm,target:tgt,saved:sav}:g));else setGoals(prev=>[...prev,{...goalForm,id:"goal_"+Date.now(),target:tgt,saved:sav}]);setGoalForm(null);};
@@ -819,7 +833,7 @@ function App(){
         <div>
           <div style={{padding:"0 24px",borderBottom:"none",display:"flex",gap:0,overflowX:"auto",background:th.bgSub}}>
             {tab==="transactions"&&<button onClick={()=>openForm()} style={{fontSize:12,paddingBottom:10,paddingTop:12,paddingLeft:12,paddingRight:16,border:"none",background:"none",cursor:"pointer",borderBottom:"2px solid transparent",color:th.sub,whiteSpace:"nowrap",flexShrink:0,display:"flex",alignItems:"center",gap:4}}><span style={{fontSize:14,lineHeight:1}}>+</span> Ajouter</button>}
-            {curSubNav.map(s=><button key={s.id} onClick={()=>setSubTab(prev=>({...prev,[tab]:s.id}))} style={{fontSize:12,paddingBottom:10,paddingTop:12,paddingLeft:12,paddingRight:12,border:"none",background:"none",cursor:"pointer",borderBottom:curSub===s.id?"2px solid "+th.sub:"2px solid transparent",color:curSub===s.id?th.text:th.sub,fontWeight:curSub===s.id?600:400,whiteSpace:"nowrap",flexShrink:0}}>{s.label}</button>)}
+            {curSubNav.map(s=>{const locked=isSubLocked(s.id),active=curSub===s.id;return(<button key={s.id} onClick={()=>setSubTab(prev=>({...prev,[tab]:s.id}))} style={{fontSize:12,paddingBottom:10,paddingTop:12,paddingLeft:12,paddingRight:12,border:"none",background:"none",cursor:"pointer",borderBottom:active?"2px solid "+th.sub:"2px solid transparent",color:active?th.text:th.sub,fontWeight:active?600:400,whiteSpace:"nowrap",flexShrink:0,display:"flex",alignItems:"center",gap:4}}>{s.label}{locked&&<span style={{fontSize:9,opacity:0.6}}>🔒</span>}</button>);})}
           </div>
           {/* Dots : pill large = actif, petits points = swipeable */}
           <div style={{borderBottom:"1px solid "+th.border,background:th.bgSub,display:"flex",justifyContent:"center",alignItems:"center",gap:5,padding:"5px 0"}}>
@@ -850,7 +864,7 @@ function App(){
               {DAYS_FR.map((d,i)=><div key={i} style={{textAlign:"center",fontSize:11,color:th.muted,padding:"4px 0"}}>{d.slice(0,3)}</div>)}
             </div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2}}>
-              {cells.map((day,i)=>{if(!day)return<div key={"e"+i} style={{paddingBottom:"100%"}}/>;const data=dayData[day]||{net:0,bal:0,count:0,cats:[]},tod=isTod(day),val=mode==="daily"?data.net:data.bal,pos=val>0,neg=val<0;const pressed=pressedDay===day;return(<div key={day} onPointerDown={()=>setPressedDay(day)} onPointerUp={()=>{setPressedDay(null);setDayMod({day});}} onPointerLeave={()=>setPressedDay(null)} style={{paddingBottom:"100%",position:"relative",borderRadius:10,cursor:"pointer",background:pressed?th.surface:tod?th.surface:data.count>0?(data.net>0?"rgba(5,150,105,0.07)":data.net<0?"rgba(239,68,68,0.07)":"transparent"):"transparent",border:tod?"1.5px solid "+th.text:"1.5px solid transparent",transform:pressed?"scale(0.9)":"scale(1)",transition:"transform 0.1s ease,background 0.1s"}}><div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2}}><span style={{fontSize:12,fontWeight:tod?700:400,color:tod?th.text:th.sub}}>{day}</span>{data.count>0&&<span style={{fontSize:mode==="balance"?9:10,fontWeight:500,fontVariantNumeric:"tabular-nums",lineHeight:1.2,color:pos?"#059669":neg?"#ef4444":th.muted}}>{mode==="daily"?(val>=0?"+":"-")+f(val):(val>=0?"":"-")+f(val)}</span>}{data.cats.length>0&&<div style={{display:"flex",gap:2,marginTop:1}}>{[...new Set(data.cats.map(c=>c.color))].slice(0,3).map((c,ci)=><div key={ci} style={{width:4,height:4,borderRadius:"50%",background:c}}/>)}</div>}</div></div>);})}
+              {cells.map((day,i)=>{if(!day)return<div key={"e"+i} style={{paddingBottom:"100%"}}/>;const data=dayData[day]||{net:0,bal:0,count:0,cats:[]},tod=isTod(day),val=mode==="daily"?data.net:data.bal,pos=val>0,neg=val<0;const pressed=pressedDay===day;return(<div key={day} onPointerDown={()=>setPressedDay(day)} onPointerUp={()=>setPressedDay(null)} onPointerLeave={()=>setPressedDay(null)} onClick={()=>setDayMod({day})} style={{paddingBottom:"100%",position:"relative",borderRadius:10,cursor:"pointer",background:pressed?th.surface:tod?th.surface:data.count>0?(data.net>0?"rgba(5,150,105,0.07)":data.net<0?"rgba(239,68,68,0.07)":"transparent"):"transparent",border:tod?"1.5px solid "+th.text:"1.5px solid transparent",transform:pressed?"scale(0.9)":"scale(1)",transition:"transform 0.1s ease,background 0.1s"}}><div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2}}><span style={{fontSize:12,fontWeight:tod?700:400,color:tod?th.text:th.sub}}>{day}</span>{data.count>0&&<span style={{fontSize:mode==="balance"?9:10,fontWeight:500,fontVariantNumeric:"tabular-nums",lineHeight:1.2,color:pos?"#059669":neg?"#ef4444":th.muted}}>{mode==="daily"?(val>=0?"+":"-")+f(val):(val>=0?"":"-")+f(val)}</span>}{data.cats.length>0&&<div style={{display:"flex",gap:2,marginTop:1}}>{[...new Set(data.cats.map(c=>c.color))].slice(0,3).map((c,ci)=><div key={ci} style={{width:4,height:4,borderRadius:"50%",background:c}}/>)}</div>}</div></div>);})}
             </div>
           </div>
         )}
@@ -1086,8 +1100,8 @@ function App(){
       {dayMod&&<Sheet onClose={()=>{setDayMod(null);setExpandedTx(null);setPendingDel(null);}} th={th}>
         <SheetHead title={MONTHS_FR[mo]+" "+dayMod.day} onClose={()=>{setDayMod(null);setExpandedTx(null);setPendingDel(null);}} th={th} right={<button onClick={()=>{setDayMod(null);openForm(null,dayModalDateStr);}} style={{fontSize:12,color:th.sub,background:"none",border:"1px solid "+th.border,borderRadius:8,padding:"5px 11px",cursor:"pointer"}}>+ Ajouter</button>}/>
         {dayModalList.length===0?<div style={{textAlign:"center",padding:"32px 0"}}><p style={{fontSize:13,color:th.muted}}>Aucune transaction ce jour</p></div>
-        :dayModalList.map(tx=>{const cat=dynCatById(tx.category||"other"),isExp=expandedTx===tx.id,sc=dynSubcatById(tx.subCategory);return(
-          <div key={tx.id}>
+        :dayModalList.map(tx=>{const cat=dynCatById(tx.category||"other"),isExp=expandedTx===tx.id,sc=dynSubcatById(tx.subCategory),isDeleting=deletingTxId===tx.id;return(
+          <div key={tx.id} style={{overflow:"hidden",animation:isDeleting?"slideOut 0.3s ease forwards":undefined}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 0",borderBottom:isExp?"none":"1px solid "+th.border,cursor:"pointer"}} onClick={()=>{setExpandedTx(isExp?null:tx.id);setPendingDel(null);}}>
               <div style={{display:"flex",alignItems:"center",gap:10,flex:1}}><div style={{width:36,height:36,borderRadius:10,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0,border:"2px solid "+(isExp?cat.color:"transparent")}}>{cat.emoji}</div><div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p><p style={{fontSize:11,margin:"2px 0 0",color:cat.color,fontWeight:500}}>{getCatName(cat.id)}{sc?<span style={{color:th.muted,fontWeight:400}}> - {sc.label}</span>:null}</p></div></div>
               <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}><span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:tx.type==="income"?"#059669":"#ef4444"}}>{tx.type==="income"?"+":"-"}{f(tx.amount,true)}</span><span style={{fontSize:11,color:th.muted,display:"inline-block",transform:isExp?"rotate(180deg)":"none",transition:"transform 0.15s",lineHeight:1}}>v</span></div>
@@ -1120,10 +1134,10 @@ function App(){
         <div style={{display:"flex",flexDirection:"column",gap:20}}>
           <div><label style={lbl}>Description</label><input type="text" value={formMod.form.desc} onChange={e=>setFF("desc")(e.target.value)} style={{...iSt,fontSize:16}}/></div>
           <div><label style={lbl}>Montant</label><input type="number" value={formMod.form.amt} step="0.01" placeholder="0.00" onChange={e=>setFF("amt")(e.target.value)} style={{...iSt,fontSize:22,fontWeight:600,fontVariantNumeric:"tabular-nums"}}/></div>
+          {!formMod.editScope&&<RecurrencePicker value={formMod.form.rec} onChange={v=>setFF("rec")(v)} startDate={formMod.form.date||dStr(TODAY)} th={th}/>}
           <div><label style={lbl}>Date de début</label><input ref={dateInputRef} type="date" value={formMod.form.date} onChange={e=>e.target.value&&handleDateChange(e.target.value)} onBlur={e=>e.target.value&&handleDateChange(e.target.value)} style={{...iSt,colorScheme:isDark?"dark":"light"}}/></div>
           <CategoryPicker value={formMod.form.cat} onChange={handleCatChange} th={th} allCats={allCats} getCatName={getCatName}/>
           {isPro?<SubCategoryPicker category={formMod.form.cat} value={formMod.form.subCat} onChange={v=>setFF("subCat")(v)} th={th} allSubcats={allSubcats}/>:<div style={{padding:"10px 12px",background:th.surface,borderRadius:10,display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:13}}>🔒</span><p style={{fontSize:12,color:th.muted,margin:0}}>Sous-catégories réservées à la version Pro</p></div>}
-          {!formMod.editScope&&<RecurrencePicker value={formMod.form.rec} onChange={v=>setFF("rec")(v)} startDate={formMod.form.date||dStr(TODAY)} th={th}/>}
         </div>
         <div style={{position:"fixed",bottom:0,left:0,right:0,padding:"16px 24px",background:th.sheetBg,borderTop:"1px solid "+th.border,display:"flex",gap:10,zIndex:201,maxWidth:640,margin:"0 auto"}}>
           <button onClick={()=>setFormMod(null)} style={{flex:1,padding:"13px 0",fontSize:14,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>Annuler</button>
