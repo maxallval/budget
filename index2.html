@@ -37,6 +37,9 @@
     @keyframes slideInFromLeft{from{transform:translateX(-56px);opacity:0}to{transform:translateX(0);opacity:1}}
     @keyframes popIn{0%{opacity:0;transform:scale(0.4)}70%{transform:scale(1.1)}100%{opacity:1;transform:scale(1)}}
     @keyframes slideOut{from{transform:translateX(0);opacity:1;max-height:120px}to{transform:translateX(-60px);opacity:0;max-height:0;padding:0;margin:0;border:none}}
+    @keyframes fadeOut{from{opacity:1}to{opacity:0}}
+    @keyframes sheetOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(24px)}}
+    @keyframes fullPageOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(100%)}}
   </style>
 </head>
 <body>
@@ -192,6 +195,7 @@ function recLabel(tx){
   }
 }
 const fabBtn=(bg,color)=>({position:"absolute",width:48,height:48,borderRadius:"50%",background:bg,color,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(0,0,0,0.22)",fontSize:19,lineHeight:1});
+const ModalCloseCtx=React.createContext(null);
 
 // ─── Thème ────────────────────────────────────────────────────────────────────
 const mkTh=d=>d
@@ -266,6 +270,8 @@ const SegCtrl=({options,value,onChange,th})=>(
 
 const Sheet=({onClose,children,th})=>{
   const outerRef=useRef(null),innerRef=useRef(null);
+  const[closing,setClosing]=useState(false);
+  const animClose=useCallback(()=>{if(closing)return;setClosing(true);setTimeout(onClose,260);},[closing,onClose]);
   useEffect(()=>{
     const outer=outerRef.current,inner=innerRef.current;
     if(!outer||!inner)return;
@@ -274,38 +280,52 @@ const Sheet=({onClose,children,th})=>{
     return()=>ro.disconnect();
   },[]);
   return(
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.35)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:150,padding:16,animation:"fadeIn 0.27s ease"}} onClick={onClose}>
-      <div ref={outerRef} style={{background:th.sheetBg,width:"100%",maxWidth:480,borderRadius:20,boxShadow:"0 -4px 40px rgba(0,0,0,0.2)",overflow:"hidden",transition:"height 0.28s cubic-bezier(0.4,0,0.2,1)",animation:"sheetIn 0.27s ease"}} onClick={e=>e.stopPropagation()}>
-        <div ref={innerRef} style={{padding:24,paddingBottom:88}}>{children}</div>
+    <ModalCloseCtx.Provider value={animClose}>
+      <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.35)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:150,padding:16,animation:closing?"fadeOut 0.26s ease forwards":"fadeIn 0.27s ease"}} onClick={animClose}>
+        <div ref={outerRef} style={{background:th.sheetBg,width:"100%",maxWidth:480,borderRadius:20,boxShadow:"0 -4px 40px rgba(0,0,0,0.2)",overflow:"hidden",transition:"height 0.28s cubic-bezier(0.4,0,0.2,1)",animation:closing?"sheetOut 0.26s ease forwards":"sheetIn 0.27s ease"}} onClick={e=>e.stopPropagation()}>
+          <div ref={innerRef} style={{padding:24,paddingBottom:88}}>{children}</div>
+        </div>
+      </div>
+    </ModalCloseCtx.Provider>
+  );
+};
+
+const FullSheet=({onClose,children,th})=>{
+  const[closing,setClosing]=useState(false);
+  const animClose=useCallback(()=>{if(closing)return;setClosing(true);setTimeout(onClose,300);},[closing,onClose]);
+  return(
+    <ModalCloseCtx.Provider value={animClose}>
+      <div style={{position:"fixed",inset:0,background:th.sheetBg,zIndex:200,overflowY:"auto",display:"flex",flexDirection:"column",animation:closing?"fullPageOut 0.3s cubic-bezier(0.32,0.72,0,1) forwards":"fullPageIn 0.27s cubic-bezier(0.32,0.72,0,1)",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>
+        <div style={{flex:1,padding:"0 24px 100px",maxWidth:640,width:"100%",margin:"0 auto"}}>{children}</div>
+      </div>
+    </ModalCloseCtx.Provider>
+  );
+};
+
+const SheetHead=({title,onClose,right,th})=>{
+  const animClose=React.useContext(ModalCloseCtx);
+  return(
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
+      <h3 style={{fontSize:15,color:th.text,fontWeight:600,margin:0}}>{title}</h3>
+      <div style={{display:"flex",gap:8,alignItems:"center"}}>
+        {right}
+        <button onClick={animClose||onClose} style={{fontSize:18,color:th.muted,background:"none",border:"none",cursor:"pointer",lineHeight:1}}>X</button>
       </div>
     </div>
   );
 };
 
-const FullSheet=({children,th})=>(
-  <div style={{position:"fixed",inset:0,background:th.sheetBg,zIndex:200,overflowY:"auto",display:"flex",flexDirection:"column",animation:"fullPageIn 0.27s cubic-bezier(0.32,0.72,0,1)",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>
-    <div style={{flex:1,padding:"0 24px 100px",maxWidth:640,width:"100%",margin:"0 auto"}}>{children}</div>
-  </div>
-);
-
-const SheetHead=({title,onClose,right,th})=>(
-  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
-    <h3 style={{fontSize:15,color:th.text,fontWeight:600,margin:0}}>{title}</h3>
-    <div style={{display:"flex",gap:8,alignItems:"center"}}>
-      {right}
-      <button onClick={onClose} style={{fontSize:18,color:th.muted,background:"none",border:"none",cursor:"pointer",lineHeight:1}}>X</button>
+const FullSheetHead=({title,onClose,right,th})=>{
+  const animClose=React.useContext(ModalCloseCtx);
+  return(
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"20px 0",borderBottom:"1px solid "+th.border,marginBottom:24,position:"sticky",top:0,background:th.sheetBg,zIndex:10}}>
+      <button onClick={animClose||onClose} style={{fontSize:13,color:th.sub,background:"none",border:"1px solid "+th.border,borderRadius:8,padding:"6px 12px",cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
+        <span style={{fontSize:16,lineHeight:1}}>&#8249;</span> {title}
+      </button>
+      <div style={{display:"flex",gap:8,alignItems:"center"}}>{right}</div>
     </div>
-  </div>
-);
-
-const FullSheetHead=({title,onClose,right,th})=>(
-  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"20px 0",borderBottom:"1px solid "+th.border,marginBottom:24,position:"sticky",top:0,background:th.sheetBg,zIndex:10}}>
-    <button onClick={onClose} style={{fontSize:13,color:th.sub,background:"none",border:"1px solid "+th.border,borderRadius:8,padding:"6px 12px",cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
-      <span style={{fontSize:16,lineHeight:1}}>&#8249;</span> {title}
-    </button>
-    <div style={{display:"flex",gap:8,alignItems:"center"}}>{right}</div>
-  </div>
-);
+  );
+};
 
 // MonthNav : flèches autour du label, bouton Aujourd'hui optionnel
 const MonthNav=({yr,mo,onPrev,onNext,onDbl,onToday,th,prevDisabled,showToday=true})=>{
@@ -1551,7 +1571,7 @@ function App(){
 
       {/* ── Formulaire transaction (full sheet) ── */}
       {formMod&&(
-        <FullSheet th={th}>
+        <FullSheet onClose={()=>setFormMod(null)} th={th}>
           <FullSheetHead
             title={formMod.tx?"Modifier la transaction":"Nouvelle transaction"}
             onClose={()=>setFormMod(null)}
@@ -1595,7 +1615,7 @@ function App(){
 
       {/* ── Gestion catégories (full sheet) ── */}
       {catsMod&&(
-        <FullSheet th={th}>
+        <FullSheet onClose={()=>setCatsMod(false)} th={th}>
           <FullSheetHead title="Catégories et sous-catégories" onClose={()=>setCatsMod(false)} th={th}/>
           <div style={{marginBottom:24}}><SegCtrl options={[["cats","Catégories"],["subcats","Sous-catégories"]]} value={catsTab} onChange={setCatsTab} th={th}/></div>
 
