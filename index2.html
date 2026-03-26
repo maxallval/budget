@@ -12,14 +12,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Radio+Canada:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
-  <style>.ms{font-family:'Material Symbols Rounded';font-size:24px;line-height:1;font-style:normal;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;user-select:none;}</style>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet"/>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:'Radio Canada',system-ui,sans-serif;-webkit-tap-highlight-color:transparent}
     input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none}
     input[type=number]{-moz-appearance:textfield}
     button:focus,input:focus,select:focus,textarea:focus{outline:none}
+    .ms{font-family:'Material Symbols Rounded';font-style:normal;font-weight:normal;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;user-select:none;line-height:1}
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
     @keyframes fullPageIn{from{opacity:0;transform:translateY(100%) scale(0.96)}to{opacity:1;transform:translateY(0) scale(1)}}
     @keyframes fullPageOut{from{opacity:1;transform:translateY(0) scale(1)}to{opacity:0;transform:translateY(100%) scale(0.96)}}
@@ -42,6 +42,7 @@
     @keyframes contentIn{from{opacity:0;transform:translateY(8px) scale(0.98)}to{opacity:1;transform:translateY(0) scale(1)}}
     @keyframes slideInFromRight{from{transform:translateX(56px) scale(0.97);opacity:0}to{transform:translateX(0) scale(1);opacity:1}}
     @keyframes slideInFromLeft{from{transform:translateX(-56px) scale(0.97);opacity:0}to{transform:translateX(0) scale(1);opacity:1}}
+    @keyframes popIn{0%{opacity:0;transform:scale(0.4)}70%{transform:scale(1.1)}100%{opacity:1;transform:scale(1)}}
     @keyframes slideOut{from{transform:translateX(0);opacity:1;max-height:120px}to{transform:translateX(-60px);opacity:0;max-height:0;padding:0;margin:0;border:none}}
   </style>
 </head>
@@ -69,11 +70,15 @@ const sb=window._sb;
 
 // ─── Données statiques ────────────────────────────────────────────────────────
 const CATS=[
-  {id:"income",emoji:"💰",color:"#22c55e"},{id:"housing",emoji:"🏠",color:"#3b82f6"},
-  {id:"services",emoji:"⚡",color:"#06b6d4"},{id:"transport",emoji:"🚗",color:"#10b981"},
-  {id:"food",emoji:"🍽️",color:"#f97316"},{id:"health",emoji:"❤️",color:"#ef4444"},
-  {id:"entertain",emoji:"🎬",color:"#8b5cf6"},{id:"finances",emoji:"🏦",color:"#059669"},
-  {id:"other",emoji:"📦",color:"#9ca3af"},
+  {id:"income",   icon:"savings",          color:"#22c55e"},
+  {id:"housing",  icon:"home",             color:"#3b82f6"},
+  {id:"services", icon:"bolt",             color:"#06b6d4"},
+  {id:"transport",icon:"directions_car",   color:"#10b981"},
+  {id:"food",     icon:"restaurant",       color:"#f97316"},
+  {id:"health",   icon:"favorite",         color:"#ef4444"},
+  {id:"entertain",icon:"movie",            color:"#8b5cf6"},
+  {id:"finances", icon:"account_balance",  color:"#059669"},
+  {id:"other",    icon:"category",         color:"#9ca3af"},
 ];
 const CAT_NAMES={income:"Revenus",housing:"Logement",services:"Services",transport:"Transport",food:"Alimentation",health:"Santé",entertain:"Loisirs",finances:"Finances",other:"Divers"};
 const SUBCATS=[
@@ -198,12 +203,18 @@ function recLabel(tx){
 }
 const fabBtn=(bg,color)=>({position:"absolute",width:48,height:48,borderRadius:"50%",background:bg,color,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(0,0,0,0.22)",fontSize:19,lineHeight:1});
 
+// ─── Icône de catégorie ───────────────────────────────────────────────────────
+const CatIcon=({cat,size=20})=>{
+  if(cat.emoji)return<span style={{fontSize:size,lineHeight:1}}>{cat.emoji}</span>;
+  return<span className="ms" style={{fontSize:size,color:cat.color,lineHeight:1}}>{cat.icon}</span>;
+};
+
 // ─── Contexte fermeture animée ────────────────────────────────────────────────
 const ModalCloseCtx=createContext(null);
 
 // ─── Thème ────────────────────────────────────────────────────────────────────
 const mkTh=d=>d
-  ?{bg:"#0d0d0d",bgSub:"#161616",surface:"#1c1c1c",border:"#252525",inputBorder:"#333",text:"#f0f0f0",sub:"#888",muted:"#444",btnBg:"#efefef",btnText:"#111",togOff:"#3a3a3a",sheetBg:"#161616",danger:"#f87171",cardBg:"#202020"}
+  ?{bg:"#0d0d0d",bgSub:"#161616",surface:"#1c1c1c",border:"#252525",inputBorder:"#333",text:"#f0f0f0",sub:"#888",muted:"#555",btnBg:"#efefef",btnText:"#111",togOff:"#3a3a3a",sheetBg:"#161616",danger:"#f87171",cardBg:"#181818"}
   :{bg:"#fff",bgSub:"#f9fafb",surface:"#f3f4f6",border:"#f0f0f0",inputBorder:"#e5e7eb",text:"#111",sub:"#6b7280",muted:"#9ca3af",btnBg:"#111",btnText:"#fff",togOff:"#d1d5db",sheetBg:"#fff",danger:"#ef4444",cardBg:"#fafafa"};
 
 // ─── Composants UI primitifs ──────────────────────────────────────────────────
@@ -232,7 +243,9 @@ const TxRow=React.memo(function TxRow({tx,amount,recurrenceLabel,cat,sc,isActive
       style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 10px",borderBottom:"1px solid "+th.border,borderRadius:10,cursor:"pointer",background:isActive?th.surface:"transparent",transition:"background 0.15s",margin:"0 -10px"}}
     >
       <div style={{display:"flex",alignItems:"center",gap:10}}>
-        <div style={{width:34,height:34,borderRadius:9,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0,border:"2px solid "+(isActive?cat.color:"transparent"),transition:"border-color 0.15s"}}>{cat.emoji}</div>
+        <div style={{width:36,height:36,borderRadius:9,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,border:"2px solid "+(isActive?cat.color:"transparent"),transition:"border-color 0.15s"}}>
+          <CatIcon cat={cat} size={18}/>
+        </div>
         <div>
           <p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p>
           <p style={{fontSize:11,color:th.muted,margin:"3px 0 0"}}>{getCatName(cat.id)}{sc?<span style={{color:th.sub}}> · {sc.label}</span>:null}</p>
@@ -262,7 +275,7 @@ const SegCtrl=({options,value,onChange,th})=>(
 const Sheet=({onClose,children,th})=>{
   const outerRef=useRef(null),innerRef=useRef(null);
   const[closing,setClosing]=useState(false);
-  const animClose=useCallback(()=>{if(closing)return;setClosing(true);setTimeout(onClose,260);},[closing,onClose]);
+  const animClose=useCallback(()=>{if(closing)return;setClosing(true);setTimeout(onClose,600);},[closing,onClose]);
   useEffect(()=>{
     const outer=outerRef.current,inner=innerRef.current;
     if(!outer||!inner)return;
@@ -283,10 +296,10 @@ const Sheet=({onClose,children,th})=>{
 
 const FullSheet=({onClose,children,th})=>{
   const[closing,setClosing]=useState(false);
-  const animClose=useCallback(()=>{if(closing)return;setClosing(true);setTimeout(onClose,300);},[closing,onClose]);
+  const animClose=useCallback(()=>{if(closing)return;setClosing(true);setTimeout(onClose,760);},[closing,onClose]);
   return(
     <ModalCloseCtx.Provider value={animClose}>
-      <div style={{position:"fixed",inset:0,background:th.sheetBg,zIndex:200,overflowY:"auto",display:"flex",flexDirection:"column",animation:closing?"fullPageOut 0.3s cubic-bezier(0.32,0.72,0,1) forwards":"fullPageIn 0.27s cubic-bezier(0.32,0.72,0,1)",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>
+      <div style={{position:"fixed",inset:0,background:th.sheetBg,zIndex:200,overflowY:"auto",display:"flex",flexDirection:"column",animation:closing?"fullPageOut 0.76s cubic-bezier(0.32,0.72,0,1) forwards":"fullPageIn 0.84s cubic-bezier(0.22,1,0.36,1)",fontFamily:"'Radio Canada',system-ui,sans-serif"}}>
         <div style={{flex:1,padding:"0 24px 100px",maxWidth:640,width:"100%",margin:"0 auto"}}>{children}</div>
       </div>
     </ModalCloseCtx.Provider>
@@ -348,14 +361,8 @@ function SubNav({tabs,activeId,onSelect,isSubLocked,showAdd,onAdd,th}){
   return(
     <div style={{borderBottom:"1px solid "+th.border,background:th.bgSub}}>
       <div ref={containerRef} style={{padding:"0 24px",display:"flex",gap:0,overflowX:"auto",position:"relative",alignItems:"center"}}>
-        {pill.ready&&(
-          <div style={{position:"absolute",top:"50%",transform:"translateY(-50%)",left:pill.left,width:pill.width,height:28,borderRadius:8,background:th.surface,transition:"left 0.25s cubic-bezier(0.4,0,0.2,1),width 0.25s cubic-bezier(0.4,0,0.2,1)",zIndex:0,pointerEvents:"none",boxShadow:"0 1px 4px rgba(0,0,0,0.08)"}}/>
-        )}
-        {showAdd&&(
-          <button onClick={onAdd} style={{position:"relative",zIndex:1,fontSize:12,padding:"12px 16px 10px 12px",border:"none",background:"none",cursor:"pointer",color:th.sub,whiteSpace:"nowrap",flexShrink:0,display:"flex",alignItems:"center",gap:4}}>
-            <span style={{fontSize:14,lineHeight:1}}>+</span> Ajouter
-          </button>
-        )}
+        {pill.ready&&<div style={{position:"absolute",top:"50%",transform:"translateY(-50%)",left:pill.left,width:pill.width,height:28,borderRadius:8,background:th.surface,transition:"left 0.25s cubic-bezier(0.4,0,0.2,1),width 0.25s cubic-bezier(0.4,0,0.2,1)",zIndex:0,pointerEvents:"none",boxShadow:"0 1px 4px rgba(0,0,0,0.08)"}}/>}
+        {showAdd&&<button onClick={onAdd} style={{position:"relative",zIndex:1,fontSize:12,padding:"12px 16px 10px 12px",border:"none",background:"none",cursor:"pointer",color:th.sub,whiteSpace:"nowrap",flexShrink:0,display:"flex",alignItems:"center",gap:4}}><span style={{fontSize:14,lineHeight:1}}>+</span> Ajouter</button>}
         {tabs.map(s=>{const locked=isSubLocked(s.id),active=activeId===s.id;return(
           <button key={s.id} ref={el=>{btnRefs.current[s.id]=el;}} onClick={()=>onSelect(s.id)} style={{position:"relative",zIndex:1,fontSize:12,padding:"10px 14px",border:"none",background:"none",cursor:"pointer",color:active?th.text:th.sub,fontWeight:active?600:400,whiteSpace:"nowrap",flexShrink:0,display:"flex",alignItems:"center",gap:4,transition:"color 0.2s"}}>
             {s.label}{locked&&<span style={{fontSize:9,opacity:0.6}}>🔒</span>}
@@ -415,8 +422,8 @@ function CategoryPicker({value,onChange,th,allCats,getCatName}){
       <label style={{fontSize:10,color:th.muted,letterSpacing:"0.1em",textTransform:"uppercase"}}>Catégorie</label>
       <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:6,marginTop:10}}>
         {allCats.map(c=>{const sel=value===c.id,name=getCatName(c.id);return(
-          <button key={c.id} onClick={()=>onChange(c.id)} title={name} style={{padding:"10px 4px",borderRadius:10,border:"2px solid "+(sel?c.color:"transparent"),background:sel?c.color+"25":th.surface,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
-            <span style={{fontSize:18,lineHeight:1}}>{c.emoji}</span>
+          <button key={c.id} onClick={()=>onChange(c.id)} title={name} style={{padding:"10px 4px",borderRadius:10,border:"2px solid "+(sel?c.color:"transparent"),background:sel?c.color+"25":th.surface,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+            <CatIcon cat={c} size={20}/>
             <span style={{fontSize:9,color:sel?c.color:th.muted,fontWeight:sel?600:400,lineHeight:1.2,textAlign:"center"}}>{name.split(" ")[0]}</span>
           </button>
         );})}
@@ -424,6 +431,7 @@ function CategoryPicker({value,onChange,th,allCats,getCatName}){
     </div>
   );
 }
+
 function SubCategoryPicker({category,value,onChange,th,allSubcats}){
   const opts=useMemo(()=>allSubcats.filter(s=>s.category===category),[allSubcats,category]);
   if(!opts.length)return null;
@@ -439,6 +447,7 @@ function SubCategoryPicker({category,value,onChange,th,allSubcats}){
     </div>
   );
 }
+
 function RecurrencePicker({value,onChange,startDate,th}){
   const UNITS_REC=[{v:"day",l:"jours"},{v:"week",l:"semaines"},{v:"month",l:"mois"},{v:"year",l:"années"}];
   const s=useMemo(()=>parseD(startDate),[startDate]);
@@ -819,7 +828,7 @@ function App(){
     <div
       onTouchStart={e=>{touchStartX.current=e.touches[0].clientX;}}
       onTouchEnd={e=>{if(touchStartX.current===null)return;const dx=e.changedTouches[0].clientX-touchStartX.current;touchStartX.current=null;handleSwipe(dx);}}
-      style={{minHeight:"100vh",background:th.bg,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}
+      style={{minHeight:"100vh",background:th.bg,fontFamily:"'Radio Canada',system-ui,sans-serif"}}
     >
 
       {/* ── Splash ── */}
@@ -852,8 +861,8 @@ function App(){
         </div>
       )}
 
-      {/* ── Barre de statut (sync / overrun / motd) ── */}
-      <div style={{position:"fixed",top:0,left:0,right:0,zIndex:98,pointerEvents:isOverrun?"auto":"none",transform:barVisible&&!barFading?"translateY(0)":"translateY(-100%)",opacity:barFading?0:barVisible?1:0,transition:"transform 0.3s ease,opacity 0.5s ease",background:isOverrun?"#f97316":"rgba(255,255,255,0.65)",backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",borderBottom:"1px solid "+(isOverrun?"rgba(255,255,255,0.2)":th.border)}}>
+      {/* ── Barre de statut ── */}
+      <div style={{position:"fixed",top:0,left:0,right:0,zIndex:98,pointerEvents:isOverrun?"auto":"none",transform:barVisible&&!barFading?"translateY(0)":"translateY(-100%)",opacity:barFading?0:barVisible?1:0,transition:"transform 0.3s ease,opacity 0.5s ease",background:isOverrun?"#f97316":isDark?"rgba(13,13,13,0.65)":"rgba(255,255,255,0.65)",backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",borderBottom:"1px solid "+(isOverrun?"rgba(255,255,255,0.2)":th.border)}}>
         {isOverrun?(
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"5px 16px",gap:8}}>
             <div style={{display:"flex",alignItems:"center",gap:6,flex:1,minWidth:0,overflow:"hidden"}}>
@@ -877,7 +886,7 @@ function App(){
       </div>
 
       {/* ── Header ── */}
-      <div onMouseEnter={()=>setHeaderHovered(true)} onMouseLeave={()=>setHeaderHovered(false)} style={{padding:"36px 24px 20px",borderBottom:"1px solid "+th.border}}>
+      <div onMouseEnter={()=>setHeaderHovered(true)} onMouseLeave={()=>setHeaderHovered(false)} style={{position:"sticky",top:0,zIndex:90,background:th.bg,padding:"36px 24px 20px",borderBottom:"1px solid "+th.border}}>
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
           <div>
             <p style={{...lbl,marginBottom:4}}>Gestion financière</p>
@@ -897,7 +906,9 @@ function App(){
 
       {/* ── Sub-nav ── */}
       {curSubNav&&(
-        <SubNav tabs={curSubNav} activeId={curSub} onSelect={id=>setSubTab(prev=>({...prev,[tab]:id}))} isSubLocked={isSubLocked} showAdd={tab==="transactions"} onAdd={()=>openForm()} th={th}/>
+        <div style={{position:"sticky",top:0,zIndex:89}}>
+          <SubNav tabs={curSubNav} activeId={curSub} onSelect={id=>setSubTab(prev=>({...prev,[tab]:id}))} isSubLocked={isSubLocked} showAdd={tab==="transactions"} onAdd={()=>openForm()} th={th}/>
+        </div>
       )}
 
       {/* ── FAB backdrop ── */}
@@ -924,6 +935,7 @@ function App(){
         style={{padding:"24px",paddingBottom:"176px",maxWidth:640,animation:tab==="home"&&slideDir?(slideDir==="left"?"slideInFromRight":"slideInFromLeft")+" 1.04s cubic-bezier(0.22,1,0.36,1)":"tabIn 0.84s cubic-bezier(0.22,1,0.36,1)"}}
       >
 
+        {/* ════ Accueil ════ */}
         {tab==="home"&&(
           <div>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
@@ -962,6 +974,7 @@ function App(){
           </div>
         )}
 
+        {/* ════ Transactions — Historique ════ */}
         {tab==="transactions"&&curSub==="historique"&&(
           <div>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
@@ -980,6 +993,7 @@ function App(){
           </div>
         )}
 
+        {/* ════ Transactions — Récurrent ════ */}
         {tab==="transactions"&&curSub==="recurrent"&&(
           <div>
             {recurTxs.length===0?<div style={{textAlign:"center",padding:"60px 0"}}><p style={{fontSize:32,color:th.border,margin:"0 0 8px"}}>○</p><p style={{fontSize:13,color:th.muted}}>Aucune transaction récurrente</p></div>
@@ -988,6 +1002,7 @@ function App(){
           </div>
         )}
 
+        {/* ════ Budget — Catégories ════ */}
         {tab==="budget"&&curSub==="categories"&&(
           <div>
             <div style={{display:"flex",alignItems:"center",marginBottom:20}}><MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} onToday={goToday} th={th} prevDisabled={isPrevMoDisabled}/></div>
@@ -998,9 +1013,11 @@ function App(){
               </div>
             )}
             {expenseCats.map(cat=>{const stats=catStats[cat.id]||{spent:0},budget=budgets[cat.id]||0,pct=budget>0?Math.min(stats.spent/budget*100,100):0,over=budget>0&&stats.spent>budget;return(
-              <div key={cat.id} style={{marginBottom:14,background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:"14px 16px",borderLeft:over?"3px solid #ef4444":"3px solid transparent"}}>
+              <div key={cat.id} style={{marginBottom:14,background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:"14px 16px",borderLeft:"3px solid "+(over?"#ef4444":cat.color+"66")}}>
                 <div style={{display:"flex",alignItems:"center",gap:12}}>
-                  <div style={{width:38,height:38,borderRadius:10,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{cat.emoji}</div>
+                  <div style={{width:40,height:40,borderRadius:11,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                    <CatIcon cat={cat} size={20}/>
+                  </div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:6}}>
                       <span style={{fontSize:13,color:th.text,fontWeight:500}}>{getCatName(cat.id)}</span>
@@ -1015,10 +1032,11 @@ function App(){
                 </div>
               </div>
             );})}
-            {monthStats.inc>0&&(<div style={{marginTop:8,background:"#05966915",border:"1px solid #05966930",borderRadius:14,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}><div style={{width:38,height:38,borderRadius:10,background:"#05966922",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>💰</div><div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>Revenus ce mois</p><p style={{fontSize:12,color:"#059669",margin:"2px 0 0",fontWeight:600,fontVariantNumeric:"tabular-nums"}}>+{f(monthStats.inc,true)}</p></div></div>)}
+            {monthStats.inc>0&&(<div style={{marginTop:8,background:"#05966915",border:"1px solid #05966930",borderRadius:14,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}><div style={{width:40,height:40,borderRadius:11,background:"#05966922",display:"flex",alignItems:"center",justifyContent:"center"}}><span className="ms" style={{fontSize:20,color:"#059669"}}>savings</span></div><div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>Revenus ce mois</p><p style={{fontSize:12,color:"#059669",margin:"2px 0 0",fontWeight:600,fontVariantNumeric:"tabular-nums"}}>+{f(monthStats.inc,true)}</p></div></div>)}
           </div>
         )}
 
+        {/* ════ Budget — Objectifs ════ */}
         {tab==="budget"&&curSub==="objectifs"&&(
           <ProGate isPro={isPro} th={th} title="Objectifs d'épargne" desc="Fixe-toi des objectifs financiers et suis ta progression. Fonctionnalité réservée à la version Pro.">
             <div>
@@ -1043,6 +1061,7 @@ function App(){
           </ProGate>
         )}
 
+        {/* ════ Analyse — Statistiques ════ */}
         {tab==="analyse"&&curSub==="statistiques"&&(
           <ProGate isPro={isPro} th={th} title="Statistiques" desc="Taux d'épargne, évolution du solde, moyennes sur 12 mois. Fonctionnalité réservée à la version Pro.">
             <div>
@@ -1055,18 +1074,20 @@ function App(){
                 </div>
                 <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}><p style={{fontSize:13,fontWeight:600,color:th.text,margin:0}}>Évolution du solde</p><MiniNav label={chart12Label} onPrev={()=>setChart12Offset(o=>o-1)} onNext={()=>setChart12Offset(o=>Math.min(o+1,12))} nextDisabled={chart12Offset>=12} th={th}/></div><LineChart data={last12.map(m=>({y:m.endBal,label:m.label}))} color={last12[last12.length-1]?.endBal>=0?"#10b981":"#ef4444"} th={th} height={130}/></div>
                 <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><p style={{fontSize:13,fontWeight:600,color:th.text,margin:0}}>Revenus vs Dépenses</p><MiniNav label={chart12Label} onPrev={()=>setChart12Offset(o=>o-1)} onNext={()=>setChart12Offset(o=>Math.min(o+1,12))} nextDisabled={chart12Offset>=12} th={th}/></div><BarChart2 data={last12.map(m=>({inc:m.inc,exp:m.exp,label:m.label}))} th={th} height={140}/></div>
-                {topCats.length>0&&(<div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}><p style={{fontSize:13,fontWeight:600,color:th.text,margin:0}}>Top catégories</p><MiniNav label={topCatLabel} onPrev={()=>setTopCatOffset(o=>o-1)} onNext={()=>setTopCatOffset(o=>Math.min(o+1,12))} nextDisabled={topCatOffset>=12} th={th}/></div><div style={{display:"flex",flexDirection:"column",gap:10}}>{topCats.map(cat=>{const pct=topCats[0].spent>0?cat.spent/topCats[0].spent*100:0;return(<div key={cat.id}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:5}}><div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:16}}>{cat.emoji}</span><span style={{fontSize:13,color:th.text}}>{getCatName(cat.id)}</span></div><span style={{fontSize:13,fontVariantNumeric:"tabular-nums",fontWeight:500,color:th.text}}>{f(cat.spent,true)}</span></div><div style={{height:6,background:th.surface,borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",width:pct+"%",background:cat.color,borderRadius:3,opacity:0.85}}/></div></div>);})}</div></div>)}
+                {topCats.length>0&&(<div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}><p style={{fontSize:13,fontWeight:600,color:th.text,margin:0}}>Top catégories</p><MiniNav label={topCatLabel} onPrev={()=>setTopCatOffset(o=>o-1)} onNext={()=>setTopCatOffset(o=>Math.min(o+1,12))} nextDisabled={topCatOffset>=12} th={th}/></div><div style={{display:"flex",flexDirection:"column",gap:10}}>{topCats.map(cat=>{const pct=topCats[0].spent>0?cat.spent/topCats[0].spent*100:0;return(<div key={cat.id}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:5}}><div style={{display:"flex",alignItems:"center",gap:8}}><CatIcon cat={cat} size={18}/><span style={{fontSize:13,color:th.text}}>{getCatName(cat.id)}</span></div><span style={{fontSize:13,fontVariantNumeric:"tabular-nums",fontWeight:500,color:th.text}}>{f(cat.spent,true)}</span></div><div style={{height:6,background:th.surface,borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",width:pct+"%",background:cat.color,borderRadius:3,opacity:0.85}}/></div></div>);})}</div></div>)}
               </div>}
             </div>
           </ProGate>
         )}
 
+        {/* ════ Analyse — Graphiques ════ */}
         {tab==="analyse"&&curSub==="graphiques"&&(
           <ProGate isPro={isPro} th={th} title="Graphiques" desc="Visualisations avancées de tes finances. Fonctionnalité réservée à la version Pro.">
             <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"100px 0"}}><p style={{fontSize:40,marginBottom:12}}>📈</p><p style={{fontSize:22,color:th.muted,fontWeight:300}}>Graphiques</p></div>
           </ProGate>
         )}
 
+        {/* ════ Analyse — Contrôle ════ */}
         {tab==="analyse"&&curSub==="controle"&&(
           <ProGate isPro={isPro} th={th} title="Contrôle des coûts" desc="Répartition essentiel / flexible / lifestyle de tes dépenses. Fonctionnalité réservée à la version Pro.">
             <div>
@@ -1086,6 +1107,7 @@ function App(){
           </ProGate>
         )}
 
+        {/* ════ Troubleshoot ════ */}
         {tab==="troubleshoot"&&curSub==="connexions"&&(
           <div>
             <p style={{...lbl,marginBottom:20}}>Connexions</p>
@@ -1120,6 +1142,7 @@ function App(){
           </div>
         )}
 
+        {/* ════ Paramètres ════ */}
         {tab==="settings"&&(
           <div>
             <p style={{...lbl,marginBottom:8}}>Paramètres</p>
@@ -1136,9 +1159,9 @@ function App(){
             </div>
             <p style={{...lbl,margin:"24px 0 4px"}}>Affichage</p>
             <Tog label="Afficher les décimales" sub="Afficher les centimes dans les montants" value={showDecimals} onChange={setShowDecimals} th={th}/>
-            <Tog label="Solde fin du mois" sub="Projeter le solde à la fin du mois courant" value={disp.endBal} onChange={v=>setDisp(d=>({...d,endBal:v}))} th={th}/>
-            <Tog label="Revenus et dépenses" sub="Afficher le total des revenus et dépenses du mois" value={disp.revExp} onChange={v=>setDisp(d=>({...d,revExp:v}))} th={th}/>
-            <Tog label="Net mensuel" sub="Afficher la différence revenus − dépenses du mois" value={disp.net} onChange={v=>setDisp(d=>({...d,net:v}))} th={th}/>
+            <Tog label="Solde fin du mois" sub="Afficher le solde projeté à la fin du mois" value={disp.endBal} onChange={v=>setDisp(d=>({...d,endBal:v}))} th={th}/>
+            <Tog label="Revenus et dépenses" sub="Afficher les totaux du mois en cours" value={disp.revExp} onChange={v=>setDisp(d=>({...d,revExp:v}))} th={th}/>
+            <Tog label="Net mensuel" sub="Afficher la différence revenus − dépenses" value={disp.net} onChange={v=>setDisp(d=>({...d,net:v}))} th={th}/>
             <Tog label="Contrôle Journée / Solde" sub="Afficher le sélecteur sur la page d'accueil" value={disp.showModeCtrl!==false} onChange={v=>setDisp(d=>({...d,showModeCtrl:v}))} th={th}/>
             <div style={{padding:"10px 0 14px",borderBottom:"1px solid "+th.border}}>
               <p style={{fontSize:13,color:th.text,margin:"0 0 8px",fontWeight:500}}>Vue par défaut</p>
@@ -1175,7 +1198,7 @@ function App(){
       </div>
 
       {/* ── Modales ── */}
-      {dupMod&&(<Sheet onClose={()=>setDupMod(null)} th={th}><SheetHead title="Dupliquer la transaction" onClose={()=>setDupMod(null)} th={th}/><div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 14px",background:th.surface,borderRadius:12,marginBottom:20}}><div style={{width:36,height:36,borderRadius:9,background:dynCatById(dupMod.tx.category||"other").color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{dynCatById(dupMod.tx.category||"other").emoji}</div><div><p style={{fontSize:13,fontWeight:500,color:th.text,margin:0}}>{dupMod.tx.description}</p><p style={{fontSize:11,color:th.muted,margin:"2px 0 0"}}>{f(dupMod.tx.amount,true)} · {getCatName(dupMod.tx.category||"other")}</p></div></div><label style={{...lbl,display:"block",marginBottom:8}}>Date de la copie</label><input type="date" value={dupMod.date} onChange={e=>e.target.value&&setDupMod(m=>({...m,date:e.target.value}))} style={{display:"block",width:"100%",padding:"12px 14px",fontSize:15,color:th.text,background:th.surface,border:"1px solid "+th.inputBorder,borderRadius:12,outline:"none",boxSizing:"border-box",colorScheme:isDark?"dark":"light",marginBottom:20}}/><div style={{display:"flex",gap:8}}><button onClick={()=>setDupMod(null)} style={{flex:1,padding:"12px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>Annuler</button><button onClick={()=>{duplicateTx(dupMod.tx,dupMod.date);setDupMod(null);}} style={{flex:2,padding:"12px 0",fontSize:13,border:"none",borderRadius:12,background:th.btnBg,color:th.btnText,cursor:"pointer",fontWeight:600}}>Dupliquer</button></div></Sheet>)}
+      {dupMod&&(<Sheet onClose={()=>setDupMod(null)} th={th}><SheetHead title="Dupliquer la transaction" onClose={()=>setDupMod(null)} th={th}/><div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 14px",background:th.surface,borderRadius:12,marginBottom:20}}><div style={{width:36,height:36,borderRadius:9,background:dynCatById(dupMod.tx.category||"other").color+"22",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><CatIcon cat={dynCatById(dupMod.tx.category||"other")} size={18}/></div><div><p style={{fontSize:13,fontWeight:500,color:th.text,margin:0}}>{dupMod.tx.description}</p><p style={{fontSize:11,color:th.muted,margin:"2px 0 0"}}>{f(dupMod.tx.amount,true)} · {getCatName(dupMod.tx.category||"other")}</p></div></div><label style={{...lbl,display:"block",marginBottom:8}}>Date de la copie</label><input type="date" value={dupMod.date} onChange={e=>e.target.value&&setDupMod(m=>({...m,date:e.target.value}))} style={{display:"block",width:"100%",padding:"12px 14px",fontSize:15,color:th.text,background:th.surface,border:"1px solid "+th.inputBorder,borderRadius:12,outline:"none",boxSizing:"border-box",colorScheme:isDark?"dark":"light",marginBottom:20}}/><div style={{display:"flex",gap:8}}><button onClick={()=>setDupMod(null)} style={{flex:1,padding:"12px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>Annuler</button><button onClick={()=>{duplicateTx(dupMod.tx,dupMod.date);setDupMod(null);}} style={{flex:2,padding:"12px 0",fontSize:13,border:"none",borderRadius:12,background:th.btnBg,color:th.btnText,cursor:"pointer",fontWeight:600}}>Dupliquer</button></div></Sheet>)}
 
       {exportMod&&(<Sheet onClose={()=>setExportMod(false)} th={th}><SheetHead title="Exporter les données" onClose={()=>setExportMod(false)} th={th}/><p style={{fontSize:12,color:th.sub,marginBottom:12}}>Copiez ce JSON et conservez-le en lieu sûr.</p><textarea readOnly value={getExportJSON()} style={{width:"100%",height:180,padding:"10px 12px",fontSize:11,fontFamily:"monospace",color:th.sub,background:th.surface,border:"1px solid "+th.border,borderRadius:10,resize:"none",boxSizing:"border-box",lineHeight:1.5}}/><div style={{display:"flex",gap:8,marginTop:12}}><button onClick={()=>setExportMod(false)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>Fermer</button><button onClick={handleCopy} style={{flex:2,padding:"11px 0",fontSize:13,border:"none",borderRadius:12,background:copied?"#059669":th.btnBg,color:copied?"#fff":th.btnText,cursor:"pointer",fontWeight:500,transition:"background 0.2s"}}>{copied?"Copié":"Copier"}</button></div></Sheet>)}
 
@@ -1193,7 +1216,9 @@ function App(){
               <div key={tx.id} style={{overflow:"hidden",animation:isDeleting?"slideOut 0.3s ease forwards":undefined}}>
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 0",borderBottom:isExp?"none":"1px solid "+th.border,cursor:"pointer"}} onClick={()=>{setExpandedTx(isExp?null:tx.id);setPendingDel(null);}}>
                   <div style={{display:"flex",alignItems:"center",gap:10,flex:1}}>
-                    <div style={{width:36,height:36,borderRadius:10,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0,border:"2px solid "+(isExp?cat.color:"transparent")}}>{cat.emoji}</div>
+                    <div style={{width:36,height:36,borderRadius:10,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,border:"2px solid "+(isExp?cat.color:"transparent")}}>
+                      <CatIcon cat={cat} size={18}/>
+                    </div>
                     <div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p><p style={{fontSize:11,margin:"2px 0 0",color:cat.color,fontWeight:500}}>{getCatName(cat.id)}{sc?<span style={{color:th.muted,fontWeight:400}}> - {sc.label}</span>:null}</p></div>
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
@@ -1258,12 +1283,20 @@ function App(){
             <div>
               <p style={{...lbl,marginBottom:12}}>Intégrées</p>
               <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,overflow:"hidden",marginBottom:20}}>
-                {CATS.map((cat,i)=>(<div key={cat.id} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 14px",borderBottom:i<CATS.length-1?"1px solid "+th.border:"none"}}><div style={{width:32,height:32,borderRadius:8,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{cat.emoji}</div><span style={{flex:1,fontSize:13,color:th.text}}>{getCatName(cat.id)}</span><span style={{fontSize:10,padding:"2px 8px",borderRadius:20,background:th.surface,color:th.muted}}>Intégrée</span></div>))}
+                {CATS.map((cat,i)=>(<div key={cat.id} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 14px",borderBottom:i<CATS.length-1?"1px solid "+th.border:"none"}}>
+                  <div style={{width:32,height:32,borderRadius:8,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><CatIcon cat={cat} size={16}/></div>
+                  <span style={{flex:1,fontSize:13,color:th.text}}>{getCatName(cat.id)}</span>
+                  <span style={{fontSize:10,padding:"2px 8px",borderRadius:20,background:th.surface,color:th.muted}}>Intégrée</span>
+                </div>))}
               </div>
               {isPro?(<>
                 <p style={{...lbl,marginBottom:12}}>Personnalisées</p>
                 {!customCats.length&&!addCatForm&&<p style={{fontSize:13,color:th.muted,textAlign:"center",padding:"20px 0",marginBottom:12}}>Aucune catégorie personnalisée</p>}
-                {customCats.length>0&&(<div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,overflow:"hidden",marginBottom:12}}>{customCats.map((cat,i)=>(<div key={cat.id} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 14px",borderBottom:i<customCats.length-1?"1px solid "+th.border:"none"}}><div style={{width:32,height:32,borderRadius:8,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{cat.emoji}</div><span style={{flex:1,fontSize:13,color:th.text}}>{cat.label}</span><button onClick={()=>deleteCustomCat(cat.id)} style={{fontSize:12,color:th.danger,background:"none",border:"none",cursor:"pointer",padding:"4px 8px",borderRadius:6}}>X</button></div>))}</div>)}
+                {customCats.length>0&&(<div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,overflow:"hidden",marginBottom:12}}>{customCats.map((cat,i)=>(<div key={cat.id} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 14px",borderBottom:i<customCats.length-1?"1px solid "+th.border:"none"}}>
+                  <div style={{width:32,height:32,borderRadius:8,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><CatIcon cat={cat} size={16}/></div>
+                  <span style={{flex:1,fontSize:13,color:th.text}}>{cat.label}</span>
+                  <button onClick={()=>deleteCustomCat(cat.id)} style={{fontSize:12,color:th.danger,background:"none",border:"none",cursor:"pointer",padding:"4px 8px",borderRadius:6}}>X</button>
+                </div>))}</div>)}
                 {addCatForm?(<div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:"16px",marginBottom:12}}><p style={{...lbl,marginBottom:12}}>Nouvelle catégorie</p><div style={{display:"flex",gap:10,alignItems:"flex-end",marginBottom:14}}><div style={{flex:1}}><label style={{...lbl,display:"block",marginBottom:6}}>Nom</label><input type="text" value={addCatForm.label||""} onChange={e=>setAddCatForm(f=>({...f,label:e.target.value}))} placeholder="Nom de la catégorie" style={{display:"block",width:"100%",padding:"8px 0",fontSize:14,color:th.text,background:"transparent",border:"none",borderBottom:"1px solid "+th.inputBorder,outline:"none"}}/></div><div><label style={{...lbl,display:"block",marginBottom:6}}>Emoji</label><input type="text" value={addCatForm.emoji||""} onChange={e=>setAddCatForm(f=>({...f,emoji:e.target.value}))} placeholder="📦" style={{width:48,textAlign:"center",padding:"8px 4px",fontSize:18,color:th.text,background:"transparent",border:"none",borderBottom:"1px solid "+th.inputBorder,outline:"none"}}/></div></div><label style={{...lbl,display:"block",marginBottom:8}}>Couleur</label><div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:16}}>{PRESET_COLORS.map(c=><button key={c} onClick={()=>setAddCatForm(f=>({...f,color:c}))} style={{width:28,height:28,borderRadius:"50%",background:c,border:(addCatForm.color||"#6366f1")===c?"3px solid "+th.text:"3px solid transparent",cursor:"pointer"}}/>)}</div><div style={{display:"flex",gap:8}}><button onClick={()=>setAddCatForm(null)} style={{flex:1,padding:"10px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:10,background:"none",color:th.sub,cursor:"pointer"}}>Annuler</button><button onClick={addCustomCat} disabled={!addCatForm.label?.trim()} style={{flex:2,padding:"10px 0",fontSize:13,border:"none",borderRadius:10,background:addCatForm.label?.trim()?th.btnBg:th.surface,color:addCatForm.label?.trim()?th.btnText:th.muted,cursor:addCatForm.label?.trim()?"pointer":"default",fontWeight:500}}>Ajouter</button></div></div>):(<button onClick={()=>setAddCatForm({label:"",emoji:"📦",color:"#6366f1"})} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",padding:"12px 0",fontSize:13,border:"1px dashed "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer",marginBottom:8}}><span style={{fontSize:16,lineHeight:1}}>+</span> Ajouter une catégorie</button>)}
               </>):(<div style={{display:"flex",alignItems:"center",gap:8,padding:"12px 14px",background:th.surface,borderRadius:10,border:"1px solid "+th.border}}><span style={{fontSize:16}}>🔒</span><p style={{fontSize:12,color:th.muted,margin:0}}>Catégories personnalisées réservées à la version Pro</p></div>)}
             </div>
@@ -1272,7 +1305,9 @@ function App(){
             isPro?(<div>
               <label style={{...lbl,display:"block",marginBottom:8}}>Catégorie</label>
               <div style={{display:"flex",gap:6,overflowX:"auto",paddingBottom:8,marginBottom:20}}>
-                {allCats.filter(c=>c.id!=="income").map(cat=>(<button key={cat.id} onClick={()=>setCatFilter(cat.id)} style={{flexShrink:0,display:"flex",alignItems:"center",gap:5,padding:"6px 12px",borderRadius:20,fontSize:12,border:"1.5px solid "+(catFilter===cat.id?cat.color:th.border),background:catFilter===cat.id?cat.color+"18":"none",color:catFilter===cat.id?cat.color:th.sub,cursor:"pointer",fontWeight:catFilter===cat.id?600:400}}><span>{cat.emoji}</span><span>{getCatName(cat.id)}</span></button>))}
+                {allCats.filter(c=>c.id!=="income").map(cat=>(<button key={cat.id} onClick={()=>setCatFilter(cat.id)} style={{flexShrink:0,display:"flex",alignItems:"center",gap:5,padding:"6px 12px",borderRadius:20,fontSize:12,border:"1.5px solid "+(catFilter===cat.id?cat.color:th.border),background:catFilter===cat.id?cat.color+"18":"none",color:catFilter===cat.id?cat.color:th.sub,cursor:"pointer",fontWeight:catFilter===cat.id?600:400}}>
+                  <CatIcon cat={cat} size={14}/><span>{getCatName(cat.id)}</span>
+                </button>))}
               </div>
               {(()=>{const visible=allSubcats.filter(sc=>sc.category===catFilter);return(<div>{visible.length>0&&(<div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,overflow:"hidden",marginBottom:12}}>{visible.map((sc,i)=>{const isBuiltin=SUBCATS.some(s=>s.id===sc.id),hasOverride=isBuiltin&&subcatGroupOverrides[sc.id]!==undefined;return(<div key={sc.id} style={{padding:"12px 14px",borderBottom:i<visible.length-1?"1px solid "+th.border:"none"}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:sc.group!==null?8:0}}><div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:13,color:th.text,fontWeight:500}}>{sc.label}</span>{isBuiltin?<span style={{fontSize:9,padding:"1px 6px",borderRadius:10,background:th.surface,color:th.muted}}>Intégrée</span>:<span style={{fontSize:9,padding:"1px 6px",borderRadius:10,background:"#6366f118",color:"#6366f1"}}>Perso.</span>}</div>{!isBuiltin&&<button onClick={()=>deleteCustomSubcat(sc.id)} style={{fontSize:12,color:th.danger,background:"none",border:"none",cursor:"pointer",padding:"2px 6px",borderRadius:6}}>X</button>}</div>{sc.group!==null&&(<div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>{SUBCAT_GROUPS.map(g=><button key={g.id} onClick={()=>setSubcatGroup(sc.id,g.id)} style={{padding:"4px 10px",borderRadius:20,fontSize:11,border:"1.5px solid "+(sc.group===g.id?g.color:th.border),background:sc.group===g.id?g.color+"18":"none",color:sc.group===g.id?g.color:th.muted,cursor:"pointer",fontWeight:sc.group===g.id?600:400}}>{g.label}</button>)}{hasOverride&&<button onClick={()=>resetSubcatGroup(sc.id)} style={{padding:"4px 10px",borderRadius:20,fontSize:11,border:"1px dashed "+th.border,background:"none",color:th.muted,cursor:"pointer"}}>Réinitialiser</button>}</div>)}</div>);})}</div>)}{addSubcatForm&&addSubcatForm.cat===catFilter?(<div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:"16px",marginBottom:12}}><p style={{...lbl,marginBottom:12}}>Nouvelle sous-catégorie</p><div style={{marginBottom:14}}><label style={{...lbl,display:"block",marginBottom:6}}>Nom</label><input type="text" value={addSubcatForm.label||""} onChange={e=>setAddSubcatForm(f=>({...f,label:e.target.value}))} placeholder="Nom de la sous-catégorie" style={{display:"block",width:"100%",padding:"8px 0",fontSize:14,color:th.text,background:"transparent",border:"none",borderBottom:"1px solid "+th.inputBorder,outline:"none"}}/></div><div style={{marginBottom:14}}><label style={{...lbl,display:"block",marginBottom:8}}>Groupe</label><div style={{display:"flex",gap:6}}>{SUBCAT_GROUPS.map(g=><button key={g.id} onClick={()=>setAddSubcatForm(f=>({...f,group:g.id}))} style={{flex:1,padding:"7px 0",borderRadius:10,fontSize:12,border:"1.5px solid "+(addSubcatForm.group===g.id?g.color:th.border),background:addSubcatForm.group===g.id?g.color+"18":"none",color:addSubcatForm.group===g.id?g.color:th.muted,cursor:"pointer",fontWeight:addSubcatForm.group===g.id?600:400}}>{g.label}</button>)}</div></div><div style={{display:"flex",gap:8}}><button onClick={()=>setAddSubcatForm(null)} style={{flex:1,padding:"10px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:10,background:"none",color:th.sub,cursor:"pointer"}}>Annuler</button><button onClick={addCustomSubcat} disabled={!addSubcatForm.label?.trim()} style={{flex:2,padding:"10px 0",fontSize:13,border:"none",borderRadius:10,background:addSubcatForm.label?.trim()?th.btnBg:th.surface,color:addSubcatForm.label?.trim()?th.btnText:th.muted,cursor:addSubcatForm.label?.trim()?"pointer":"default",fontWeight:500}}>Ajouter</button></div></div>):(<button onClick={()=>setAddSubcatForm({label:"",cat:catFilter,group:"flexible"})} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",padding:"12px 0",fontSize:13,border:"1px dashed "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer",marginBottom:8}}><span style={{fontSize:16,lineHeight:1}}>+</span> Ajouter une sous-catégorie</button>)}</div>);})()}
             </div>):(<div style={{display:"flex",alignItems:"center",gap:8,padding:"12px 14px",background:th.surface,borderRadius:10,border:"1px solid "+th.border}}><span style={{fontSize:16}}>🔒</span><p style={{fontSize:12,color:th.muted,margin:0}}>Sous-catégories réservées à la version Pro</p></div>)
