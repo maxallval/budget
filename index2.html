@@ -648,7 +648,7 @@ function App(){
   const getCatName=useCallback(id=>catNameMap[id]||id,[catNameMap]);
   const dynCatById=useCallback(id=>catMap.get(id)||allCats[allCats.length-1],[catMap,allCats]);
   const dynSubcatById=useCallback(id=>id?subcatMap.get(id)||null:null,[subcatMap]);
-  const getBalAt=useCallback(date=>{
+  const getBalAt=useMemo(()=>date=>{
     if(!balAnchor)return rawBalAt(txs,initBal,date);
     const aDate=parseD(balAnchor.dateStr);
     if(date<aDate)return rawBalAt(txs,initBal,date);
