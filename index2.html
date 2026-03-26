@@ -853,7 +853,7 @@ function App(){
       )}
 
       {/* ── Barre de statut (sync / overrun / motd) ── */}
-      <div style={{position:"fixed",top:0,left:0,right:0,zIndex:98,pointerEvents:isOverrun?"auto":"none",transform:barVisible&&!barFading?"translateY(0)":"translateY(-100%)",opacity:barFading?0:barVisible?1:0,transition:"transform 0.3s ease,opacity 0.5s ease",background:isOverrun?"#f97316":isDark?"rgba(5,8,20,0.68)":"rgba(5,8,20,0.68)",backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",borderBottom:"1px solid "+(isOverrun?"rgba(255,255,255,0.2)":th.border)}}>
+      <div style={{position:"fixed",top:0,left:0,right:0,zIndex:98,pointerEvents:isOverrun?"auto":"none",transform:barVisible&&!barFading?"translateY(0)":"translateY(-100%)",opacity:barFading?0:barVisible?1:0,transition:"transform 0.3s ease,opacity 0.5s ease",background:isOverrun?"#f97316":"rgba(1,104,210,0.68)",backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",borderBottom:"1px solid "+(isOverrun?"rgba(255,255,255,0.2)":th.border)}}>
         {isOverrun?(
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"5px 16px",gap:8}}>
             <div style={{display:"flex",alignItems:"center",gap:6,flex:1,minWidth:0,overflow:"hidden"}}>
