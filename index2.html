@@ -853,7 +853,7 @@ function App(){
       )}
 
       {/* ── Barre de statut (sync / overrun / motd) ── */}
-      <div style={{position:"fixed",top:0,left:0,right:0,zIndex:98,pointerEvents:isOverrun?"auto":"none",transform:barVisible&&!barFading?"translateY(0)":"translateY(-100%)",opacity:barFading?0:barVisible?1:0,transition:"transform 0.3s ease,opacity 0.5s ease",background:isOverrun?"#f97316":th.bg,borderBottom:"1px solid "+(isOverrun?"rgba(255,255,255,0.2)":th.border)}}>
+      <div style={{position:"fixed",top:0,left:0,right:0,zIndex:98,pointerEvents:isOverrun?"auto":"none",transform:barVisible&&!barFading?"translateY(0)":"translateY(-100%)",opacity:barFading?0:barVisible?1:0,transition:"transform 0.3s ease,opacity 0.5s ease",background:isOverrun?"#f97316":isDark?"rgba(13,13,13,0.8)":"rgba(255,255,255,0.8)",backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",borderBottom:"1px solid "+(isOverrun?"rgba(255,255,255,0.2)":th.border)}}>
         {isOverrun?(
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"5px 16px",gap:8}}>
             <div style={{display:"flex",alignItems:"center",gap:6,flex:1,minWidth:0,overflow:"hidden"}}>
@@ -864,7 +864,7 @@ function App(){
             <button onClick={acknowledgeOverruns} style={{fontSize:11,padding:"3px 10px",borderRadius:8,border:"none",background:"rgba(255,255,255,0.25)",color:"#fff",cursor:"pointer",fontWeight:600,flexShrink:0}}>Compris</button>
           </div>
         ):isMotd?(
-          <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100px",padding:"0 48px 0 16px",position:"relative"}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"98px",padding:"0 48px 0 16px",position:"relative"}}>
             <span style={{fontSize:15,color:th.sub,textAlign:"center",lineHeight:1.6}}>{motd}</span>
             <span style={{position:"absolute",bottom:10,right:14,fontSize:10,color:th.muted,fontVariantNumeric:"tabular-nums"}}>{motdCountdown}s</span>
           </div>
@@ -1140,6 +1140,10 @@ function App(){
             <Tog label="Revenus et dépenses" value={disp.revExp} onChange={v=>setDisp(d=>({...d,revExp:v}))} th={th}/>
             <Tog label="Net mensuel" value={disp.net} onChange={v=>setDisp(d=>({...d,net:v}))} th={th}/>
             <Tog label="Contrôle Journée / Solde" sub="Afficher le sélecteur sur la page d'accueil" value={disp.showModeCtrl!==false} onChange={v=>setDisp(d=>({...d,showModeCtrl:v}))} th={th}/>
+            <div style={{padding:"10px 0 14px",borderBottom:"1px solid "+th.border}}>
+              <p style={{fontSize:13,color:th.text,margin:"0 0 8px",fontWeight:500}}>Vue par défaut</p>
+              <SegCtrl options={[["daily","Journée"],["balance","Solde"]]} value={mode} onChange={setMode} th={th}/>
+            </div>
             <Tog label="Taux d'épargne" sub="Afficher le badge d'épargne sur la page d'accueil" value={disp.showSavingsRate!==false} onChange={v=>setDisp(d=>({...d,showSavingsRate:v}))} th={th}/>
             <p style={{...lbl,margin:"24px 0 4px"}}>Mode nuit</p>
             <div style={{paddingBottom:16,borderBottom:"1px solid "+th.border}}><SegCtrl options={[["off","Désactivé"],["auto","Automatique"],["on","Activé"]]} value={darkMode} onChange={setDarkMode} th={th}/></div>
