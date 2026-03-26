@@ -20,11 +20,7 @@
     button:focus,input:focus,select:focus,textarea:focus{outline:none}
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
     @keyframes fullPageIn{from{opacity:0;transform:translateY(100%)}to{opacity:1;transform:translateY(0)}}
-    @keyframes fullPageOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(100%)}}
     @keyframes sheetIn{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
-    @keyframes sheetOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(24px)}}
-    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-    @keyframes fadeOut{from{opacity:1}to{opacity:0}}
     @keyframes splashFadeOut{0%{opacity:1}88%{opacity:1}100%{opacity:0;pointer-events:none}}
     @keyframes rocketLaunch{0%{transform:translateY(0) rotate(-45deg)}30%{transform:translateY(-4px) rotate(-45deg)}100%{transform:translateY(-120px) rotate(-45deg);opacity:0}}
     @keyframes flamePulse{0%,100%{transform:scaleY(1) scaleX(1);opacity:1}50%{transform:scaleY(1.4) scaleX(0.8);opacity:0.8}}
@@ -36,7 +32,7 @@
     @keyframes coinFly6{0%,28%{opacity:0;transform:translate(0,0) rotate(0deg)}36%{opacity:1}100%{opacity:0;transform:translate(-55px,-45px) rotate(-300deg)}}
     @keyframes trailDot{0%{opacity:0.8;transform:scaleX(1)}100%{opacity:0;transform:scaleX(0.2)}}
     @keyframes textPop{0%{opacity:0;transform:scale(0.8)}60%{opacity:1;transform:scale(1.05)}100%{opacity:1;transform:scale(1)}}
-    @keyframes contentIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
     @keyframes slideInFromRight{from{transform:translateX(56px);opacity:0}to{transform:translateX(0);opacity:1}}
     @keyframes slideInFromLeft{from{transform:translateX(-56px);opacity:0}to{transform:translateX(0);opacity:1}}
     @keyframes popIn{0%{opacity:0;transform:scale(0.4)}70%{transform:scale(1.1)}100%{opacity:1;transform:scale(1)}}
@@ -50,7 +46,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 <script>
-window._sb=supabase.createClient(
+window._sb = supabase.createClient(
   'https://wlicvwitvfmjghssapbx.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndsaWN2d2l0dmZtamdoc3NhcGJ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMzQwNDksImV4cCI6MjA4ODYxMDA0OX0.1vaYyzrXkBn4LxS3wa25jucGIvMUDsL5oP8Jdw5W0XA'
 );
@@ -61,7 +57,7 @@ window.storage={
 };
 </script>
 <script type="text/babel" data-presets="react">
-const{useState,useEffect,useMemo,useRef,useCallback,useContext,createContext}=React;
+const{useState,useEffect,useMemo,useRef,useCallback}=React;
 const TODAY=new Date();TODAY.setHours(0,0,0,0);
 const sb=window._sb;
 
@@ -124,7 +120,6 @@ const MONTHS_FR=["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Ao�
 const NTH_FR=["","1er","2e","3e","4e","5e"];
 const DS_FR=["D","L","M","M","J","V","S"];
 const UNITS_FR={day:"jours",week:"semaines",month:"mois",year:"années"};
-const HEADER_H=100; // hauteur partagée header + barre d'annonce
 
 // ─── Utilitaires ──────────────────────────────────────────────────────────────
 const _pdCache=new Map();
@@ -185,7 +180,8 @@ function relTimeStr(ls){
 function recLabel(tx){
   const s=parseD(tx.startDate),r=normRec(tx.recurrence,s),wd=r.weekday!==undefined?r.weekday:s.getDay();
   switch(r.type){
-    case"once":return"Une fois";case"daily":return"Tous les jours";
+    case"once":return"Une fois";
+    case"daily":return"Tous les jours";
     case"weekly":return"Toutes les semaines le "+DAYS_FR[wd];
     case"monthly_day":return"Tous les mois";
     case"monthly_nth_weekday":return"Tous les mois, le "+(NTH_FR[r.nth]||r.nth)+" "+DAYS_FR[r.weekday];
@@ -197,29 +193,32 @@ function recLabel(tx){
 }
 const fabBtn=(bg,color)=>({position:"absolute",width:48,height:48,borderRadius:"50%",background:bg,color,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(0,0,0,0.22)",fontSize:19,lineHeight:1});
 
-// ─── Contexte fermeture animée ────────────────────────────────────────────────
-const ModalCloseCtx=createContext(null);
-
 // ─── Thème ────────────────────────────────────────────────────────────────────
 const mkTh=d=>d
-  ?{bg:"#0d0d0d",bgSub:"#161616",surface:"#1c1c1c",border:"#252525",inputBorder:"#333",text:"#f0f0f0",sub:"#888",muted:"#444",btnBg:"#efefef",btnText:"#111",togOff:"#3a3a3a",sheetBg:"#161616",danger:"#f87171",cardBg:"#202020"}
+  ?{bg:"#0d0d0d",bgSub:"#161616",surface:"#1c1c1c",border:"#252525",inputBorder:"#333",text:"#f0f0f0",sub:"#888",muted:"#444",btnBg:"#efefef",btnText:"#111",togOff:"#3a3a3a",sheetBg:"#161616",danger:"#f87171",cardBg:"#181818"}
   :{bg:"#fff",bgSub:"#f9fafb",surface:"#f3f4f6",border:"#f0f0f0",inputBorder:"#e5e7eb",text:"#111",sub:"#6b7280",muted:"#9ca3af",btnBg:"#111",btnText:"#fff",togOff:"#d1d5db",sheetBg:"#fff",danger:"#ef4444",cardBg:"#fafafa"};
 
-// ─── Composants UI primitifs ──────────────────────────────────────────────────
+// ─── Composants UI ────────────────────────────────────────────────────────────
 function ProGate({isPro,th,title,desc,children}){
   if(isPro)return children;
   return(
     <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"56px 32px",textAlign:"center"}}>
-      <div style={{width:64,height:64,borderRadius:20,background:"linear-gradient(135deg,#6366f1,#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:20,boxShadow:"0 8px 24px rgba(99,102,241,0.25)"}}><span style={{fontSize:28}}>🔒</span></div>
+      <div style={{width:64,height:64,borderRadius:20,background:"linear-gradient(135deg,#6366f1,#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:20,boxShadow:"0 8px 24px rgba(99,102,241,0.25)"}}>
+        <span style={{fontSize:28}}>🔒</span>
+      </div>
       <p style={{fontSize:16,fontWeight:700,color:th.text,margin:"0 0 8px"}}>{title}</p>
       <p style={{fontSize:13,color:th.muted,margin:"0 0 28px",lineHeight:1.7,maxWidth:280}}>{desc}</p>
-      <div style={{display:"inline-flex",alignItems:"center",gap:6,padding:"10px 22px",borderRadius:20,background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:600,boxShadow:"0 4px 14px rgba(99,102,241,0.35)"}}>✦ Passer à Pro</div>
+      <div style={{display:"inline-flex",alignItems:"center",gap:6,padding:"10px 22px",borderRadius:20,background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:600,boxShadow:"0 4px 14px rgba(99,102,241,0.35)"}}>
+        ✦ Passer à Pro
+      </div>
     </div>
   );
 }
 
 function StatusDot({ok,na,th}){
-  return na?<span style={{fontSize:12,color:th.muted}}>-</span>:<span style={{fontSize:12,color:ok?"#10b981":"#ef4444",fontWeight:500}}>{ok?"OK":"Non"}</span>;
+  return na
+    ?<span style={{fontSize:12,color:th.muted}}>-</span>
+    :<span style={{fontSize:12,color:ok?"#10b981":"#ef4444",fontWeight:500}}>{ok?"OK":"Non"}</span>;
 }
 
 const TxRow=React.memo(function TxRow({tx,amount,recurrenceLabel,cat,sc,isActive,setActiveTx,fmt,getCatName,th}){
@@ -238,14 +237,19 @@ const TxRow=React.memo(function TxRow({tx,amount,recurrenceLabel,cat,sc,isActive
           <p style={{fontSize:11,color:th.muted,margin:"2px 0 0"}}>{recurrenceLabel}</p>
         </div>
       </div>
-      <span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:tx.type==="income"?"#059669":"#ef4444",flexShrink:0}}>{tx.type==="income"?"+":"-"}{fmt(amount,true)}</span>
+      <span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:tx.type==="income"?"#059669":"#ef4444",flexShrink:0}}>
+        {tx.type==="income"?"+":"-"}{fmt(amount,true)}
+      </span>
     </div>
   );
 });
 
 const Tog=({label,sub,value,onChange,th})=>(
   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0",borderBottom:"1px solid "+th.border}}>
-    <div><span style={{fontSize:13,color:th.text,display:"block"}}>{label}</span>{sub&&<span style={{fontSize:11,color:th.muted}}>{sub}</span>}</div>
+    <div>
+      <span style={{fontSize:13,color:th.text,display:"block"}}>{label}</span>
+      {sub&&<span style={{fontSize:11,color:th.muted}}>{sub}</span>}
+    </div>
     <button onClick={()=>onChange(!value)} style={{width:36,height:20,borderRadius:10,background:value?th.btnBg:th.togOff,border:"none",cursor:"pointer",position:"relative",flexShrink:0,transition:"background 0.2s"}}>
       <div style={{position:"absolute",top:2,left:value?16:2,width:16,height:16,background:"#fff",borderRadius:"50%",transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.3)"}}/>
     </button>
@@ -254,15 +258,14 @@ const Tog=({label,sub,value,onChange,th})=>(
 
 const SegCtrl=({options,value,onChange,th})=>(
   <div style={{display:"flex",background:th.surface,borderRadius:10,padding:3,gap:2}}>
-    {options.map(([v,l])=><button key={v} onClick={()=>onChange(v)} style={{flex:1,fontSize:12,padding:"6px 10px",borderRadius:8,border:"none",cursor:"pointer",background:value===v?th.bg:"transparent",color:value===v?th.text:th.muted,boxShadow:value===v?"0 1px 4px rgba(0,0,0,0.12)":"none",fontWeight:value===v?500:400,whiteSpace:"nowrap"}}>{l}</button>)}
+    {options.map(([v,l])=>(
+      <button key={v} onClick={()=>onChange(v)} style={{flex:1,fontSize:12,padding:"6px 10px",borderRadius:8,border:"none",cursor:"pointer",background:value===v?th.bg:"transparent",color:value===v?th.text:th.muted,boxShadow:value===v?"0 1px 4px rgba(0,0,0,0.12)":"none",fontWeight:value===v?500:400,whiteSpace:"nowrap"}}>{l}</button>
+    ))}
   </div>
 );
 
-// Sheet avec animation de fermeture
 const Sheet=({onClose,children,th})=>{
   const outerRef=useRef(null),innerRef=useRef(null);
-  const[closing,setClosing]=useState(false);
-  const animClose=useCallback(()=>{if(closing)return;setClosing(true);setTimeout(onClose,260);},[closing,onClose]);
   useEffect(()=>{
     const outer=outerRef.current,inner=innerRef.current;
     if(!outer||!inner)return;
@@ -271,59 +274,51 @@ const Sheet=({onClose,children,th})=>{
     return()=>ro.disconnect();
   },[]);
   return(
-    <ModalCloseCtx.Provider value={animClose}>
-      <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.35)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:150,padding:16,animation:closing?"fadeOut 0.26s ease forwards":"fadeIn 0.27s ease"}} onClick={animClose}>
-        <div ref={outerRef} style={{background:th.sheetBg,width:"100%",maxWidth:480,borderRadius:20,boxShadow:"0 -4px 40px rgba(0,0,0,0.2)",overflow:"hidden",transition:"height 0.28s cubic-bezier(0.4,0,0.2,1)",animation:closing?"sheetOut 0.26s ease forwards":"sheetIn 0.27s ease"}} onClick={e=>e.stopPropagation()}>
-          <div ref={innerRef} style={{padding:24,paddingBottom:88}}>{children}</div>
-        </div>
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.35)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:150,padding:16,animation:"fadeIn 0.27s ease"}} onClick={onClose}>
+      <div ref={outerRef} style={{background:th.sheetBg,width:"100%",maxWidth:480,borderRadius:20,boxShadow:"0 -4px 40px rgba(0,0,0,0.2)",overflow:"hidden",transition:"height 0.28s cubic-bezier(0.4,0,0.2,1)",animation:"sheetIn 0.27s ease"}} onClick={e=>e.stopPropagation()}>
+        <div ref={innerRef} style={{padding:24,paddingBottom:88}}>{children}</div>
       </div>
-    </ModalCloseCtx.Provider>
-  );
-};
-
-// FullSheet avec animation de fermeture
-const FullSheet=({onClose,children,th})=>{
-  const[closing,setClosing]=useState(false);
-  const animClose=useCallback(()=>{if(closing)return;setClosing(true);setTimeout(onClose,300);},[closing,onClose]);
-  return(
-    <ModalCloseCtx.Provider value={animClose}>
-      <div style={{position:"fixed",inset:0,background:th.sheetBg,zIndex:200,overflowY:"auto",display:"flex",flexDirection:"column",animation:closing?"fullPageOut 0.3s cubic-bezier(0.32,0.72,0,1) forwards":"fullPageIn 0.27s cubic-bezier(0.32,0.72,0,1)",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>
-        <div style={{flex:1,padding:"0 24px 100px",maxWidth:640,width:"100%",margin:"0 auto"}}>{children}</div>
-      </div>
-    </ModalCloseCtx.Provider>
-  );
-};
-
-const SheetHead=({title,onClose,right,th})=>{
-  const animClose=useContext(ModalCloseCtx);
-  return(
-    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
-      <h3 style={{fontSize:15,color:th.text,fontWeight:600,margin:0}}>{title}</h3>
-      <div style={{display:"flex",gap:8,alignItems:"center"}}>{right}<button onClick={animClose||onClose} style={{fontSize:18,color:th.muted,background:"none",border:"none",cursor:"pointer",lineHeight:1}}>X</button></div>
     </div>
   );
 };
 
-const FullSheetHead=({title,onClose,right,th})=>{
-  const animClose=useContext(ModalCloseCtx);
-  return(
-    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"20px 0",borderBottom:"1px solid "+th.border,marginBottom:24,position:"sticky",top:0,background:th.sheetBg,zIndex:10}}>
-      <button onClick={animClose||onClose} style={{fontSize:13,color:th.sub,background:"none",border:"1px solid "+th.border,borderRadius:8,padding:"6px 12px",cursor:"pointer",display:"flex",alignItems:"center",gap:4}}><span style={{fontSize:16,lineHeight:1}}>&#8249;</span> {title}</button>
-      <div style={{display:"flex",gap:8,alignItems:"center"}}>{right}</div>
-    </div>
-  );
-};
+const FullSheet=({children,th})=>(
+  <div style={{position:"fixed",inset:0,background:th.sheetBg,zIndex:200,overflowY:"auto",display:"flex",flexDirection:"column",animation:"fullPageIn 0.27s cubic-bezier(0.32,0.72,0,1)",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>
+    <div style={{flex:1,padding:"0 24px 100px",maxWidth:640,width:"100%",margin:"0 auto"}}>{children}</div>
+  </div>
+);
 
-// MonthNav — flèches autour du label, bouton Aujourd'hui optionnel
+const SheetHead=({title,onClose,right,th})=>(
+  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
+    <h3 style={{fontSize:15,color:th.text,fontWeight:600,margin:0}}>{title}</h3>
+    <div style={{display:"flex",gap:8,alignItems:"center"}}>
+      {right}
+      <button onClick={onClose} style={{fontSize:18,color:th.muted,background:"none",border:"none",cursor:"pointer",lineHeight:1}}>X</button>
+    </div>
+  </div>
+);
+
+const FullSheetHead=({title,onClose,right,th})=>(
+  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"20px 0",borderBottom:"1px solid "+th.border,marginBottom:24,position:"sticky",top:0,background:th.sheetBg,zIndex:10}}>
+    <button onClick={onClose} style={{fontSize:13,color:th.sub,background:"none",border:"1px solid "+th.border,borderRadius:8,padding:"6px 12px",cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
+      <span style={{fontSize:16,lineHeight:1}}>&#8249;</span> {title}
+    </button>
+    <div style={{display:"flex",gap:8,alignItems:"center"}}>{right}</div>
+  </div>
+);
+
+// MonthNav : flèches autour du label, bouton Aujourd'hui optionnel
 const MonthNav=({yr,mo,onPrev,onNext,onDbl,onToday,th,prevDisabled,showToday=true})=>{
   const isCurrent=yr===TODAY.getFullYear()&&mo===TODAY.getMonth();
   return(
     <div style={{display:"flex",alignItems:"center",gap:4}}>
       <button onClick={onPrev} disabled={prevDisabled} style={{width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:"none",border:"none",cursor:prevDisabled?"default":"pointer",fontSize:20,color:prevDisabled?th.border:th.muted,borderRadius:8}}>&#8249;</button>
-      <span onDoubleClick={onDbl} style={{fontSize:19,color:th.text,fontWeight:700,minWidth:150,textAlign:"center",cursor:"default",userSelect:"none"}}>{MONTHS_FR[mo]} {yr}</span>
+      <span onDoubleClick={onDbl} style={{fontSize:15,color:th.text,fontWeight:500,minWidth:130,textAlign:"center",cursor:"default",userSelect:"none"}}>{MONTHS_FR[mo]} {yr}</span>
       <button onClick={onNext} style={{width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:"none",border:"none",cursor:"pointer",fontSize:20,color:th.muted,borderRadius:8}}>&#8250;</button>
       {showToday&&!isCurrent&&(
-        <button onClick={onToday||onDbl} style={{fontSize:11,padding:"3px 9px",borderRadius:8,border:"1px solid "+th.border,background:"none",color:th.sub,cursor:"pointer",whiteSpace:"nowrap",marginLeft:2}}>Aujourd'hui</button>
+        <button onClick={onToday||onDbl} style={{fontSize:11,padding:"3px 9px",borderRadius:8,border:"1px solid "+th.border,background:"none",color:th.sub,cursor:"pointer",whiteSpace:"nowrap",marginLeft:2}}>
+          Aujourd'hui
+        </button>
       )}
     </div>
   );
@@ -337,39 +332,6 @@ const MiniNav=({label,onPrev,onNext,nextDisabled,th})=>(
   </div>
 );
 
-// SubNav avec bulle glissante
-function SubNav({tabs,activeId,onSelect,isSubLocked,showAdd,onAdd,th}){
-  const containerRef=useRef(null);
-  const btnRefs=useRef({});
-  const[pill,setPill]=useState({left:0,width:0,ready:false});
-  useEffect(()=>{
-    const btn=btnRefs.current[activeId],container=containerRef.current;
-    if(!btn||!container)return;
-    const cr=container.getBoundingClientRect(),br=btn.getBoundingClientRect();
-    setPill({left:br.left-cr.left,width:br.width,ready:true});
-  },[activeId,tabs]);
-  return(
-    <div style={{borderBottom:"1px solid "+th.border,background:th.bgSub}}>
-      <div ref={containerRef} style={{padding:"0 24px",display:"flex",gap:0,overflowX:"auto",position:"relative",alignItems:"center"}}>
-        {pill.ready&&(
-          <div style={{position:"absolute",top:"50%",transform:"translateY(-50%)",left:pill.left,width:pill.width,height:28,borderRadius:8,background:th.surface,transition:"left 0.25s cubic-bezier(0.4,0,0.2,1),width 0.25s cubic-bezier(0.4,0,0.2,1)",zIndex:0,pointerEvents:"none",boxShadow:"0 1px 4px rgba(0,0,0,0.08)"}}/>
-        )}
-        {showAdd&&(
-          <button onClick={onAdd} style={{position:"relative",zIndex:1,fontSize:12,padding:"12px 16px 10px 12px",border:"none",background:"none",cursor:"pointer",color:th.sub,whiteSpace:"nowrap",flexShrink:0,display:"flex",alignItems:"center",gap:4}}>
-            <span style={{fontSize:14,lineHeight:1}}>+</span> Ajouter
-          </button>
-        )}
-        {tabs.map(s=>{const locked=isSubLocked(s.id),active=activeId===s.id;return(
-          <button key={s.id} ref={el=>{btnRefs.current[s.id]=el;}} onClick={()=>onSelect(s.id)} style={{position:"relative",zIndex:1,fontSize:12,padding:"10px 14px",border:"none",background:"none",cursor:"pointer",color:active?th.text:th.sub,fontWeight:active?600:400,whiteSpace:"nowrap",flexShrink:0,display:"flex",alignItems:"center",gap:4,transition:"color 0.2s"}}>
-            {s.label}{locked&&<span style={{fontSize:9,opacity:0.6}}>🔒</span>}
-          </button>
-        );})}
-      </div>
-    </div>
-  );
-}
-
-// Charts
 function LineChart({data,color,th,height=120}){
   if(!data||data.length<2)return null;
   const W=560,H=height,pad={t:12,b:28,l:44,r:12};
@@ -384,13 +346,15 @@ function LineChart({data,color,th,height=120}){
     <svg viewBox={"0 0 "+W+" "+H} style={{width:"100%",height,display:"block",overflow:"visible"}}>
       <defs><linearGradient id={gid} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.18"/><stop offset="100%" stopColor={color} stopOpacity="0.01"/></linearGradient></defs>
       {yTicks.map((v,i)=><line key={i} x1={pad.l} x2={W-pad.r} y1={py(v)} y2={py(v)} stroke={th.border} strokeWidth="1"/>)}
-      <path d={areaD} fill={"url(#"+gid+")"}/><path d={pathD} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d={areaD} fill={"url(#"+gid+")"}/>
+      <path d={pathD} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
       {pts.map((p,i)=><circle key={i} cx={p.x} cy={p.y} r="3" fill={color} stroke={th.sheetBg} strokeWidth="1.5"/>)}
       {pts.filter((_,i)=>i%2===0||data.length<=7).map((p,i)=><text key={i} x={p.x} y={H-6} textAnchor="middle" fontSize="9" fill={th.muted}>{p.label}</text>)}
       {yTicks.map((v,i)=><text key={i} x={pad.l-4} y={py(v)+3.5} textAnchor="end" fontSize="9" fill={th.muted}>{v>=1000?(v/1000).toFixed(1)+"k":v.toFixed(0)}</text>)}
     </svg>
   );
 }
+
 function BarChart2({data,th,height=140}){
   if(!data||!data.length)return null;
   const W=560,H=height,pad={t:8,b:28,l:4,r:4};
@@ -399,12 +363,17 @@ function BarChart2({data,th,height=140}){
   return(
     <svg viewBox={"0 0 "+W+" "+H} style={{width:"100%",height,display:"block",overflow:"visible"}}>
       {data.map((d,i)=>{const x=pad.l+i*slotW+gap,incH=bh(d.inc),expH=bh(d.exp),bw=barW/2-1;return(
-        <g key={i}><rect x={x} y={H-pad.b-incH} width={bw} height={Math.max(incH,1)} rx="2" fill="#10b981" opacity="0.85"/><rect x={x+bw+2} y={H-pad.b-expH} width={bw} height={Math.max(expH,1)} rx="2" fill="#ef4444" opacity="0.75"/>{(i%2===0||data.length<=7)&&<text x={x+bw} y={H-6} textAnchor="middle" fontSize="9" fill={th.muted}>{d.label}</text>}</g>
+        <g key={i}>
+          <rect x={x} y={H-pad.b-incH} width={bw} height={Math.max(incH,1)} rx="2" fill="#10b981" opacity="0.85"/>
+          <rect x={x+bw+2} y={H-pad.b-expH} width={bw} height={Math.max(expH,1)} rx="2" fill="#ef4444" opacity="0.75"/>
+          {(i%2===0||data.length<=7)&&<text x={x+bw} y={H-6} textAnchor="middle" fontSize="9" fill={th.muted}>{d.label}</text>}
+        </g>
       );})}
       <line x1={pad.l} x2={W-pad.r} y1={H-pad.b} y2={H-pad.b} stroke={th.border} strokeWidth="1"/>
     </svg>
   );
 }
+
 const StatCard=({label,value,sub,color,th})=>(
   <div style={{flex:"1 1 140px",background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:"14px 16px",minWidth:0}}>
     <p style={{fontSize:10,color:th.muted,letterSpacing:"0.1em",textTransform:"uppercase",margin:"0 0 8px"}}>{label}</p>
@@ -428,6 +397,7 @@ function CategoryPicker({value,onChange,th,allCats,getCatName}){
     </div>
   );
 }
+
 function SubCategoryPicker({category,value,onChange,th,allSubcats}){
   const opts=useMemo(()=>allSubcats.filter(s=>s.category===category),[allSubcats,category]);
   if(!opts.length)return null;
@@ -443,6 +413,7 @@ function SubCategoryPicker({category,value,onChange,th,allSubcats}){
     </div>
   );
 }
+
 function RecurrencePicker({value,onChange,startDate,th}){
   const UNITS_REC=[{v:"day",l:"jours"},{v:"week",l:"semaines"},{v:"month",l:"mois"},{v:"year",l:"années"}];
   const s=useMemo(()=>parseD(startDate),[startDate]);
@@ -458,7 +429,15 @@ function RecurrencePicker({value,onChange,startDate,th}){
     {rec:{type:"weekdays"},label:"Jours de semaine (lun.-ven.)"},
     {rec:null,isCustom:true,label:"Personnaliser"},
   ],[s,wd,nth]);
-  const selIdx=useMemo(()=>{if(isCust)return 6;return opts.findIndex(o=>{if(!o.rec||o.rec.type!==nr.type)return false;if(o.rec.type==="weekly")return o.rec.weekday===nr.weekday;if(o.rec.type==="monthly_nth_weekday")return o.rec.nth===nr.nth&&o.rec.weekday===nr.weekday;return true;});},[nr,opts,isCust]);
+  const selIdx=useMemo(()=>{
+    if(isCust)return 6;
+    return opts.findIndex(o=>{
+      if(!o.rec||o.rec.type!==nr.type)return false;
+      if(o.rec.type==="weekly")return o.rec.weekday===nr.weekday;
+      if(o.rec.type==="monthly_nth_weekday")return o.rec.nth===nr.nth&&o.rec.weekday===nr.weekday;
+      return true;
+    });
+  },[nr,opts,isCust]);
   const[ivRaw,setIvRaw]=useState(()=>nr.interval>1?String(nr.interval):"");
   useEffect(()=>setIvRaw(nr.interval>1?String(nr.interval):""),[nr.type]);
   const handleIv=v=>{setIvRaw(v);const n=parseInt(v);onChange({...nr,interval:(!v||isNaN(n)||n<1)?1:n});};
@@ -497,7 +476,52 @@ function RecurrencePicker({value,onChange,startDate,th}){
   );
 }
 
-// ─── Nav icons ────────────────────────────────────────────────────────────────
+// ─── SubNav avec bulle glissante ─────────────────────────────────────────────
+function SubNav({tabs,activeId,onSelect,isSubLocked,showAdd,onAdd,th}){
+  const containerRef=useRef(null);
+  const btnRefs=useRef({});
+  const[pill,setPill]=useState({left:0,width:0,ready:false});
+
+  useEffect(()=>{
+    const btn=btnRefs.current[activeId];
+    const container=containerRef.current;
+    if(!btn||!container)return;
+    const cr=container.getBoundingClientRect(),br=btn.getBoundingClientRect();
+    setPill({left:br.left-cr.left,width:br.width,ready:true});
+  },[activeId,tabs]);
+
+  return(
+    <div style={{borderBottom:"1px solid "+th.border,background:th.bgSub}}>
+      <div ref={containerRef} style={{padding:"0 24px",display:"flex",gap:0,overflowX:"auto",position:"relative",alignItems:"center"}}>
+        {/* Bulle glissante */}
+        {pill.ready&&(
+          <div style={{position:"absolute",top:"50%",transform:"translateY(-50%)",left:pill.left,width:pill.width,height:28,borderRadius:8,background:th.surface,transition:"left 0.25s cubic-bezier(0.4,0,0.2,1), width 0.25s cubic-bezier(0.4,0,0.2,1)",zIndex:0,pointerEvents:"none",boxShadow:"0 1px 4px rgba(0,0,0,0.08)"}}/>
+        )}
+        {showAdd&&(
+          <button onClick={onAdd} style={{position:"relative",zIndex:1,fontSize:12,padding:"12px 16px 10px 12px",border:"none",background:"none",cursor:"pointer",color:th.sub,whiteSpace:"nowrap",flexShrink:0,display:"flex",alignItems:"center",gap:4}}>
+            <span style={{fontSize:14,lineHeight:1}}>+</span> Ajouter
+          </button>
+        )}
+        {tabs.map(s=>{
+          const locked=isSubLocked(s.id),active=activeId===s.id;
+          return(
+            <button
+              key={s.id}
+              ref={el=>{btnRefs.current[s.id]=el;}}
+              onClick={()=>onSelect(s.id)}
+              style={{position:"relative",zIndex:1,fontSize:12,padding:"10px 14px",border:"none",background:"none",cursor:"pointer",color:active?th.text:th.sub,fontWeight:active?600:400,whiteSpace:"nowrap",flexShrink:0,display:"flex",alignItems:"center",gap:4,transition:"color 0.2s"}}
+            >
+              {s.label}
+              {locked&&<span style={{fontSize:9,opacity:0.6}}>🔒</span>}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+
 const NAV_ICONS={
   home:<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
   transactions:<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>,
@@ -515,14 +539,16 @@ function LoginScreen(){
   const handleGoogle=async()=>{setLoading(true);setErr("");const{error}=await sb.auth.signInWithOAuth({provider:"google",options:{redirectTo:window.location.origin+window.location.pathname}});if(error){setErr(error.message);setLoading(false);}};
   return(
     <div style={{minHeight:"100vh",background:th.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:32,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>
-      <div style={{width:"100%",maxWidth:360,animation:"contentIn 0.5s ease"}}>
+      <div style={{width:"100%",maxWidth:360,animation:"fadeIn 0.5s ease"}}>
         <div style={{textAlign:"center",marginBottom:40}}>
           <div style={{width:72,height:72,borderRadius:20,background:"linear-gradient(135deg,#6366f1,#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px",boxShadow:"0 8px 24px rgba(99,102,241,0.3)"}}><span style={{fontSize:34}}>💰</span></div>
           <h1 style={{fontSize:26,fontWeight:800,color:th.text,margin:"0 0 6px",letterSpacing:"-0.02em"}}>Budget</h1>
           <p style={{fontSize:14,color:th.sub,margin:0}}>Gestion financière personnelle</p>
         </div>
         <button onClick={handleGoogle} disabled={loading} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:12,padding:"14px 20px",borderRadius:14,border:"1px solid "+th.border,background:th.bg,color:th.text,fontSize:15,fontWeight:600,cursor:loading?"default":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.06)",opacity:loading?0.7:1,fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>
-          {loading?<span style={{width:20,height:20,borderRadius:"50%",border:"2px solid #e5e7eb",borderTopColor:"#6366f1",display:"inline-block",animation:"pulse 0.8s linear infinite"}}/>:<svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>}
+          {loading
+            ?<span style={{width:20,height:20,borderRadius:"50%",border:"2px solid #e5e7eb",borderTopColor:"#6366f1",display:"inline-block",animation:"pulse 0.8s linear infinite"}}/>
+            :<svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>}
           {loading?"Connexion...":"Continuer avec Google"}
         </button>
         {err&&<p style={{fontSize:12,color:"#ef4444",textAlign:"center",marginTop:12}}>{err}</p>}
@@ -534,7 +560,7 @@ function LoginScreen(){
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 function App(){
-  // Auth & données
+  // Auth & data
   const[authLoading,setAuthLoading]=useState(true);
   const[session,setSession]=useState(null);
   const[txs,setTxs]=useState([]);
@@ -543,7 +569,7 @@ function App(){
   const[budgets,setBudgets]=useState({});
   const[goals,setGoals]=useState([]);
   const[loaded,setLoaded]=useState(false);
-  // UI
+  // UI state
   const[tab,setTab]=useState("home");
   const[subTab,setSubTab]=useState({});
   const[yr,setYr]=useState(TODAY.getFullYear());
@@ -563,7 +589,7 @@ function App(){
   const[isPro,setIsPro]=useState(true);
   const[pressedDay,setPressedDay]=useState(null);
   const[deletingTxId,setDeletingTxId]=useState(null);
-  // Sync
+  // Sync UI
   const[syncBarVisible,setSyncBarVisible]=useState(false);
   const[syncBarFading,setSyncBarFading]=useState(false);
   const[headerHovered,setHeaderHovered]=useState(false);
@@ -579,7 +605,7 @@ function App(){
   const[motdVisible,setMotdVisible]=useState(false);
   const[motdFading,setMotdFading]=useState(false);
   const[motdCountdown,setMotdCountdown]=useState(8);
-  // Catégories
+  // Cats
   const[advancedCats,setAdvancedCats]=useState(false);
   const[customCats,setCustomCats]=useState([]);
   const[customSubcats,setCustomSubcats]=useState([]);
@@ -589,12 +615,12 @@ function App(){
   const[catFilter,setCatFilter]=useState("housing");
   const[addCatForm,setAddCatForm]=useState(null);
   const[addSubcatForm,setAddSubcatForm]=useState(null);
-  // Solde éditable
+  // Balance edit
   const[editingBal,setEditingBal]=useState(false);
   const[balInput,setBalInput]=useState("");
   const[editingBalSett,setEditingBalSett]=useState(false);
   const[balInputSett,setBalInputSett]=useState("");
-  // Modales
+  // Modals
   const[dayMod,setDayMod]=useState(null);
   const[formMod,setFormMod]=useState(null);
   const[delMod,setDelMod]=useState(null);
@@ -617,6 +643,7 @@ function App(){
   const syncHideTimer=useRef(null),syncFadeTimer=useRef(null);
   const overrunTimer=useRef(null),motdFadeTimer=useRef(null),motdCountdownRef=useRef(null);
 
+  // Derived theme & style shortcuts
   const isDark=darkMode==="on"||(darkMode==="auto"&&sysDark);
   const th=useMemo(()=>mkTh(isDark),[isDark]);
   const lbl={fontSize:10,color:th.muted,letterSpacing:"0.12em",textTransform:"uppercase"};
@@ -628,6 +655,7 @@ function App(){
   const FREE_LIMIT=useMemo(()=>addMths(TODAY.getFullYear(),TODAY.getMonth(),-2),[]);
   const LOCKED_SUB_IDS=useMemo(()=>new Set(["objectifs","statistiques","graphiques","controle"]),[]);
   const isSubLocked=useCallback(id=>!isPro&&LOCKED_SUB_IDS.has(id),[isPro,LOCKED_SUB_IDS]);
+
   const allCats=useMemo(()=>[...CATS,...customCats],[customCats]);
   const allSubcats=useMemo(()=>{const base=SUBCATS.map(sc=>subcatGroupOverrides[sc.id]?{...sc,group:subcatGroupOverrides[sc.id]}:sc);return[...base,...customSubcats];},[customSubcats,subcatGroupOverrides]);
   const catMap=useMemo(()=>{const m=new Map();allCats.forEach(c=>m.set(c.id,c));return m;},[allCats]);
@@ -636,6 +664,7 @@ function App(){
   const getCatName=useCallback(id=>catNameMap[id]||id,[catNameMap]);
   const dynCatById=useCallback(id=>catMap.get(id)||allCats[allCats.length-1],[catMap,allCats]);
   const dynSubcatById=useCallback(id=>id?subcatMap.get(id)||null:null,[subcatMap]);
+
   const getBalAt=useMemo(()=>date=>{
     if(!balAnchor)return rawBalAt(txs,initBal,date);
     const aDate=parseD(balAnchor.dateStr);
@@ -643,7 +672,9 @@ function App(){
     const delta=txs.reduce((b,tx)=>b+(tx.type==="income"?1:-1)*tx.amount*(countOccs(tx,date)-countOccs(tx,aDate)),0);
     return balAnchor.amount+delta;
   },[txs,initBal,balAnchor]);
+
   const getExportJSON=()=>JSON.stringify({txs,initBal,balAnchor,disp,darkMode,showDecimals,budgets,customCats,customSubcats,subcatGroupOverrides,goals,updated:Date.now()},null,2);
+
   const NAV_ITEMS=useMemo(()=>{const b=[["home","Accueil"],["transactions","Transactions"],["budget","Budget"],["analyse","Analyse"],["settings","Paramètres"]];if(showTroubleshoot)b.push(["troubleshoot","Troubleshoot"]);return b;},[showTroubleshoot]);
   const SUB_NAV={
     transactions:[{id:"historique",label:"Historique"},{id:"recurrent",label:"Récurrent"}],
@@ -654,6 +685,8 @@ function App(){
   const DEFAULT_SUB={transactions:"historique",budget:"categories",analyse:"statistiques",troubleshoot:"connexions"};
   const curSub=subTab[tab]||(DEFAULT_SUB[tab]||null);
   const curSubNav=SUB_NAV[tab];
+  const showDots=curSubNav&&curSubNav.length>1;
+
   const curBalVal=useMemo(()=>getBalAt(TODAY),[getBalAt]);
   const dim=new Date(yr,mo+1,0).getDate();
   const cells=useMemo(()=>{const fd=new Date(yr,mo,1).getDay();return[...Array(fd).fill(null),...Array.from({length:dim},(_,i)=>i+1)];},[yr,mo,dim]);
@@ -682,9 +715,14 @@ function App(){
   const savingsRate=monthStats.inc>0?Math.round(monthStats.net/monthStats.inc*100):null;
   const isTod=d=>d===TODAY.getDate()&&mo===TODAY.getMonth()&&yr===TODAY.getFullYear();
   const isNotToday=yr!==TODAY.getFullYear()||mo!==TODAY.getMonth();
+
   const chart12End=useMemo(()=>addMths(yr,mo,chart12Offset),[yr,mo,chart12Offset]);
   const chart12Start=useMemo(()=>addMths(chart12End.yr,chart12End.mo,-11),[chart12End]);
-  const last12=useMemo(()=>{const ms=[];let y2=chart12Start.yr,m2=chart12Start.mo;for(let i=0;i<12;i++){const lastDay=new Date(y2,m2+1,0);let inc=0,exp=0;txs.forEach(tx=>{const n=occsInMonth(tx,y2,m2).length;if(tx.type==="income")inc+=tx.amount*n;else exp+=tx.amount*n;});ms.push({label:MONTHS_FR[m2].slice(0,3),inc,exp,net:inc-exp,endBal:getBalAt(lastDay)});m2++;if(m2>11){m2=0;y2++;}}return ms;},[txs,getBalAt,chart12Start]);
+  const last12=useMemo(()=>{
+    const ms=[];let y2=chart12Start.yr,m2=chart12Start.mo;
+    for(let i=0;i<12;i++){const lastDay=new Date(y2,m2+1,0);let inc=0,exp=0;txs.forEach(tx=>{const n=occsInMonth(tx,y2,m2).length;if(tx.type==="income")inc+=tx.amount*n;else exp+=tx.amount*n;});ms.push({label:MONTHS_FR[m2].slice(0,3),inc,exp,net:inc-exp,endBal:getBalAt(lastDay)});m2++;if(m2>11){m2=0;y2++;}}
+    return ms;
+  },[txs,getBalAt,chart12Start]);
   const chart12Label=chart12Offset===0?"Ce mois":MONTHS_FR[chart12End.mo].slice(0,3)+" "+chart12End.yr;
   const topCatEnd=useMemo(()=>addMths(yr,mo,topCatOffset),[yr,mo,topCatOffset]);
   const topCats=useMemo(()=>{const s={};allCats.forEach(c=>{s[c.id]={spent:0};});txs.forEach(tx=>{if(tx.type==="income")return;const n=occsInMonth(tx,topCatEnd.yr,topCatEnd.mo).length;if(!n)return;const cat=tx.category||"other";if(!s[cat])s[cat]={spent:0};s[cat].spent+=tx.amount*n;});return allCats.filter(c=>c.id!=="income").map(c=>({...c,spent:s[c.id]?.spent||0})).filter(c=>c.spent>0).sort((a,b)=>b.spent-a.spent).slice(0,5);},[txs,topCatEnd,allCats]);
@@ -730,7 +768,9 @@ function App(){
   },[isSyncing,lastSync]);
   useEffect(()=>{
     if(!loaded)return;
-    const t=setTimeout(async()=>{try{const res=await fetch(MOTD_URL+"?t="+Date.now());if(!res.ok)return;const txt=(await res.text()).trim();if(!txt)return;setMotd(txt);setMotdVisible(true);setMotdFading(false);setMotdCountdown(8);clearInterval(motdCountdownRef.current);motdCountdownRef.current=setInterval(()=>{setMotdCountdown(c=>{if(c<=1){clearInterval(motdCountdownRef.current);return 0;}return c-1;});},1000);motdFadeTimer.current=setTimeout(()=>{setMotdFading(true);setTimeout(()=>{setMotdVisible(false);setMotdFading(false);},800);},8000);}catch{}},10000);
+    const t=setTimeout(async()=>{
+      try{const res=await fetch(MOTD_URL+"?t="+Date.now());if(!res.ok)return;const txt=(await res.text()).trim();if(!txt)return;setMotd(txt);setMotdVisible(true);setMotdFading(false);setMotdCountdown(8);clearInterval(motdCountdownRef.current);motdCountdownRef.current=setInterval(()=>{setMotdCountdown(c=>{if(c<=1){clearInterval(motdCountdownRef.current);return 0;}return c-1;});},1000);motdFadeTimer.current=setTimeout(()=>{setMotdFading(true);setTimeout(()=>{setMotdVisible(false);setMotdFading(false);},800);},8000);}catch{}
+    },10000);
     return()=>{clearTimeout(t);clearTimeout(motdFadeTimer.current);clearInterval(motdCountdownRef.current);};
   },[loaded]);
   useEffect(()=>{
@@ -740,7 +780,10 @@ function App(){
       try{await window.storage.set("bgt9-ct","1");lR=!!(await window.storage.get("bgt9-ct"));lW=true;}catch{}
       setConnStatus({localRead:lR,localWrite:lW});
       try{const r=await window.storage.get("bgt9-cfg");if(r){const c=JSON.parse(r.value);if(c.disp)setDisp(c.disp);if(c.darkMode)setDarkMode(c.darkMode);if(c.mode)setMode(c.mode);if(c.advancedCats!==undefined)setAdvancedCats(c.advancedCats);if(c.showDecimals!==undefined)setShowDecimals(c.showDecimals);if(c.isPro!==undefined)setIsPro(c.isPro);}}catch{}
-      try{const{data:row}=await sb.from("user_data").select("data,updated_at").eq("user_id",session.user.id).single();if(row?.data){const d=row.data;if(Array.isArray(d.txs))setTxs(cleanTxs(d.txs));if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.balAnchor!==undefined)setBalAnchor(d.balAnchor);if(d.budgets)setBudgets(d.budgets);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.showDecimals!==undefined)setShowDecimals(d.showDecimals);if(d.customCats)setCustomCats(d.customCats);if(d.customSubcats)setCustomSubcats(d.customSubcats);if(d.subcatGroupOverrides)setSubcatGroupOverrides(d.subcatGroupOverrides);if(Array.isArray(d.goals))setGoals(d.goals);setLastSync(new Date(row.updated_at));}}catch{}
+      try{
+        const{data:row}=await sb.from("user_data").select("data,updated_at").eq("user_id",session.user.id).single();
+        if(row?.data){const d=row.data;if(Array.isArray(d.txs))setTxs(cleanTxs(d.txs));if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.balAnchor!==undefined)setBalAnchor(d.balAnchor);if(d.budgets)setBudgets(d.budgets);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.showDecimals!==undefined)setShowDecimals(d.showDecimals);if(d.customCats)setCustomCats(d.customCats);if(d.customSubcats)setCustomSubcats(d.customSubcats);if(d.subcatGroupOverrides)setSubcatGroupOverrides(d.subcatGroupOverrides);if(Array.isArray(d.goals))setGoals(d.goals);setLastSync(new Date(row.updated_at));}
+      }catch{}
       setLoaded(true);
     })();
   },[session]);
@@ -762,7 +805,13 @@ function App(){
   const commitEditBal=()=>{const v=parseFloat(balInput);if(!isNaN(v))setBalAnchor({dateStr:dStr(TODAY),amount:v});setEditingBal(false);};
   const startEditBalSett=()=>{setBalInputSett(String(curBalVal.toFixed(2)));setEditingBalSett(true);setTimeout(()=>{balSettRef.current?.focus();balSettRef.current?.select();},50);};
   const commitEditBalSett=()=>{const v=parseFloat(balInputSett);if(!isNaN(v))setBalAnchor({dateStr:dStr(TODAY),amount:v});setEditingBalSett(false);};
-  const openForm=(tx=null,prefill=null)=>{const dt=prefill||dStr(TODAY);setFormMod({tx,editScope:null,editDateStr:null,form:tx?{desc:tx.description,amt:String(tx.amount),type:tx.type,rec:normRec(tx.recurrence,parseD(tx.startDate)),date:tx.startDate,cat:tx.category||"other",subCat:tx.subCategory||null}:{desc:"",amt:"",type:"expense",rec:{type:"once"},date:dt,cat:"other",subCat:null}});};
+  const openForm=(tx=null,prefill=null)=>{
+    const dt=prefill||dStr(TODAY);
+    setFormMod({tx,editScope:null,editDateStr:null,form:tx
+      ?{desc:tx.description,amt:String(tx.amount),type:tx.type,rec:normRec(tx.recurrence,parseD(tx.startDate)),date:tx.startDate,cat:tx.category||"other",subCat:tx.subCategory||null}
+      :{desc:"",amt:"",type:"expense",rec:{type:"once"},date:dt,cat:"other",subCat:null}
+    });
+  };
   const setFF=k=>v=>setFormMod(m=>({...m,form:{...m.form,[k]:v}}));
   const handleTypeChange=v=>setFormMod(m=>({...m,form:{...m.form,type:v,cat:v==="income"?"income":"other",subCat:null}}));
   const handleCatChange=v=>setFormMod(m=>({...m,form:{...m.form,cat:v,subCat:null}}));
@@ -779,7 +828,13 @@ function App(){
     else setTxs(prev=>prev.map(t=>t.id===tx.id?{...t,...data}:t));
     setFormMod(null);
   };
-  const handleDel=scope=>{const{tx,dateStr}=delMod;if(scope==="all"||normRec(tx.recurrence,parseD(tx.startDate)).type==="once")setTxs(prev=>prev.filter(t=>t.id!==tx.id));else if(scope==="this")setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,exceptions:[...(t.exceptions||[]),dateStr]}));else if(scope==="follow"){const ne=dayBef(dateStr);if(parseD(ne)<parseD(tx.startDate))setTxs(prev=>prev.filter(t=>t.id!==tx.id));else setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,endDate:ne}));}setDelMod(null);};
+  const handleDel=scope=>{
+    const{tx,dateStr}=delMod;
+    if(scope==="all"||normRec(tx.recurrence,parseD(tx.startDate)).type==="once")setTxs(prev=>prev.filter(t=>t.id!==tx.id));
+    else if(scope==="this")setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,exceptions:[...(t.exceptions||[]),dateStr]}));
+    else if(scope==="follow"){const ne=dayBef(dateStr);if(parseD(ne)<parseD(tx.startDate))setTxs(prev=>prev.filter(t=>t.id!==tx.id));else setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,endDate:ne}));}
+    setDelMod(null);
+  };
   const handleDirectMod=(tx,dateStr,scope)=>{
     setExpandedTx(null);setPendingDel(null);
     const isOnce=normRec(tx.recurrence,parseD(tx.startDate)).type==="once",eff=(isOnce&&scope==="this")?"all":scope;
@@ -817,7 +872,13 @@ function App(){
   const prevMo=()=>{if(isPrevMoDisabled)return;setSlideDir("right");mo===0?(setMo(11),setYr(y=>y-1)):setMo(m=>m-1);};
   const nextMo=()=>{setSlideDir("left");mo===11?(setMo(0),setYr(y=>y+1)):setMo(m=>m+1);};
   const goToday=()=>{setSlideDir(null);setMo(TODAY.getMonth());setYr(TODAY.getFullYear());};
-  const handleSwipe=dx=>{if(Math.abs(dx)<40)return;const dir=dx<0?1:-1;const subs=SUB_NAV[tab];if(subs&&subs.length>1){const idx=subs.findIndex(s=>s.id===curSub);const next=idx+dir;if(next>=0&&next<subs.length)setSubTab(prev=>({...prev,[tab]:subs[next].id}));}else{dir>0?nextMo():prevMo();}};
+  const handleSwipe=dx=>{
+    if(Math.abs(dx)<40)return;
+    const dir=dx<0?1:-1;
+    const subs=SUB_NAV[tab];
+    if(subs&&subs.length>1){const idx=subs.findIndex(s=>s.id===curSub);const next=idx+dir;if(next>=0&&next<subs.length)setSubTab(prev=>({...prev,[tab]:subs[next].id}));}
+    else{dir>0?nextMo():prevMo();}
+  };
 
   const dayModalList=dayMod?txs.filter(tx=>monthOccs.get(tx.id)?.includes(dayMod.day)):[];
   const dayModalDateStr=dayMod?yr+"-"+String(mo+1).padStart(2,"0")+"-"+String(dayMod.day).padStart(2,"0"):"";
@@ -833,6 +894,7 @@ function App(){
   const barVisible=syncShow||isOverrun||isMotd;
   const barFading=syncFade||(overrunDismissing&&!syncShow)||(motdFading&&isMotd);
 
+  // ─────────────────────────────────────────────────────────────────────────
   return(
     <div
       onTouchStart={e=>{touchStartX.current=e.touches[0].clientX;}}
@@ -870,10 +932,10 @@ function App(){
         </div>
       )}
 
-      {/* ── Barre d'annonce fixe (zIndex:98, recouvre le header) ── */}
-      <div style={{position:"fixed",top:0,left:0,right:0,zIndex:98,pointerEvents:isOverrun?"auto":"none",transform:barVisible&&!barFading?"translateY(0)":"translateY(-100%)",opacity:barFading?0:barVisible?1:0,transition:"transform 0.3s ease,opacity 0.5s ease",background:isOverrun?"#f97316":th.bg,borderBottom:"1px solid "+(isOverrun?"rgba(255,255,255,0.2)":th.border),height:HEADER_H,display:"flex",alignItems:"center"}}>
+      {/* ── Barre de statut (sync / overrun / motd) ── */}
+      <div style={{position:"fixed",top:0,left:0,right:0,zIndex:98,pointerEvents:isOverrun?"auto":"none",transform:barVisible&&!barFading?"translateY(0)":"translateY(-100%)",opacity:barFading?0:barVisible?1:0,transition:"transform 0.3s ease,opacity 0.5s ease",background:isOverrun?"#f97316":th.bg,borderBottom:"1px solid "+(isOverrun?"rgba(255,255,255,0.2)":th.border)}}>
         {isOverrun?(
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 16px",width:"100%",gap:8}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"5px 16px",gap:8}}>
             <div style={{display:"flex",alignItems:"center",gap:6,flex:1,minWidth:0,overflow:"hidden"}}>
               <span style={{fontSize:12,flexShrink:0}}>⚠️</span>
               <span style={{fontSize:11,fontWeight:700,color:"#fff",flexShrink:0}}>Budget dépassé</span>
@@ -882,47 +944,19 @@ function App(){
             <button onClick={acknowledgeOverruns} style={{fontSize:11,padding:"3px 10px",borderRadius:8,border:"none",background:"rgba(255,255,255,0.25)",color:"#fff",cursor:"pointer",fontWeight:600,flexShrink:0}}>Compris</button>
           </div>
         ):isMotd?(
-          <div style={{display:"flex",alignItems:"center",justifyContent:"center",width:"100%",padding:"0 48px 0 16px",position:"relative"}}>
-            <span style={{fontSize:13,color:th.sub,textAlign:"center",lineHeight:1.5}}>{motd}</span>
-            <span style={{position:"absolute",right:14,fontSize:10,color:th.muted,fontVariantNumeric:"tabular-nums"}}>{motdCountdown}s</span>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"104px",padding:"0 48px 0 16px",position:"relative"}}>
+            <span style={{fontSize:15,color:th.sub,textAlign:"center",lineHeight:1.6}}>{motd}</span>
+            <span style={{position:"absolute",bottom:10,right:14,fontSize:10,color:th.muted,fontVariantNumeric:"tabular-nums"}}>{motdCountdown}s</span>
           </div>
         ):(
-          <div style={{display:"flex",alignItems:"center",gap:7,justifyContent:"center",width:"100%",padding:"0 16px"}}>
-            {isSyncing?<span style={{width:6,height:6,borderRadius:"50%",background:"#f59e0b",display:"inline-block",flexShrink:0,animation:"pulse 1s infinite"}}/>:<span style={{width:6,height:6,borderRadius:"50%",background:"#10b981",display:"inline-block",flexShrink:0,opacity:0.8}}/>}
+          <div style={{display:"flex",alignItems:"center",gap:7,justifyContent:"center",padding:"5px 16px"}}>
+            {isSyncing
+              ?<span style={{width:6,height:6,borderRadius:"50%",background:"#f59e0b",display:"inline-block",flexShrink:0,animation:"pulse 1s infinite"}}/>
+              :<span style={{width:6,height:6,borderRadius:"50%",background:"#10b981",display:"inline-block",flexShrink:0,opacity:0.8}}/>}
             <span style={{fontSize:11,color:th.sub,whiteSpace:"nowrap"}}>{syncText}</span>
           </div>
         )}
       </div>
-
-      {/* ── Header statique (même hauteur que la barre) ── */}
-      <div
-        onMouseEnter={()=>setHeaderHovered(true)}
-        onMouseLeave={()=>setHeaderHovered(false)}
-        style={{background:th.bg,borderBottom:"1px solid "+th.border,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 24px",height:HEADER_H}}
-      >
-        <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <h1 onClick={handleTitleClick} style={{fontSize:16,color:th.text,fontWeight:700,margin:0,cursor:"pointer",userSelect:"none"}}>Budget</h1>
-          {!isOnline&&<span style={{fontSize:10,padding:"2px 8px",borderRadius:20,background:"#ef444422",color:"#ef4444",border:"1px solid #ef444440",fontWeight:500}}>HORS LIGNE</span>}
-        </div>
-        <div style={{textAlign:"right",cursor:"pointer"}} onClick={!editingBal?startEditBal:undefined}>
-          {editingBal
-            ?<input ref={balInputRef} type="number" inputMode="decimal" step="0.01" value={balInput} onChange={e=>setBalInput(e.target.value)} onBlur={commitEditBal} onKeyDown={e=>{if(e.key==="Enter")commitEditBal();if(e.key==="Escape")setEditingBal(false);}} style={{width:110,textAlign:"right",fontSize:16,fontWeight:600,color:th.text,background:"transparent",border:"none",borderBottom:"2px solid "+th.text,outline:"none",fontVariantNumeric:"tabular-nums"}}/>
-            :<p style={{fontSize:16,fontWeight:700,fontVariantNumeric:"tabular-nums",margin:0,color:curBalVal>=0?"#059669":"#ef4444"}}>{f(curBalVal,true)}</p>}
-        </div>
-      </div>
-
-      {/* ── Sub-nav avec bulle glissante ── */}
-      {curSubNav&&(
-        <SubNav
-          tabs={curSubNav}
-          activeId={curSub}
-          onSelect={id=>setSubTab(prev=>({...prev,[tab]:id}))}
-          isSubLocked={isSubLocked}
-          showAdd={tab==="transactions"}
-          onAdd={()=>openForm()}
-          th={th}
-        />
-      )}
 
       {/* ── FAB backdrop ── */}
       {showFabActions&&<div onClick={()=>setActiveTx(null)} style={{position:"fixed",inset:0,zIndex:97,background:"transparent"}}/>}
@@ -942,16 +976,48 @@ function App(){
         <button onClick={()=>{if(showFabActions)setActiveTx(null);else openForm();}} style={{width:48,height:48,borderRadius:"50%",background:showFabActions?"#ef4444":th.btnBg,color:showFabActions?"#fff":th.btnText,border:"none",cursor:"pointer",fontSize:showFabActions?22:26,fontWeight:300,boxShadow:"0 4px 16px rgba(0,0,0,0.2)",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1,position:"relative",zIndex:1,transition:"background 0.18s,color 0.18s,transform 0.18s",transform:showFabActions?"rotate(45deg)":"rotate(0deg)"}}>+</button>
       </div>
 
+      {/* ── Header ── */}
+      <div onMouseEnter={()=>setHeaderHovered(true)} onMouseLeave={()=>setHeaderHovered(false)} style={{padding:"36px 24px 20px",borderBottom:"1px solid "+th.border}}>
+        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
+          <div>
+            <p style={{...lbl,marginBottom:4}}>Gestion financière</p>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <h1 onClick={handleTitleClick} style={{fontSize:20,color:th.text,fontWeight:700,margin:0,cursor:"pointer",userSelect:"none"}}>Budget</h1>
+              {!isOnline&&<span style={{fontSize:10,padding:"2px 8px",borderRadius:20,background:"#ef444422",color:"#ef4444",border:"1px solid #ef444440",fontWeight:500}}>HORS LIGNE</span>}
+            </div>
+          </div>
+          <div style={{textAlign:"right",cursor:"pointer"}} onClick={!editingBal?startEditBal:undefined}>
+            <p style={{...lbl,margin:"0 0 3px"}}>Solde actuel</p>
+            {editingBal
+              ?<input ref={balInputRef} type="number" inputMode="decimal" step="0.01" value={balInput} onChange={e=>setBalInput(e.target.value)} onBlur={commitEditBal} onKeyDown={e=>{if(e.key==="Enter")commitEditBal();if(e.key==="Escape")setEditingBal(false);}} style={{width:130,textAlign:"right",fontSize:20,fontWeight:600,color:th.text,background:"transparent",border:"none",borderBottom:"2px solid "+th.text,outline:"none",fontVariantNumeric:"tabular-nums"}}/>
+              :<p style={{fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",margin:0,color:curBalVal>=0?"#059669":"#ef4444"}}>{f(curBalVal,true)}</p>}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Sub-nav + dots ── */}
+      {curSubNav&&(
+        <SubNav
+          tabs={curSubNav}
+          activeId={curSub}
+          onSelect={id=>setSubTab(prev=>({...prev,[tab]:id}))}
+          isSubLocked={isSubLocked}
+          showAdd={tab==="transactions"}
+          onAdd={()=>openForm()}
+          th={th}
+        />
+      )}
+
       {/* ── Contenu principal ── */}
       <div
         key={tab+"-"+(curSub||"")+(tab==="home"?"-"+yr+"-"+mo:"")}
-        style={{padding:"24px",paddingBottom:"176px",maxWidth:640,animation:tab==="home"&&slideDir?(slideDir==="left"?"slideInFromRight":"slideInFromLeft")+" 0.28s ease":"contentIn 0.27s ease"}}
+        style={{padding:"24px",paddingBottom:"176px",maxWidth:640,animation:tab==="home"&&slideDir?(slideDir==="left"?"slideInFromRight":"slideInFromLeft")+" 0.28s ease":"fadeIn 0.27s ease"}}
       >
 
         {/* ════ Accueil ════ */}
         {tab==="home"&&(
           <div>
-            {/* R1 : épargne — Aujourd'hui (placeholder invisible si mois courant) — Journée/Solde */}
+            {/* Rangée 1 : épargne — Aujourd'hui — Journée/Solde */}
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
               {savingsRate!==null
                 ?<span style={{fontSize:11,padding:"3px 10px",borderRadius:20,background:savingsRate>=0?"rgba(5,150,105,0.1)":"rgba(239,68,68,0.1)",color:savingsRate>=0?"#059669":"#ef4444",fontWeight:500}}>{savingsRate>=0?"+":""}{savingsRate}% épargne</span>
@@ -961,7 +1027,7 @@ function App(){
                 :<button style={{fontSize:11,padding:"3px 9px",borderRadius:8,border:"1px solid transparent",background:"none",color:"transparent",cursor:"default",whiteSpace:"nowrap",pointerEvents:"none"}}>Aujourd'hui</button>}
               <SegCtrl options={[["daily","Journée"],["balance","Solde"]]} value={mode} onChange={setMode} th={th}/>
             </div>
-            {/* R2 : résumé optionnel */}
+            {/* Rangée 2 : résumé mensuel (optionnel) */}
             {hasSummary&&(
               <div style={{marginBottom:0,paddingTop:10,paddingBottom:16,borderTop:"1px solid "+th.border,borderBottom:"1px solid "+th.border,display:"flex",flexWrap:"wrap",gap:"16px 28px"}}>
                 {disp.endBal&&endBalVal!==null&&<div><p style={{...lbl,margin:"0 0 4px"}}>Fin du mois</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:endBalVal>=0?"#059669":"#ef4444"}}>{f(endBalVal,true)}</p></div>}
@@ -969,15 +1035,15 @@ function App(){
                 {disp.net&&<div><p style={{...lbl,margin:"0 0 4px"}}>Net</p><p style={{fontSize:15,fontWeight:600,fontVariantNumeric:"tabular-nums",margin:0,color:monthStats.net>=0?"#059669":"#ef4444"}}>{monthStats.net>=0?"+":"-"}{f(monthStats.net,true)}</p></div>}
               </div>
             )}
-            {/* R3 : ← Mois Année → */}
+            {/* Rangée 3 : ← Mois Année → */}
             <div style={{display:"flex",alignItems:"center",justifyContent:"center",marginTop:30,marginBottom:10}}>
               <MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} onToday={goToday} th={th} prevDisabled={isPrevMoDisabled} showToday={false}/>
             </div>
-            {/* R4 : D L M M J V S */}
+            {/* Rangée 4 : jours de la semaine */}
             <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",marginBottom:6}}>
               {DAYS_FR.map((d,i)=><div key={i} style={{textAlign:"center",fontSize:11,color:th.muted,padding:"4px 0"}}>{d.slice(0,3)}</div>)}
             </div>
-            {/* R5 : grille */}
+            {/* Rangée 5 : grille calendrier */}
             <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4}}>
               {cells.map((day,i)=>{
                 if(!day)return<div key={"e"+i} style={{paddingBottom:"100%"}}/>;
@@ -1024,7 +1090,7 @@ function App(){
               {searchQuery&&<button onClick={()=>setSearchQuery("")} style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",fontSize:13,color:th.muted,background:"none",border:"none",cursor:"pointer",padding:4}}>X</button>}
             </div>
             {monthTxs.length===0
-              ?<div style={{textAlign:"center",padding:"60px 0"}}><p style={{fontSize:32,color:th.border,margin:"0 0 8px"}}>○</p><p style={{fontSize:13,color:th.muted}}>{searchQuery?"Aucun résultat":"Aucune transaction"}</p></div>
+              ?<div style={{textAlign:"center",padding:"60px 0"}}><p style={{fontSize:32,color:th.border,margin:"0 0 8px"}}>O</p><p style={{fontSize:13,color:th.muted}}>{searchQuery?"Aucun résultat":"Aucune transaction"}</p></div>
               :monthTxs.map(tx=>{const n=monthOccs.get(tx.id)?.length||1;return <TxRow key={tx.id} tx={tx} amount={tx.amount*n} recurrenceLabel={recLabel(tx)+(n>1?" x"+n:"")} cat={dynCatById(tx.category||"other")} sc={dynSubcatById(tx.subCategory)} isActive={activeTx?.id===tx.id} setActiveTx={setActiveTx} fmt={f} getCatName={getCatName} th={th}/>;})
             }
           </div>
@@ -1034,7 +1100,7 @@ function App(){
         {tab==="transactions"&&curSub==="recurrent"&&(
           <div>
             {recurTxs.length===0
-              ?<div style={{textAlign:"center",padding:"60px 0"}}><p style={{fontSize:32,color:th.border,margin:"0 0 8px"}}>○</p><p style={{fontSize:13,color:th.muted}}>Aucune transaction récurrente</p></div>
+              ?<div style={{textAlign:"center",padding:"60px 0"}}><p style={{fontSize:32,color:th.border,margin:"0 0 8px"}}>O</p><p style={{fontSize:13,color:th.muted}}>Aucune transaction récurrente</p></div>
               :recurTxs.map(tx=><TxRow key={tx.id} tx={tx} amount={tx.amount} recurrenceLabel={recLabel(tx)} cat={dynCatById(tx.category||"other")} sc={dynSubcatById(tx.subCategory)} isActive={activeTx?.id===tx.id} setActiveTx={setActiveTx} fmt={f} getCatName={getCatName} th={th}/>)
             }
           </div>
@@ -1133,17 +1199,37 @@ function App(){
         {tab==="analyse"&&curSub==="statistiques"&&(
           <ProGate isPro={isPro} th={th} title="Statistiques" desc="Taux d'épargne, évolution du solde, moyennes sur 12 mois. Fonctionnalité réservée à la version Pro.">
             <div>
-              {txs.length===0?<div style={{textAlign:"center",padding:"80px 0"}}><p style={{fontSize:40,marginBottom:12}}>📊</p><p style={{fontSize:14,color:th.muted}}>Pas encore assez de données</p></div>
-              :<div style={{display:"flex",flexDirection:"column",gap:24}}>
-                <div style={{display:"flex",flexWrap:"wrap",gap:10}}>
-                  <StatCard label="Taux d'épargne" value={statsKPIs.savingsRate!==null?statsKPIs.savingsRate+"%":"--"} sub={MONTHS_FR[mo]} color={statsKPIs.savingsRate===null?th.muted:statsKPIs.savingsRate>=0?"#059669":"#ef4444"} th={th}/>
-                  <StatCard label="Moy. dépenses / mois" value={f(statsKPIs.avgExp3)} sub="3 mois" color="#ef4444" th={th}/>
-                  <StatCard label="Net mensuel moyen" value={(statsKPIs.avgNet12>=0?"+":"-")+f(statsKPIs.avgNet12)} sub="12 derniers mois" color={statsKPIs.avgNet12>=0?"#059669":"#ef4444"} th={th}/>
+              {txs.length===0
+                ?<div style={{textAlign:"center",padding:"80px 0"}}><p style={{fontSize:40,marginBottom:12}}>📊</p><p style={{fontSize:14,color:th.muted}}>Pas encore assez de données</p></div>
+                :<div style={{display:"flex",flexDirection:"column",gap:24}}>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:10}}>
+                    <StatCard label="Taux d'épargne" value={statsKPIs.savingsRate!==null?statsKPIs.savingsRate+"%":"--"} sub={MONTHS_FR[mo]} color={statsKPIs.savingsRate===null?th.muted:statsKPIs.savingsRate>=0?"#059669":"#ef4444"} th={th}/>
+                    <StatCard label="Moy. dépenses / mois" value={f(statsKPIs.avgExp3)} sub="3 mois" color="#ef4444" th={th}/>
+                    <StatCard label="Net mensuel moyen" value={(statsKPIs.avgNet12>=0?"+":"-")+f(statsKPIs.avgNet12)} sub="12 derniers mois" color={statsKPIs.avgNet12>=0?"#059669":"#ef4444"} th={th}/>
+                  </div>
+                  <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}><p style={{fontSize:13,fontWeight:600,color:th.text,margin:0}}>Évolution du solde</p><MiniNav label={chart12Label} onPrev={()=>setChart12Offset(o=>o-1)} onNext={()=>setChart12Offset(o=>Math.min(o+1,12))} nextDisabled={chart12Offset>=12} th={th}/></div>
+                    <LineChart data={last12.map(m=>({y:m.endBal,label:m.label}))} color={last12[last12.length-1]?.endBal>=0?"#10b981":"#ef4444"} th={th} height={130}/>
+                  </div>
+                  <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><p style={{fontSize:13,fontWeight:600,color:th.text,margin:0}}>Revenus vs Dépenses</p><MiniNav label={chart12Label} onPrev={()=>setChart12Offset(o=>o-1)} onNext={()=>setChart12Offset(o=>Math.min(o+1,12))} nextDisabled={chart12Offset>=12} th={th}/></div>
+                    <BarChart2 data={last12.map(m=>({inc:m.inc,exp:m.exp,label:m.label}))} th={th} height={140}/>
+                  </div>
+                  {topCats.length>0&&(
+                    <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}><p style={{fontSize:13,fontWeight:600,color:th.text,margin:0}}>Top catégories</p><MiniNav label={topCatLabel} onPrev={()=>setTopCatOffset(o=>o-1)} onNext={()=>setTopCatOffset(o=>Math.min(o+1,12))} nextDisabled={topCatOffset>=12} th={th}/></div>
+                      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                        {topCats.map(cat=>{const pct=topCats[0].spent>0?cat.spent/topCats[0].spent*100:0;return(
+                          <div key={cat.id}>
+                            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:5}}><div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:16}}>{cat.emoji}</span><span style={{fontSize:13,color:th.text}}>{getCatName(cat.id)}</span></div><span style={{fontSize:13,fontVariantNumeric:"tabular-nums",fontWeight:500,color:th.text}}>{f(cat.spent,true)}</span></div>
+                            <div style={{height:6,background:th.surface,borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",width:pct+"%",background:cat.color,borderRadius:3,opacity:0.85}}/></div>
+                          </div>
+                        );})}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}><p style={{fontSize:13,fontWeight:600,color:th.text,margin:0}}>Évolution du solde</p><MiniNav label={chart12Label} onPrev={()=>setChart12Offset(o=>o-1)} onNext={()=>setChart12Offset(o=>Math.min(o+1,12))} nextDisabled={chart12Offset>=12} th={th}/></div><LineChart data={last12.map(m=>({y:m.endBal,label:m.label}))} color={last12[last12.length-1]?.endBal>=0?"#10b981":"#ef4444"} th={th} height={130}/></div>
-                <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><p style={{fontSize:13,fontWeight:600,color:th.text,margin:0}}>Revenus vs Dépenses</p><MiniNav label={chart12Label} onPrev={()=>setChart12Offset(o=>o-1)} onNext={()=>setChart12Offset(o=>Math.min(o+1,12))} nextDisabled={chart12Offset>=12} th={th}/></div><BarChart2 data={last12.map(m=>({inc:m.inc,exp:m.exp,label:m.label}))} th={th} height={140}/></div>
-                {topCats.length>0&&(<div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}><p style={{fontSize:13,fontWeight:600,color:th.text,margin:0}}>Top catégories</p><MiniNav label={topCatLabel} onPrev={()=>setTopCatOffset(o=>o-1)} onNext={()=>setTopCatOffset(o=>Math.min(o+1,12))} nextDisabled={topCatOffset>=12} th={th}/></div><div style={{display:"flex",flexDirection:"column",gap:10}}>{topCats.map(cat=>{const pct=topCats[0].spent>0?cat.spent/topCats[0].spent*100:0;return(<div key={cat.id}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:5}}><div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:16}}>{cat.emoji}</span><span style={{fontSize:13,color:th.text}}>{getCatName(cat.id)}</span></div><span style={{fontSize:13,fontVariantNumeric:"tabular-nums",fontWeight:500,color:th.text}}>{f(cat.spent,true)}</span></div><div style={{height:6,background:th.surface,borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",width:pct+"%",background:cat.color,borderRadius:3,opacity:0.85}}/></div></div>);})}</div></div>)}
-              </div>}
+              }
             </div>
           </ProGate>
         )}
@@ -1151,31 +1237,38 @@ function App(){
         {/* ════ Analyse — Graphiques ════ */}
         {tab==="analyse"&&curSub==="graphiques"&&(
           <ProGate isPro={isPro} th={th} title="Graphiques" desc="Visualisations avancées de tes finances. Fonctionnalité réservée à la version Pro.">
-            <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"100px 0"}}><p style={{fontSize:40,marginBottom:12}}>📈</p><p style={{fontSize:22,color:th.muted,fontWeight:300}}>Graphiques</p></div>
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"100px 0"}}>
+              <p style={{fontSize:40,marginBottom:12}}>📈</p>
+              <p style={{fontSize:22,color:th.muted,fontWeight:300}}>Graphiques</p>
+            </div>
           </ProGate>
         )}
 
-        {/* ════ Analyse — Contrôle ════ */}
+        {/* ════ Analyse — Contrôle des coûts ════ */}
         {tab==="analyse"&&curSub==="controle"&&(
           <ProGate isPro={isPro} th={th} title="Contrôle des coûts" desc="Répartition essentiel / flexible / lifestyle de tes dépenses. Fonctionnalité réservée à la version Pro.">
             <div>
-              <div style={{display:"flex",alignItems:"center",marginBottom:20}}><MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} onToday={goToday} th={th} prevDisabled={isPrevMoDisabled}/></div>
-              {txs.length===0?<div style={{textAlign:"center",padding:"80px 0"}}><p style={{fontSize:40,marginBottom:12}}>📊</p><p style={{fontSize:14,color:th.muted}}>Pas encore assez de données</p></div>
-              :<div style={{display:"flex",flexDirection:"column",gap:14}}>
-                {SUBCAT_GROUPS.map(grp=>{const total=controleData.groups[grp.id]||0,items=controleData.details[grp.id]||[],totalAll=Object.values(controleData.groups).reduce((s,v)=>s+v,0),pct=totalAll>0?total/totalAll*100:0;return(
-                  <div key={grp.id} style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"16px",borderLeft:"3px solid "+grp.color}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}><div><p style={{fontSize:14,fontWeight:600,color:grp.color,margin:"0 0 2px"}}>{grp.label}</p><p style={{fontSize:11,color:th.muted,margin:0}}>{grp.desc}</p></div><div style={{textAlign:"right"}}><p style={{fontSize:16,fontWeight:700,fontVariantNumeric:"tabular-nums",color:th.text,margin:"0 0 1px"}}>{f(total,true)}</p><p style={{fontSize:11,color:th.muted,margin:0}}>{pct.toFixed(0)}% des dépenses</p></div></div>
-                    <div style={{height:4,background:th.surface,borderRadius:2,overflow:"hidden",marginBottom:items.length?14:0}}><div style={{height:"100%",width:pct+"%",background:grp.color,borderRadius:2,opacity:0.7}}/></div>
-                    {items.length?<div style={{display:"flex",flexDirection:"column",gap:6}}>{items.map((item,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:6,borderTop:"1px solid "+th.border}}><span style={{fontSize:12,color:th.sub}}>{item.label}</span><span style={{fontSize:12,fontVariantNumeric:"tabular-nums",color:th.text,fontWeight:500}}>{f(item.total,true)}</span></div>)}</div>:<p style={{fontSize:12,color:th.muted,margin:0,textAlign:"center",paddingTop:4}}>Aucune transaction classifiée ce mois</p>}
-                  </div>
-                );})}
-                {controleData.groups.nonclasse>0&&(
-                  <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"16px",borderLeft:"3px solid "+th.muted}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}><div><p style={{fontSize:14,fontWeight:600,color:th.sub,margin:"0 0 2px"}}>Non classé</p><p style={{fontSize:11,color:th.muted,margin:0}}>Sans sous-catégorie assignée</p></div><p style={{fontSize:16,fontWeight:700,fontVariantNumeric:"tabular-nums",color:th.text,margin:0}}>{f(controleData.groups.nonclasse,true)}</p></div>
-                    <div style={{display:"flex",flexDirection:"column",gap:6}}>{(controleData.details.nonclasse||[]).map((item,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:6,borderTop:"1px solid "+th.border}}><span style={{fontSize:12,color:th.sub}}>{item.label}</span><span style={{fontSize:12,fontVariantNumeric:"tabular-nums",color:th.text,fontWeight:500}}>{f(item.total,true)}</span></div>)}</div>
-                  </div>
-                )}
-              </div>}
+              <div style={{display:"flex",alignItems:"center",marginBottom:20}}>
+                <MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} onToday={goToday} th={th} prevDisabled={isPrevMoDisabled}/>
+              </div>
+              {txs.length===0
+                ?<div style={{textAlign:"center",padding:"80px 0"}}><p style={{fontSize:40,marginBottom:12}}>📊</p><p style={{fontSize:14,color:th.muted}}>Pas encore assez de données</p></div>
+                :<div style={{display:"flex",flexDirection:"column",gap:14}}>
+                  {SUBCAT_GROUPS.map(grp=>{const total=controleData.groups[grp.id]||0,items=controleData.details[grp.id]||[],totalAll=Object.values(controleData.groups).reduce((s,v)=>s+v,0),pct=totalAll>0?total/totalAll*100:0;return(
+                    <div key={grp.id} style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"16px",borderLeft:"3px solid "+grp.color}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}><div><p style={{fontSize:14,fontWeight:600,color:grp.color,margin:"0 0 2px"}}>{grp.label}</p><p style={{fontSize:11,color:th.muted,margin:0}}>{grp.desc}</p></div><div style={{textAlign:"right"}}><p style={{fontSize:16,fontWeight:700,fontVariantNumeric:"tabular-nums",color:th.text,margin:"0 0 1px"}}>{f(total,true)}</p><p style={{fontSize:11,color:th.muted,margin:0}}>{pct.toFixed(0)}% des dépenses</p></div></div>
+                      <div style={{height:4,background:th.surface,borderRadius:2,overflow:"hidden",marginBottom:items.length?14:0}}><div style={{height:"100%",width:pct+"%",background:grp.color,borderRadius:2,opacity:0.7}}/></div>
+                      {items.length?<div style={{display:"flex",flexDirection:"column",gap:6}}>{items.map((item,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:6,borderTop:"1px solid "+th.border}}><span style={{fontSize:12,color:th.sub}}>{item.label}</span><span style={{fontSize:12,fontVariantNumeric:"tabular-nums",color:th.text,fontWeight:500}}>{f(item.total,true)}</span></div>)}</div>:<p style={{fontSize:12,color:th.muted,margin:0,textAlign:"center",paddingTop:4}}>Aucune transaction classifiée ce mois</p>}
+                    </div>
+                  );})}
+                  {controleData.groups.nonclasse>0&&(
+                    <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"16px",borderLeft:"3px solid "+th.muted}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}><div><p style={{fontSize:14,fontWeight:600,color:th.sub,margin:"0 0 2px"}}>Non classé</p><p style={{fontSize:11,color:th.muted,margin:0}}>Sans sous-catégorie assignée</p></div><p style={{fontSize:16,fontWeight:700,fontVariantNumeric:"tabular-nums",color:th.text,margin:0}}>{f(controleData.groups.nonclasse,true)}</p></div>
+                      <div style={{display:"flex",flexDirection:"column",gap:6}}>{(controleData.details.nonclasse||[]).map((item,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:6,borderTop:"1px solid "+th.border}}><span style={{fontSize:12,color:th.sub}}>{item.label}</span><span style={{fontSize:12,fontVariantNumeric:"tabular-nums",color:th.text,fontWeight:500}}>{f(item.total,true)}</span></div>)}</div>
+                    </div>
+                  )}
+                </div>
+              }
             </div>
           </ProGate>
         )}
@@ -1227,14 +1320,23 @@ function App(){
             <p style={{...lbl,marginBottom:8}}>Paramètres</p>
             <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:"14px 16px",marginBottom:20}}>
               <div style={{display:"flex",alignItems:"center",gap:12}}>
-                <div style={{width:42,height:42,borderRadius:12,background:"linear-gradient(135deg,#6366f1,#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{session?.user?.user_metadata?.avatar_url?<img src={session.user.user_metadata.avatar_url} style={{width:42,height:42,borderRadius:12,objectFit:"cover"}} alt=""/>:"👤"}</div>
-                <div style={{flex:1,minWidth:0}}><p style={{fontSize:13,color:th.text,margin:0,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{session?.user?.user_metadata?.full_name||"Utilisateur"}</p><p style={{fontSize:11,color:th.muted,margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{session?.user?.email}</p></div>
+                <div style={{width:42,height:42,borderRadius:12,background:"linear-gradient(135deg,#6366f1,#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>
+                  {session?.user?.user_metadata?.avatar_url?<img src={session.user.user_metadata.avatar_url} style={{width:42,height:42,borderRadius:12,objectFit:"cover"}} alt=""/>:"👤"}
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  <p style={{fontSize:13,color:th.text,margin:0,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{session?.user?.user_metadata?.full_name||"Utilisateur"}</p>
+                  <p style={{fontSize:11,color:th.muted,margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{session?.user?.email}</p>
+                </div>
                 <button onClick={handleLogout} style={{fontSize:12,color:th.danger,background:"none",border:"1px solid "+th.danger+"66",borderRadius:8,padding:"6px 12px",cursor:"pointer",flexShrink:0,fontWeight:500}}>Déconnexion</button>
               </div>
             </div>
             <div style={{padding:"12px 0",borderBottom:"1px solid "+th.border,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>Solde actuel</p><p style={{fontSize:11,color:th.muted,margin:"3px 0 0"}}>Montant actuel dans le portefeuille</p></div>
-              <div style={{cursor:"pointer"}} onClick={!editingBalSett?startEditBalSett:undefined}>{editingBalSett?<input ref={balSettRef} type="number" inputMode="decimal" step="0.01" value={balInputSett} onChange={e=>setBalInputSett(e.target.value)} onBlur={commitEditBalSett} onKeyDown={e=>{if(e.key==="Enter")commitEditBalSett();if(e.key==="Escape")setEditingBalSett(false);}} style={{width:110,textAlign:"right",fontSize:13,fontWeight:600,color:th.text,background:"transparent",border:"none",borderBottom:"2px solid "+th.text,outline:"none",fontVariantNumeric:"tabular-nums"}}/>:<span style={{fontSize:13,fontWeight:600,fontVariantNumeric:"tabular-nums",color:curBalVal>=0?"#059669":"#ef4444"}}>{f(curBalVal,true)}</span>}</div>
+              <div style={{cursor:"pointer"}} onClick={!editingBalSett?startEditBalSett:undefined}>
+                {editingBalSett
+                  ?<input ref={balSettRef} type="number" inputMode="decimal" step="0.01" value={balInputSett} onChange={e=>setBalInputSett(e.target.value)} onBlur={commitEditBalSett} onKeyDown={e=>{if(e.key==="Enter")commitEditBalSett();if(e.key==="Escape")setEditingBalSett(false);}} style={{width:110,textAlign:"right",fontSize:13,fontWeight:600,color:th.text,background:"transparent",border:"none",borderBottom:"2px solid "+th.text,outline:"none",fontVariantNumeric:"tabular-nums"}}/>
+                  :<span style={{fontSize:13,fontWeight:600,fontVariantNumeric:"tabular-nums",color:curBalVal>=0?"#059669":"#ef4444"}}>{f(curBalVal,true)}</span>}
+              </div>
             </div>
             <p style={{...lbl,margin:"24px 0 4px"}}>Affichage</p>
             <Tog label="Afficher les décimales" sub="Afficher les centimes dans les montants" value={showDecimals} onChange={setShowDecimals} th={th}/>
@@ -1242,13 +1344,18 @@ function App(){
             <Tog label="Revenus et dépenses" value={disp.revExp} onChange={v=>setDisp(d=>({...d,revExp:v}))} th={th}/>
             <Tog label="Net mensuel" value={disp.net} onChange={v=>setDisp(d=>({...d,net:v}))} th={th}/>
             <p style={{...lbl,margin:"24px 0 4px"}}>Mode nuit</p>
-            <div style={{paddingBottom:16,borderBottom:"1px solid "+th.border}}><SegCtrl options={[["off","Désactivé"],["auto","Automatique"],["on","Activé"]]} value={darkMode} onChange={setDarkMode} th={th}/></div>
+            <div style={{paddingBottom:16,borderBottom:"1px solid "+th.border}}>
+              <SegCtrl options={[["off","Désactivé"],["auto","Automatique"],["on","Activé"]]} value={darkMode} onChange={setDarkMode} th={th}/>
+            </div>
             <p style={{...lbl,margin:"24px 0 4px"}}>Catégories</p>
             <Tog label="Gestion avancée des catégories" sub="Personnaliser et créer des catégories" value={advancedCats} onChange={setAdvancedCats} th={th}/>
             {advancedCats&&(
               <button onClick={()=>{setCatsMod(true);setCatsTab("cats");setAddCatForm(null);setAddSubcatForm(null);}} style={{display:"flex",alignItems:"center",justifyContent:"space-between",width:"100%",padding:"13px 16px",marginTop:10,background:th.cardBg,border:"1px solid "+th.border,borderRadius:12,cursor:"pointer",fontSize:13,color:th.text,textAlign:"left"}}>
                 <div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:18}}>🗂️</span><span style={{fontWeight:500}}>Gérer les catégories</span></div>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>{(customCats.length+customSubcats.length)>0&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:20,background:"#6366f118",color:"#6366f1",fontWeight:500}}>{customCats.length+customSubcats.length} perso.</span>}<span style={{color:th.muted,fontSize:16}}>›</span></div>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  {(customCats.length+customSubcats.length)>0&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:20,background:"#6366f118",color:"#6366f1",fontWeight:500}}>{customCats.length+customSubcats.length} perso.</span>}
+                  <span style={{color:th.muted,fontSize:16}}>›</span>
+                </div>
               </button>
             )}
             <p style={{...lbl,margin:"24px 0 8px"}}>Données</p>
@@ -1260,7 +1367,8 @@ function App(){
             ):(
               <div style={{paddingBottom:20,borderBottom:"1px solid "+th.border}}>
                 <div style={{display:"flex",alignItems:"center",gap:8,padding:"11px 14px",background:th.surface,borderRadius:10,border:"1px solid "+th.border}}>
-                  <span style={{fontSize:14}}>🔒</span><p style={{fontSize:12,color:th.muted,margin:0}}>Export / Import réservé à la version Pro</p>
+                  <span style={{fontSize:14}}>🔒</span>
+                  <p style={{fontSize:12,color:th.muted,margin:0}}>Export / Import réservé à la version Pro</p>
                 </div>
               </div>
             )}
@@ -1286,8 +1394,7 @@ function App(){
         ))}
       </div>
 
-      {/* ── Modales ── */}
-
+      {/* ── Modal : dupliquer ── */}
       {dupMod&&(
         <Sheet onClose={()=>setDupMod(null)} th={th}>
           <SheetHead title="Dupliquer la transaction" onClose={()=>setDupMod(null)} th={th}/>
@@ -1304,6 +1411,7 @@ function App(){
         </Sheet>
       )}
 
+      {/* ── Modal : export ── */}
       {exportMod&&(
         <Sheet onClose={()=>setExportMod(false)} th={th}>
           <SheetHead title="Exporter les données" onClose={()=>setExportMod(false)} th={th}/>
@@ -1316,6 +1424,7 @@ function App(){
         </Sheet>
       )}
 
+      {/* ── Modal : import ── */}
       {importMod&&(
         <Sheet onClose={()=>setImportMod(false)} th={th}>
           <SheetHead title="Importer les données" onClose={()=>setImportMod(false)} th={th}/>
@@ -1328,6 +1437,7 @@ function App(){
         </Sheet>
       )}
 
+      {/* ── Modal : objectif ── */}
       {goalForm&&(
         <Sheet onClose={()=>setGoalForm(null)} th={th}>
           <SheetHead title={goalForm.id?"Modifier l'objectif":"Nouvel objectif"} onClose={()=>setGoalForm(null)} th={th}/>
@@ -1346,9 +1456,15 @@ function App(){
         </Sheet>
       )}
 
+      {/* ── Modal : jour ── */}
       {dayMod&&(
         <Sheet onClose={()=>{setDayMod(null);setExpandedTx(null);setPendingDel(null);}} th={th}>
-          <SheetHead title={MONTHS_FR[mo]+" "+dayMod.day} onClose={()=>{setDayMod(null);setExpandedTx(null);setPendingDel(null);}} th={th} right={<button onClick={()=>{setDayMod(null);openForm(null,dayModalDateStr);}} style={{fontSize:12,color:th.sub,background:"none",border:"1px solid "+th.border,borderRadius:8,padding:"5px 11px",cursor:"pointer"}}>+ Ajouter</button>}/>
+          <SheetHead
+            title={MONTHS_FR[mo]+" "+dayMod.day}
+            onClose={()=>{setDayMod(null);setExpandedTx(null);setPendingDel(null);}}
+            th={th}
+            right={<button onClick={()=>{setDayMod(null);openForm(null,dayModalDateStr);}} style={{fontSize:12,color:th.sub,background:"none",border:"1px solid "+th.border,borderRadius:8,padding:"5px 11px",cursor:"pointer"}}>+ Ajouter</button>}
+          />
           {dayModalList.length===0
             ?<div style={{textAlign:"center",padding:"32px 0"}}><p style={{fontSize:13,color:th.muted}}>Aucune transaction ce jour</p></div>
             :dayModalList.map(tx=>{
@@ -1358,7 +1474,10 @@ function App(){
                   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 0",borderBottom:isExp?"none":"1px solid "+th.border,cursor:"pointer"}} onClick={()=>{setExpandedTx(isExp?null:tx.id);setPendingDel(null);}}>
                     <div style={{display:"flex",alignItems:"center",gap:10,flex:1}}>
                       <div style={{width:36,height:36,borderRadius:10,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0,border:"2px solid "+(isExp?cat.color:"transparent")}}>{cat.emoji}</div>
-                      <div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p><p style={{fontSize:11,margin:"2px 0 0",color:cat.color,fontWeight:500}}>{getCatName(cat.id)}{sc?<span style={{color:th.muted,fontWeight:400}}> - {sc.label}</span>:null}</p></div>
+                      <div>
+                        <p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p>
+                        <p style={{fontSize:11,margin:"2px 0 0",color:cat.color,fontWeight:500}}>{getCatName(cat.id)}{sc?<span style={{color:th.muted,fontWeight:400}}> - {sc.label}</span>:null}</p>
+                      </div>
                     </div>
                     <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
                       <span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:tx.type==="income"?"#059669":"#ef4444"}}>{tx.type==="income"?"+":"-"}{f(tx.amount,true)}</span>
@@ -1367,14 +1486,25 @@ function App(){
                   </div>
                   {isExp&&(
                     <div style={{padding:"12px 0 16px",borderBottom:"1px solid "+th.border}}>
-                      {isPro&&(<><p style={{fontSize:10,color:th.muted,letterSpacing:"0.1em",textTransform:"uppercase",margin:"0 0 6px",paddingLeft:2}}>Dupliquer</p><div style={{marginBottom:14}}><button onClick={()=>{setDayMod(null);setDupMod({tx,date:dStr(TODAY)});}} style={{textAlign:"left",padding:"9px 12px",fontSize:13,color:th.text,background:th.surface,border:"none",borderRadius:9,cursor:"pointer",lineHeight:1.3,width:"100%"}}>Choisir une date et dupliquer</button></div></>)}
+                      {isPro&&(
+                        <><p style={{fontSize:10,color:th.muted,letterSpacing:"0.1em",textTransform:"uppercase",margin:"0 0 6px",paddingLeft:2}}>Dupliquer</p>
+                        <div style={{marginBottom:14}}>
+                          <button onClick={()=>{setDayMod(null);setDupMod({tx,date:dStr(TODAY)});}} style={{textAlign:"left",padding:"9px 12px",fontSize:13,color:th.text,background:th.surface,border:"none",borderRadius:9,cursor:"pointer",lineHeight:1.3,width:"100%"}}>Choisir une date et dupliquer</button>
+                        </div></>
+                      )}
                       <p style={{fontSize:10,color:th.muted,letterSpacing:"0.1em",textTransform:"uppercase",margin:"0 0 6px",paddingLeft:2}}>Modifier</p>
                       <div style={{display:"flex",flexDirection:"column",gap:3,marginBottom:14}}>
-                        {(normRec(tx.recurrence,parseD(tx.startDate)).type==="once"?[["this","Cette occurrence"]]:[["this","Cette occurrence"],["follow","Cette occurrence et les suivantes"],["all","Toute la série"],["terminate","Terminé après cette date"]]).map(([sc2,lb])=><button key={sc2} onClick={()=>handleDirectMod(tx,dayModalDateStr,sc2)} style={{textAlign:"left",padding:"9px 12px",fontSize:13,color:th.text,background:th.surface,border:"none",borderRadius:9,cursor:"pointer",lineHeight:1.3}}>{lb}</button>)}
+                        {(normRec(tx.recurrence,parseD(tx.startDate)).type==="once"
+                          ?[["this","Cette occurrence"]]
+                          :[["this","Cette occurrence"],["follow","Cette occurrence et les suivantes"],["all","Toute la série"],["terminate","Terminé après cette date"]]
+                        ).map(([sc2,lb])=><button key={sc2} onClick={()=>handleDirectMod(tx,dayModalDateStr,sc2)} style={{textAlign:"left",padding:"9px 12px",fontSize:13,color:th.text,background:th.surface,border:"none",borderRadius:9,cursor:"pointer",lineHeight:1.3}}>{lb}</button>)}
                       </div>
                       <p style={{fontSize:10,color:"#ef4444",letterSpacing:"0.1em",textTransform:"uppercase",margin:"0 0 6px",paddingLeft:2,opacity:0.8}}>Supprimer</p>
                       <div style={{display:"flex",flexDirection:"column",gap:3}}>
-                        {(normRec(tx.recurrence,parseD(tx.startDate)).type==="once"?[["this","Cette occurrence"]]:[["this","Cette occurrence"],["follow","Cette occurrence et les suivantes"],["anterior","Toutes les occurrences antérieures"],["all","Toutes les occurrences"]]).map(([sc2,lb])=>{const isPending=pendingDel?.txId===tx.id&&pendingDel?.scope===sc2;return(
+                        {(normRec(tx.recurrence,parseD(tx.startDate)).type==="once"
+                          ?[["this","Cette occurrence"]]
+                          :[["this","Cette occurrence"],["follow","Cette occurrence et les suivantes"],["anterior","Toutes les occurrences antérieures"],["all","Toutes les occurrences"]]
+                        ).map(([sc2,lb])=>{const isPending=pendingDel?.txId===tx.id&&pendingDel?.scope===sc2;return(
                           <button key={sc2} onClick={()=>{if(isPending){handleDirectDel(tx,dayModalDateStr,sc2);setPendingDel(null);}else setPendingDel({txId:tx.id,scope:sc2});}} style={{textAlign:"left",padding:"9px 12px",fontSize:13,color:"#ef4444",background:isPending?(isDark?"rgba(239,68,68,0.18)":"#fee2e2"):th.surface,border:"1px solid "+(isPending?"#ef4444":"transparent"),borderRadius:9,cursor:"pointer",lineHeight:1.3,transition:"all 0.15s"}}>{isPending?"Confirmer - "+lb:lb}</button>
                         );})}
                       </div>
@@ -1387,6 +1517,7 @@ function App(){
         </Sheet>
       )}
 
+      {/* ── Modal : supprimer transaction ── */}
       {delMod&&(
         <Sheet onClose={()=>setDelMod(null)} th={th}>
           <h3 style={{fontSize:15,color:th.text,fontWeight:600,margin:"0 0 4px"}}>Supprimer la transaction</h3>
@@ -1401,6 +1532,7 @@ function App(){
         </Sheet>
       )}
 
+      {/* ── Modal : supprimer compte ── */}
       {delAccMod&&(
         <Sheet onClose={()=>{setDelAccMod(false);setDelAccInput("");}} th={th}>
           <div style={{textAlign:"center",marginBottom:20}}>
@@ -1408,7 +1540,9 @@ function App(){
             <h3 style={{fontSize:16,color:th.text,fontWeight:700,margin:"0 0 8px"}}>Confirmer la suppression</h3>
             <p style={{fontSize:13,color:th.sub,margin:0,lineHeight:1.6}}>Toutes vos données Supabase seront effacées.<br/>Tapez le mot ci-dessous :</p>
           </div>
-          <div style={{background:th.surface,borderRadius:10,padding:"10px 14px",textAlign:"center",marginBottom:16}}><span style={{fontSize:16,fontWeight:700,letterSpacing:"0.1em",color:th.danger}}>SUPPRIMER</span></div>
+          <div style={{background:th.surface,borderRadius:10,padding:"10px 14px",textAlign:"center",marginBottom:16}}>
+            <span style={{fontSize:16,fontWeight:700,letterSpacing:"0.1em",color:th.danger}}>SUPPRIMER</span>
+          </div>
           <input type="text" value={delAccInput} onChange={e=>setDelAccInput(e.target.value)} placeholder="SUPPRIMER" style={{...iSt,textAlign:"center",fontSize:15,fontWeight:600,letterSpacing:"0.05em",borderColor:delAccInput==="SUPPRIMER"?"#059669":th.inputBorder,color:delAccInput==="SUPPRIMER"?"#059669":th.text,marginBottom:16}}/>
           <div style={{display:"flex",gap:8}}>
             <button onClick={()=>{setDelAccMod(false);setDelAccInput("");}} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>Annuler</button>
@@ -1417,40 +1551,48 @@ function App(){
         </Sheet>
       )}
 
+      {/* ── Formulaire transaction (full sheet) ── */}
       {formMod&&(
-        <FullSheet onClose={()=>setFormMod(null)} th={th}>
-          <FullSheetHead title={formMod.tx?"Modifier la transaction":"Nouvelle transaction"} onClose={()=>setFormMod(null)} th={th} right={formMod.tx&&!formMod.editScope?<button onClick={()=>{setDelMod({tx:formMod.tx,dateStr:formMod.tx.startDate});setFormMod(null);}} style={{fontSize:13,color:"#f87171",background:"none",border:"none",cursor:"pointer",padding:"4px 8px"}}>Supprimer</button>:null}/>
+        <FullSheet th={th}>
+          <FullSheetHead
+            title={formMod.tx?"Modifier la transaction":"Nouvelle transaction"}
+            onClose={()=>setFormMod(null)}
+            th={th}
+            right={formMod.tx&&!formMod.editScope?<button onClick={()=>{setDelMod({tx:formMod.tx,dateStr:formMod.tx.startDate});setFormMod(null);}} style={{fontSize:13,color:"#f87171",background:"none",border:"none",cursor:"pointer",padding:"4px 8px"}}>Supprimer</button>:null}
+          />
           <div style={{display:"flex",gap:8,marginBottom:24}}>
             {[["expense","Dépense"],["income","Revenu"]].map(([v,l])=>(
               <button key={v} onClick={()=>handleTypeChange(v)} style={{flex:1,padding:"11px 0",fontSize:14,borderRadius:12,border:"none",cursor:"pointer",fontWeight:500,background:formMod.form.type===v?(v==="income"?(isDark?"rgba(16,185,129,0.15)":"#ecfdf5"):(isDark?"rgba(239,68,68,0.12)":"#fff5f5")):th.surface,color:formMod.form.type===v?(v==="income"?"#059669":"#ef4444"):th.muted}}>{l}</button>
             ))}
           </div>
-          {formMod.editScope&&<div style={{background:th.surface,borderRadius:10,padding:"8px 12px",marginBottom:16}}><p style={{fontSize:11,color:th.muted,margin:0}}>{{this:"Cette occurrence seulement",follow:"Cette occurrence et les suivantes"}[formMod.editScope]||""}</p></div>}
+          {formMod.editScope&&(
+            <div style={{background:th.surface,borderRadius:10,padding:"8px 12px",marginBottom:16}}>
+              <p style={{fontSize:11,color:th.muted,margin:0}}>{{this:"Cette occurrence seulement",follow:"Cette occurrence et les suivantes"}[formMod.editScope]||""}</p>
+            </div>
+          )}
           <div style={{display:"flex",flexDirection:"column",gap:20}}>
             <div><label style={lbl}>Description</label><input type="text" value={formMod.form.desc} onChange={e=>setFF("desc")(e.target.value)} style={{...iSt,fontSize:16}}/></div>
-            <div>
-              <label style={lbl}>Montant</label>
-              <input type="number" value={formMod.form.amt} step="0.01" placeholder="0.00" onChange={e=>setFF("amt")(e.target.value)}
-                style={{...iSt,fontSize:22,fontWeight:600,fontVariantNumeric:"tabular-nums",borderBottomColor:formMod.form.amt&&(isNaN(parseFloat(formMod.form.amt))||parseFloat(formMod.form.amt)<=0)?"#ef4444":th.inputBorder,transition:"border-color 0.2s"}}/>
-            </div>
+            <div><label style={lbl}>Montant</label><input type="number" value={formMod.form.amt} step="0.01" placeholder="0.00" onChange={e=>setFF("amt")(e.target.value)} style={{...iSt,fontSize:22,fontWeight:600,fontVariantNumeric:"tabular-nums"}}/></div>
             {!formMod.editScope&&<RecurrencePicker value={formMod.form.rec} onChange={v=>setFF("rec")(v)} startDate={formMod.form.date||dStr(TODAY)} th={th}/>}
             <div><label style={lbl}>Date de début</label><input ref={dateInputRef} type="date" value={formMod.form.date} onChange={e=>e.target.value&&handleDateChange(e.target.value)} onBlur={e=>e.target.value&&handleDateChange(e.target.value)} style={{...iSt,colorScheme:isDark?"dark":"light"}}/></div>
             <CategoryPicker value={formMod.form.cat} onChange={handleCatChange} th={th} allCats={allCats} getCatName={getCatName}/>
-            {isPro?<SubCategoryPicker category={formMod.form.cat} value={formMod.form.subCat} onChange={v=>setFF("subCat")(v)} th={th} allSubcats={allSubcats}/>:<div style={{padding:"10px 12px",background:th.surface,borderRadius:10,display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:13}}>🔒</span><p style={{fontSize:12,color:th.muted,margin:0}}>Sous-catégories réservées à la version Pro</p></div>}
+            {isPro
+              ?<SubCategoryPicker category={formMod.form.cat} value={formMod.form.subCat} onChange={v=>setFF("subCat")(v)} th={th} allSubcats={allSubcats}/>
+              :<div style={{padding:"10px 12px",background:th.surface,borderRadius:10,display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:13}}>🔒</span><p style={{fontSize:12,color:th.muted,margin:0}}>Sous-catégories réservées à la version Pro</p></div>}
           </div>
-          {(()=>{const amt=parseFloat(formMod.form.amt),valid=formMod.form.desc.trim().length>0&&!isNaN(amt)&&amt>0;return(
-            <div style={{position:"fixed",bottom:0,left:0,right:0,padding:"16px 24px",background:th.sheetBg,borderTop:"1px solid "+th.border,display:"flex",gap:10,zIndex:201,maxWidth:640,margin:"0 auto"}}>
-              <button onClick={()=>setFormMod(null)} style={{flex:1,padding:"13px 0",fontSize:14,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>Annuler</button>
-              <button onClick={()=>{if(valid)saveForm(dateInputRef.current?.value);}} style={{flex:3,padding:"13px 0",fontSize:14,border:"none",borderRadius:12,background:valid?th.btnBg:th.surface,color:valid?th.btnText:th.muted,cursor:valid?"pointer":"default",fontWeight:600,transition:"background 0.2s,color 0.2s"}}>{formMod.tx?"Enregistrer":"Ajouter"}</button>
-            </div>
-          );})()}
+          <div style={{position:"fixed",bottom:0,left:0,right:0,padding:"16px 24px",background:th.sheetBg,borderTop:"1px solid "+th.border,display:"flex",gap:10,zIndex:201,maxWidth:640,margin:"0 auto"}}>
+            <button onClick={()=>setFormMod(null)} style={{flex:1,padding:"13px 0",fontSize:14,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>Annuler</button>
+            <button onClick={()=>saveForm(dateInputRef.current?.value)} style={{flex:3,padding:"13px 0",fontSize:14,border:"none",borderRadius:12,background:th.btnBg,color:th.btnText,cursor:"pointer",fontWeight:600}}>{formMod.tx?"Enregistrer":"Ajouter"}</button>
+          </div>
         </FullSheet>
       )}
 
+      {/* ── Gestion catégories (full sheet) ── */}
       {catsMod&&(
-        <FullSheet onClose={()=>setCatsMod(false)} th={th}>
+        <FullSheet th={th}>
           <FullSheetHead title="Catégories et sous-catégories" onClose={()=>setCatsMod(false)} th={th}/>
           <div style={{marginBottom:24}}><SegCtrl options={[["cats","Catégories"],["subcats","Sous-catégories"]]} value={catsTab} onChange={setCatsTab} th={th}/></div>
+
           {catsTab==="cats"&&(
             <div>
               <p style={{...lbl,marginBottom:12}}>Intégrées</p>
@@ -1500,11 +1642,13 @@ function App(){
                 </>
               ):(
                 <div style={{display:"flex",alignItems:"center",gap:8,padding:"12px 14px",background:th.surface,borderRadius:10,border:"1px solid "+th.border}}>
-                  <span style={{fontSize:16}}>🔒</span><p style={{fontSize:12,color:th.muted,margin:0}}>Catégories personnalisées réservées à la version Pro</p>
+                  <span style={{fontSize:16}}>🔒</span>
+                  <p style={{fontSize:12,color:th.muted,margin:0}}>Catégories personnalisées réservées à la version Pro</p>
                 </div>
               )}
             </div>
           )}
+
           {catsTab==="subcats"&&(
             isPro?(
               <div>
@@ -1562,7 +1706,8 @@ function App(){
               </div>
             ):(
               <div style={{display:"flex",alignItems:"center",gap:8,padding:"12px 14px",background:th.surface,borderRadius:10,border:"1px solid "+th.border}}>
-                <span style={{fontSize:16}}>🔒</span><p style={{fontSize:12,color:th.muted,margin:0}}>Sous-catégories réservées à la version Pro</p>
+                <span style={{fontSize:16}}>🔒</span>
+                <p style={{fontSize:12,color:th.muted,margin:0}}>Sous-catégories réservées à la version Pro</p>
               </div>
             )
           )}
