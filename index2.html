@@ -318,7 +318,7 @@ const MonthNav=({yr,mo,onPrev,onNext,onDbl,onToday,th,prevDisabled,showToday=tru
   return(
     <div style={{display:"flex",alignItems:"center",gap:4}}>
       <button onClick={onPrev} disabled={prevDisabled} style={{width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:"none",border:"none",cursor:prevDisabled?"default":"pointer",fontSize:20,color:prevDisabled?th.border:th.muted,borderRadius:8}}>&#8249;</button>
-      <span onDoubleClick={onDbl} style={{fontSize:15,color:th.text,fontWeight:500,minWidth:130,textAlign:"center",cursor:"default",userSelect:"none"}}>{MONTHS_FR[mo]} {yr}</span>
+      <span onDoubleClick={onDbl} style={{fontSize:19,color:th.text,fontWeight:500,minWidth:130,textAlign:"center",cursor:"default",userSelect:"none"}}>{MONTHS_FR[mo]} {yr}</span>
       <button onClick={onNext} style={{width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:"none",border:"none",cursor:"pointer",fontSize:20,color:th.muted,borderRadius:8}}>&#8250;</button>
       {showToday&&!isCurrent&&(
         <button onClick={onToday||onDbl} style={{fontSize:11,padding:"3px 9px",borderRadius:8,border:"1px solid "+th.border,background:"none",color:th.sub,cursor:"pointer",whiteSpace:"nowrap",marginLeft:2}}>Aujourd'hui</button>
@@ -853,7 +853,7 @@ function App(){
       )}
 
       {/* ── Barre de statut (sync / overrun / motd) ── */}
-      <div style={{position:"fixed",top:0,left:0,right:0,zIndex:98,pointerEvents:isOverrun?"auto":"none",transform:barVisible&&!barFading?"translateY(0)":"translateY(-100%)",opacity:barFading?0:barVisible?1:0,transition:"transform 0.3s ease,opacity 0.5s ease",background:isOverrun?"#f97316":isDark?"rgba(13,13,13,0.8)":"rgba(255,255,255,0.8)",backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",borderBottom:"1px solid "+(isOverrun?"rgba(255,255,255,0.2)":th.border)}}>
+      <div style={{position:"fixed",top:0,left:0,right:0,zIndex:98,pointerEvents:isOverrun?"auto":"none",transform:barVisible&&!barFading?"translateY(0)":"translateY(-100%)",opacity:barFading?0:barVisible?1:0,transition:"transform 0.3s ease,opacity 0.5s ease",background:isOverrun?"#f97316":isDark?"rgba(5,8,20,0.68)":"rgba(5,8,20,0.68)",backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",borderBottom:"1px solid "+(isOverrun?"rgba(255,255,255,0.2)":th.border)}}>
         {isOverrun?(
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"5px 16px",gap:8}}>
             <div style={{display:"flex",alignItems:"center",gap:6,flex:1,minWidth:0,overflow:"hidden"}}>
