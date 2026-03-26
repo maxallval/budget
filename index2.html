@@ -864,7 +864,7 @@ function App(){
             <button onClick={acknowledgeOverruns} style={{fontSize:11,padding:"3px 10px",borderRadius:8,border:"none",background:"rgba(255,255,255,0.25)",color:"#fff",cursor:"pointer",fontWeight:600,flexShrink:0}}>Compris</button>
           </div>
         ):isMotd?(
-          <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"98px",padding:"0 48px 0 16px",position:"relative"}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"96px",padding:"0 48px 0 16px",position:"relative"}}>
             <span style={{fontSize:15,color:th.sub,textAlign:"center",lineHeight:1.6}}>{motd}</span>
             <span style={{position:"absolute",bottom:10,right:14,fontSize:10,color:th.muted,fontVariantNumeric:"tabular-nums"}}>{motdCountdown}s</span>
           </div>
@@ -1136,9 +1136,9 @@ function App(){
             </div>
             <p style={{...lbl,margin:"24px 0 4px"}}>Affichage</p>
             <Tog label="Afficher les décimales" sub="Afficher les centimes dans les montants" value={showDecimals} onChange={setShowDecimals} th={th}/>
-            <Tog label="Solde fin du mois" value={disp.endBal} onChange={v=>setDisp(d=>({...d,endBal:v}))} th={th}/>
-            <Tog label="Revenus et dépenses" value={disp.revExp} onChange={v=>setDisp(d=>({...d,revExp:v}))} th={th}/>
-            <Tog label="Net mensuel" value={disp.net} onChange={v=>setDisp(d=>({...d,net:v}))} th={th}/>
+            <Tog label="Solde fin du mois" sub="Projeter le solde à la fin du mois courant" value={disp.endBal} onChange={v=>setDisp(d=>({...d,endBal:v}))} th={th}/>
+            <Tog label="Revenus et dépenses" sub="Afficher le total des revenus et dépenses du mois" value={disp.revExp} onChange={v=>setDisp(d=>({...d,revExp:v}))} th={th}/>
+            <Tog label="Net mensuel" sub="Afficher la différence revenus − dépenses du mois" value={disp.net} onChange={v=>setDisp(d=>({...d,net:v}))} th={th}/>
             <Tog label="Contrôle Journée / Solde" sub="Afficher le sélecteur sur la page d'accueil" value={disp.showModeCtrl!==false} onChange={v=>setDisp(d=>({...d,showModeCtrl:v}))} th={th}/>
             <div style={{padding:"10px 0 14px",borderBottom:"1px solid "+th.border}}>
               <p style={{fontSize:13,color:th.text,margin:"0 0 8px",fontWeight:500}}>Vue par défaut</p>
