@@ -540,7 +540,7 @@ function App(){
   const[yr,setYr]=useState(TODAY.getFullYear());
   const[mo,setMo]=useState(TODAY.getMonth());
   const[mode,setMode]=useState("daily");
-  const[disp,setDisp]=useState({endBal:false,revExp:false,net:false});
+  const[disp,setDisp]=useState({endBal:false,revExp:false,net:false,showModeCtrl:true,showSavingsRate:true});
   const[darkMode,setDarkMode]=useState("off");
   const[showDecimals,setShowDecimals]=useState(true);
   const[sysDark,setSysDark]=useState(()=>window.matchMedia("(prefers-color-scheme:dark)").matches);
@@ -864,7 +864,7 @@ function App(){
             <button onClick={acknowledgeOverruns} style={{fontSize:11,padding:"3px 10px",borderRadius:8,border:"none",background:"rgba(255,255,255,0.25)",color:"#fff",cursor:"pointer",fontWeight:600,flexShrink:0}}>Compris</button>
           </div>
         ):isMotd?(
-          <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"104px",padding:"0 48px 0 16px",position:"relative"}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100px",padding:"0 48px 0 16px",position:"relative"}}>
             <span style={{fontSize:15,color:th.sub,textAlign:"center",lineHeight:1.6}}>{motd}</span>
             <span style={{position:"absolute",bottom:10,right:14,fontSize:10,color:th.muted,fontVariantNumeric:"tabular-nums"}}>{motdCountdown}s</span>
           </div>
@@ -927,9 +927,9 @@ function App(){
         {tab==="home"&&(
           <div>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-              {savingsRate!==null?<span style={{fontSize:11,padding:"3px 10px",borderRadius:20,background:savingsRate>=0?"rgba(5,150,105,0.1)":"rgba(239,68,68,0.1)",color:savingsRate>=0?"#059669":"#ef4444",fontWeight:500}}>{savingsRate>=0?"+":""}{savingsRate}% épargne</span>:<span/>}
+              {disp.showSavingsRate!==false?(savingsRate!==null?<span style={{fontSize:11,padding:"3px 10px",borderRadius:20,background:savingsRate>=0?"rgba(5,150,105,0.1)":"rgba(239,68,68,0.1)",color:savingsRate>=0?"#059669":"#ef4444",fontWeight:500}}>{savingsRate>=0?"+":""}{savingsRate}% épargne</span>:<span/>):<span/>}
               {isNotToday?<button onClick={goToday} style={{fontSize:11,padding:"3px 9px",borderRadius:8,border:"1px solid "+th.border,background:"none",color:th.sub,cursor:"pointer",whiteSpace:"nowrap"}}>Aujourd'hui</button>:<button style={{fontSize:11,padding:"3px 9px",borderRadius:8,border:"1px solid transparent",background:"none",color:"transparent",cursor:"default",whiteSpace:"nowrap",pointerEvents:"none"}}>Aujourd'hui</button>}
-              <SegCtrl options={[["daily","Journée"],["balance","Solde"]]} value={mode} onChange={setMode} th={th}/>
+              {disp.showModeCtrl!==false&&<SegCtrl options={[["daily","Journée"],["balance","Solde"]]} value={mode} onChange={setMode} th={th}/>}
             </div>
             {hasSummary&&(
               <div style={{marginBottom:0,paddingTop:10,paddingBottom:16,borderTop:"1px solid "+th.border,borderBottom:"1px solid "+th.border,display:"flex",flexWrap:"wrap",gap:"16px 28px"}}>
@@ -1139,6 +1139,8 @@ function App(){
             <Tog label="Solde fin du mois" value={disp.endBal} onChange={v=>setDisp(d=>({...d,endBal:v}))} th={th}/>
             <Tog label="Revenus et dépenses" value={disp.revExp} onChange={v=>setDisp(d=>({...d,revExp:v}))} th={th}/>
             <Tog label="Net mensuel" value={disp.net} onChange={v=>setDisp(d=>({...d,net:v}))} th={th}/>
+            <Tog label="Contrôle Journée / Solde" sub="Afficher le sélecteur sur la page d'accueil" value={disp.showModeCtrl!==false} onChange={v=>setDisp(d=>({...d,showModeCtrl:v}))} th={th}/>
+            <Tog label="Taux d'épargne" sub="Afficher le badge d'épargne sur la page d'accueil" value={disp.showSavingsRate!==false} onChange={v=>setDisp(d=>({...d,showSavingsRate:v}))} th={th}/>
             <p style={{...lbl,margin:"24px 0 4px"}}>Mode nuit</p>
             <div style={{paddingBottom:16,borderBottom:"1px solid "+th.border}}><SegCtrl options={[["off","Désactivé"],["auto","Automatique"],["on","Activé"]]} value={darkMode} onChange={setDarkMode} th={th}/></div>
             <p style={{...lbl,margin:"24px 0 4px"}}>Catégories</p>
