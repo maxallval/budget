@@ -415,6 +415,7 @@ function RecurrencePicker({value,onChange,startDate,th}){
     {rec:{type:"once"},label:"Une fois"},
     {rec:{type:"daily"},label:"Tous les jours"},
     {rec:{type:"weekly",weekday:wd},label:"Toutes les semaines le "+DAYS_FR[wd]},
+    {rec:{type:"monthly_day"},label:"Tous les mois le "+s.getDate()},
     {rec:{type:"monthly_nth_weekday",nth,weekday:wd},label:"Tous les mois, le "+(NTH_FR[nth]||nth)+" "+DAYS_FR[wd]},
     {rec:{type:"annually"},label:"Annuellement le "+s.getDate()+" "+MONTHS_FR[s.getMonth()]},
     {rec:{type:"weekdays"},label:"Jours de semaine (lun.-ven.)"},
