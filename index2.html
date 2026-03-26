@@ -134,7 +134,16 @@ const UNITS_FR={day:"jours",week:"semaines",month:"mois",year:"années"};
 
 // ─── Utilitaires ──────────────────────────────────────────────────────────────
 const _pdCache=new Map();
-const parseD=s=>{let v=_pdCache.get(s);if(!v){const[y,m,d]=s.split("-").map(Number);v=[y,m-1,d];_pdCache.set(s,v);}return new Date(v[0],v[1],v[2]);};
+const _pdCacheMaxSize=500;
+const parseD=s=>{
+  let v=_pdCache.get(s);
+  if(!v){
+    if(_pdCache.size>=_pdCacheMaxSize)_pdCache.delete(_pdCache.keys().next().value);
+    const[y,m,d]=s.split("-").map(Number);
+    v=[y,m-1,d];_pdCache.set(s,v);
+  }
+  return new Date(v[0],v[1],v[2]);
+};
 const dayBef=s=>{const[y,m,d]=s.split("-").map(Number);const dt=new Date(y,m-1,d);dt.setDate(dt.getDate()-1);return dStr(dt);};
 const dStr=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const addMths=(yr,mo,n)=>{let m=mo+n,y=yr;while(m>11){m-=12;y++;}while(m<0){m+=12;y--;}return{yr:y,mo:m};};
@@ -202,6 +211,18 @@ function recLabel(tx){
   }
 }
 const fabBtn=(bg,color)=>({position:"absolute",width:48,height:48,borderRadius:"50%",background:bg,color,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(0,0,0,0.22)",fontSize:19,lineHeight:1});
+
+// ─── Constantes dérivées (après utilitaires) ──────────────────────────────────
+const FREE_LIMIT=addMths(TODAY.getFullYear(),TODAY.getMonth(),-2);
+const LOCKED_SUB_IDS=new Set(["objectifs","statistiques","graphiques","controle"]);
+const SUB_NAV={
+  transactions:[{id:"historique",label:"Historique"},{id:"recurrent",label:"Récurrent"}],
+  budget:[{id:"categories",label:"Budget par catégorie"},{id:"objectifs",label:"Objectifs"}],
+  analyse:[{id:"statistiques",label:"Statistiques"},{id:"graphiques",label:"Graphiques"},{id:"controle",label:"Contrôle des coûts"}],
+  troubleshoot:[{id:"connexions",label:"Connexions"}],
+};
+const DEFAULT_SUB={transactions:"historique",budget:"categories",analyse:"statistiques",troubleshoot:"connexions"};
+const NAV_BASE=[["home","Accueil"],["transactions","Transactions"],["budget","Budget"],["analyse","Analyse"],["settings","Paramètres"]];
 
 // ─── Icône de catégorie ───────────────────────────────────────────────────────
 const CatIcon=({cat,size=20})=>{
@@ -618,9 +639,7 @@ function App(){
   const f=(n,full=false)=>fA(n,full,showDecimals);
   formModRef.current=formMod;
 
-  const FREE_LIMIT=useMemo(()=>addMths(TODAY.getFullYear(),TODAY.getMonth(),-2),[]);
-  const LOCKED_SUB_IDS=useMemo(()=>new Set(["objectifs","statistiques","graphiques","controle"]),[]);
-  const isSubLocked=useCallback(id=>!isPro&&LOCKED_SUB_IDS.has(id),[isPro,LOCKED_SUB_IDS]);
+  const isSubLocked=useCallback(id=>!isPro&&LOCKED_SUB_IDS.has(id),[isPro]);
   const allCats=useMemo(()=>[...CATS,...customCats],[customCats]);
   const allSubcats=useMemo(()=>{const base=SUBCATS.map(sc=>subcatGroupOverrides[sc.id]?{...sc,group:subcatGroupOverrides[sc.id]}:sc);return[...base,...customSubcats];},[customSubcats,subcatGroupOverrides]);
   const catMap=useMemo(()=>{const m=new Map();allCats.forEach(c=>m.set(c.id,c));return m;},[allCats]);
@@ -629,22 +648,17 @@ function App(){
   const getCatName=useCallback(id=>catNameMap[id]||id,[catNameMap]);
   const dynCatById=useCallback(id=>catMap.get(id)||allCats[allCats.length-1],[catMap,allCats]);
   const dynSubcatById=useCallback(id=>id?subcatMap.get(id)||null:null,[subcatMap]);
-  const getBalAt=useMemo(()=>date=>{
+  const getBalAt=useCallback(date=>{
     if(!balAnchor)return rawBalAt(txs,initBal,date);
     const aDate=parseD(balAnchor.dateStr);
     if(date<aDate)return rawBalAt(txs,initBal,date);
     const delta=txs.reduce((b,tx)=>b+(tx.type==="income"?1:-1)*tx.amount*(countOccs(tx,date)-countOccs(tx,aDate)),0);
     return balAnchor.amount+delta;
   },[txs,initBal,balAnchor]);
-  const getExportJSON=()=>JSON.stringify({txs,initBal,balAnchor,disp,darkMode,showDecimals,budgets,customCats,customSubcats,subcatGroupOverrides,goals,updated:Date.now()},null,2);
-  const NAV_ITEMS=useMemo(()=>{const b=[["home","Accueil"],["transactions","Transactions"],["budget","Budget"],["analyse","Analyse"],["settings","Paramètres"]];if(showTroubleshoot)b.push(["troubleshoot","Troubleshoot"]);return b;},[showTroubleshoot]);
-  const SUB_NAV={
-    transactions:[{id:"historique",label:"Historique"},{id:"recurrent",label:"Récurrent"}],
-    budget:[{id:"categories",label:"Budget par catégorie"},{id:"objectifs",label:"Objectifs"}],
-    analyse:[{id:"statistiques",label:"Statistiques"},{id:"graphiques",label:"Graphiques"},{id:"controle",label:"Contrôle des coûts"}],
-    troubleshoot:[{id:"connexions",label:"Connexions"}],
-  };
-  const DEFAULT_SUB={transactions:"historique",budget:"categories",analyse:"statistiques",troubleshoot:"connexions"};
+
+  const getExportJSON=useCallback(()=>JSON.stringify({txs,initBal,balAnchor,disp,darkMode,showDecimals,budgets,customCats,customSubcats,subcatGroupOverrides,goals,updated:Date.now()},null,2),[txs,initBal,balAnchor,disp,darkMode,showDecimals,budgets,customCats,customSubcats,subcatGroupOverrides,goals]);
+
+  const NAV_ITEMS=useMemo(()=>showTroubleshoot?[...NAV_BASE,["troubleshoot","Troubleshoot"]]:NAV_BASE,[showTroubleshoot]);
   const curSub=subTab[tab]||(DEFAULT_SUB[tab]||null);
   const curSubNav=SUB_NAV[tab];
   const curBalVal=useMemo(()=>getBalAt(TODAY),[getBalAt]);
@@ -811,7 +825,7 @@ function App(){
   const handleSwipe=dx=>{if(Math.abs(dx)<40)return;const dir=dx<0?1:-1;const subs=SUB_NAV[tab];if(subs&&subs.length>1){const idx=subs.findIndex(s=>s.id===curSub);const next=idx+dir;if(next>=0&&next<subs.length)setSubTab(prev=>({...prev,[tab]:subs[next].id}));}else{dir>0?nextMo():prevMo();}};
 
   const[expandedGoal,setExpandedGoal]=useState(null);
-  const anyModal=!!(dayMod||formMod||delMod||delAccMod||exportMod||importMod||dupMod||goalForm||catsMod);
+  const anyModal=!!(dayMod||formMod||delMod||delAccMod||exportMod||importMod||dupMod||goalForm||catsMod||expandedGoal);
   useEffect(()=>{document.body.style.overflow=anyModal?"hidden":"";return()=>{document.body.style.overflow="";};},[anyModal]);
   const dayModalDateStr=dayMod?yr+"-"+String(mo+1).padStart(2,"0")+"-"+String(dayMod.day).padStart(2,"0"):"";
   const showFabActions=activeTx&&tab==="transactions";
