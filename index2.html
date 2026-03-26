@@ -579,6 +579,8 @@ function App(){
   const[dupMod,setDupMod]=useState(null);
   const[goalForm,setGoalForm]=useState(null);
   const[fabMenuOpen,setFabMenuOpen]=useState(false);
+  const[fabMenuClosing,setFabMenuClosing]=useState(false);
+  const closeFabMenu=useCallback(()=>{setFabMenuClosing(true);setTimeout(()=>{setFabMenuOpen(false);setFabMenuClosing(false);},220);},[]);
 
   const[expandedGoal,setExpandedGoal]=useState(null);
 
@@ -912,7 +914,7 @@ function App(){
         return(
           <>
             {/* Backdrop */}
-            {(fabMenuOpen||isActiveTx&&showFabActions)&&<div onClick={()=>{setFabMenuOpen(false);if(isActiveTx)setActiveTx(null);}} style={{position:"fixed",inset:0,zIndex:97,background:"transparent"}}/>}
+            {(fabMenuOpen||isActiveTx&&showFabActions)&&<div onClick={()=>{closeFabMenu();if(isActiveTx)setActiveTx(null);}} style={{position:"fixed",inset:0,zIndex:97,background:"transparent"}}/>}
 
             <div style={{position:"fixed",bottom:80,right:16,zIndex:99,display:"flex",flexDirection:"column",alignItems:"flex-end",gap:10}}>
               {/* Actions activeTx existantes */}
@@ -926,8 +928,8 @@ function App(){
               </>)}
 
               {/* Actions menu contextuel */}
-              {isMenu&&fabMenuOpen&&cfg.actions.map((a,i)=>(
-                <div key={i} onClick={()=>{a.onClick();setFabMenuOpen(false);}} style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",animation:"popIn 0.2s cubic-bezier(0.34,1.56,0.64,1) "+(i*0.05)+"s both"}}>
+              {isMenu&&(fabMenuOpen||fabMenuClosing)&&cfg.actions.map((a,i)=>(
+                <div key={i} onClick={()=>{a.onClick();closeFabMenu();}} style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",animation:fabMenuClosing?"popIn 0.18s cubic-bezier(0.34,1.56,0.64,1) reverse forwards":"popIn 0.2s cubic-bezier(0.34,1.56,0.64,1) "+(i*0.05)+"s both"}}>
                   <div style={{background:th.bg,border:"1px solid "+th.border,borderRadius:10,padding:"6px 14px",fontSize:13,color:th.text,fontWeight:500,whiteSpace:"nowrap",boxShadow:"0 2px 12px rgba(0,0,0,0.12)"}}>{a.label}</div>
                   <div style={{width:40,height:40,borderRadius:"50%",background:th.btnBg,color:th.btnText,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(0,0,0,0.18)",flexShrink:0}}>
                     <span className="ms" style={{fontSize:20}}>{a.icon}</span>
@@ -939,7 +941,7 @@ function App(){
               <button
                 onClick={()=>{
                   if(isActiveTx){if(showFabActions)setActiveTx(null);else openForm();}
-                  else if(isMenu){setFabMenuOpen(o=>!o);}
+                  else if(isMenu){fabMenuOpen?closeFabMenu():setFabMenuOpen(true);}
                   else if(cfg.type==="direct"){cfg.action();}
                 }}
                 style={{width:40,height:40,borderRadius:"50%",background:(isActiveTx&&showFabActions)||fabMenuOpen?"#ef4444":th.btnBg,color:(isActiveTx&&showFabActions)||fabMenuOpen?"#fff":th.btnText,border:"none",cursor:"pointer",boxShadow:"0 4px 16px rgba(0,0,0,0.2)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:4,position:"relative",zIndex:1,transition:"background 0.18s,color 0.18s,transform 0.18s",transform:(isActiveTx&&showFabActions)||fabMenuOpen?"rotate(45deg)":"rotate(0deg)"}}
