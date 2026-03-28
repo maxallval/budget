@@ -344,7 +344,7 @@ function SubNav({tabs,activeId,onSelect,isSubLocked,showAdd,onAdd,th}){
     const btn=btnRefs.current[activeId],container=containerRef.current;
     if(!btn||!container)return;
     const cr=container.getBoundingClientRect(),br=btn.getBoundingClientRect();
-    setPill({left:br.left-cr.left,width:br.width,ready:true});
+    setPill({left:br.left-cr.left+container.scrollLeft,width:br.width,ready:true});
   },[activeId,tabs]);
   return(<div style={{borderBottom:"1px solid "+th.border,background:th.bgSub}}>
     <div ref={containerRef} style={{padding:"0 24px",display:"flex",gap:0,overflowX:"auto",position:"relative",alignItems:"center"}}>
