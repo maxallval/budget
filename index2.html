@@ -133,6 +133,23 @@ const NTH_FR=["","1er","2e","3e","4e","5e"];
 const DS_FR=["D","L","M","M","J","V","S"];
 const UNITS_FR={day:"jours",week:"semaines",month:"mois",year:"années"};
 
+// ─── Envies — constantes métier ───────────────────────────────────────────────
+// score = (bonheur × durée × fréquence) / ln(prix + 2) × facteur_ancienneté
+const calcWishScore=w=>{
+  const ageDays=(Date.now()-new Date(w.created_at).getTime())/86400000;
+  const ageFactor=ageDays>7?1.1:1; // +10% si envie persistante (>7j)
+  return+((w.happiness*(w.duration||1)*(w.frequency||1))/Math.log(w.price+2)*ageFactor).toFixed(2);
+};
+const wishPriority=s=>s>=20?"high":s>=8?"mid":"low";
+const WISH_PRIORITY={
+  high:{icon:"🟢",label:"Haute",color:"#10b981"},
+  mid: {icon:"🟡",label:"Moyenne",color:"#f59e0b"},
+  low: {icon:"🔴",label:"Faible",color:"#ef4444"},
+};
+// Options d'interface pour durée et fréquence
+const DUR_OPTS=[{v:1,l:"Court"},{v:2,l:"Moyen"},{v:3,l:"Long"}];
+const FREQ_OPTS=[{v:1,l:"Rare"},{v:2,l:"Occasionnel"},{v:3,l:"Fréquent"},{v:4,l:"Quotidien"}];
+
 // ─── Utilitaires ──────────────────────────────────────────────────────────────
 const _pdCache=new Map();
 const _pdCacheMaxSize=500;
@@ -217,7 +234,7 @@ const FREE_LIMIT=addMths(TODAY.getFullYear(),TODAY.getMonth(),-2);
 const LOCKED_SUB_IDS=new Set(["objectifs","statistiques","graphiques","controle"]);
 const SUB_NAV={
   transactions:[{id:"historique",label:"Historique"},{id:"recurrent",label:"Récurrent"}],
-  budget:[{id:"categories",label:"Budget par catégorie"},{id:"objectifs",label:"Objectifs"}],
+  budget:[{id:"categories",label:"Budget par catégorie"},{id:"objectifs",label:"Objectifs"},{id:"envies",label:"Envies"}],
   analyse:[{id:"statistiques",label:"Statistiques"},{id:"graphiques",label:"Graphiques"},{id:"controle",label:"Contrôle des coûts"}],
   troubleshoot:[{id:"connexions",label:"Connexions"}],
 };
@@ -497,6 +514,12 @@ function App(){
   const[balAnchor,setBalAnchor]=useState(null);
   const[budgets,setBudgets]=useState({});
   const[goals,setGoals]=useState([]);
+  // ── Envies ────────────────────────────────────────────────────────────────
+  const[wishes,setWishes]=useState([]);
+  const[wishForm,setWishForm]=useState(null);   // null | {id,name,price,happiness,duration,frequency}
+  const[wishSort,setWishSort]=useState("score"); // "score" | "price" | "happiness_per_dollar"
+  const[wishFilter,setWishFilter]=useState("all"); // "all" | "top" | "reconsider"
+  // ─────────────────────────────────────────────────────────────────────────
   const[loaded,setLoaded]=useState(false);
   const[tab,setTab]=useState("home");
   const[subTab,setSubTab]=useState({});
@@ -594,7 +617,7 @@ function App(){
     const delta=txs.reduce((b,tx)=>b+(tx.type==="income"?1:-1)*tx.amount*(countOccs(tx,date)-countOccs(tx,aDate)),0);
     return balAnchor.amount+delta;
   },[txs,initBal,balAnchor]);
-  const getExportJSON=useCallback(()=>JSON.stringify({txs,initBal,balAnchor,disp,darkMode,showDecimals,budgets,customCats,customSubcats,subcatGroupOverrides,goals,updated:Date.now()},null,2),[txs,initBal,balAnchor,disp,darkMode,showDecimals,budgets,customCats,customSubcats,subcatGroupOverrides,goals]);
+  const getExportJSON=useCallback(()=>JSON.stringify({txs,initBal,balAnchor,disp,darkMode,showDecimals,budgets,customCats,customSubcats,subcatGroupOverrides,goals,wishes,updated:Date.now()},null,2),[txs,initBal,balAnchor,disp,darkMode,showDecimals,budgets,customCats,customSubcats,subcatGroupOverrides,goals,wishes]);
   const NAV_ITEMS=useMemo(()=>showTroubleshoot?[...NAV_BASE,["troubleshoot","Troubleshoot"]]:NAV_BASE,[showTroubleshoot]);
   const curSub=subTab[tab]||(DEFAULT_SUB[tab]||null);
   const curSubNav=SUB_NAV[tab];
@@ -648,6 +671,15 @@ function App(){
   },[txs,monthOccs,dynSubcatById]);
   const isPrevMoDisabled=!isPro&&(yr<FREE_LIMIT.yr||(yr===FREE_LIMIT.yr&&mo<=FREE_LIMIT.mo));
 
+  // ── Envies — données dérivées ─────────────────────────────────────────────
+  // Calcule le score en temps réel et trie/filtre la liste
+  const scoredWishes=useMemo(()=>{
+    const scored=wishes.map(w=>({...w,score:calcWishScore(w),hpd:w.price>0?+(w.happiness/w.price).toFixed(3):w.happiness}));
+    const medianScore=scored.length?[...scored].sort((a,b)=>a.score-b.score)[Math.floor(scored.length/2)]?.score??0:0;
+    const filtered=wishFilter==="top"?scored.filter(w=>w.score>=medianScore):wishFilter==="reconsider"?scored.filter(w=>w.score<medianScore):scored;
+    return[...filtered].sort((a,b)=>wishSort==="price"?a.price-b.price:wishSort==="happiness_per_dollar"?b.hpd-a.hpd:b.score-a.score);
+  },[wishes,wishSort,wishFilter]);
+
   // ── Effects ────────────────────────────────────────────────────────────────
   const closeFabMenu=useCallback(()=>{
     if(!fabMenuOpen)return;
@@ -663,6 +695,7 @@ function App(){
     window.history.pushState({b:true},"");
     const h=()=>{
       window.history.pushState({b:true},"");
+      if(wishForm){setWishForm(null);return;}
       if(formMod){setFormMod(null);return;}if(dupMod){setDupMod(null);return;}if(goalForm){setGoalForm(null);return;}
       if(catsMod){setCatsMod(false);return;}if(dayMod){setDayMod(null);setExpandedTx(null);setPendingDel(null);return;}
       if(delMod){setDelMod(null);return;}if(delAccMod){setDelAccMod(false);setDelAccInput("");return;}
@@ -670,7 +703,7 @@ function App(){
       setTab("home");setMo(TODAY.getMonth());setYr(TODAY.getFullYear());
     };
     window.addEventListener("popstate",h);return()=>window.removeEventListener("popstate",h);
-  },[formMod,dupMod,goalForm,catsMod,dayMod,delMod,delAccMod,exportMod,importMod]);
+  },[wishForm,formMod,dupMod,goalForm,catsMod,dayMod,delMod,delAccMod,exportMod,importMod]);
   useEffect(()=>{const id=setInterval(()=>setTick(n=>n+1),15000);return()=>clearInterval(id);},[]);
   useEffect(()=>{const mq=window.matchMedia("(prefers-color-scheme:dark)");const h=e=>setSysDark(e.matches);mq.addEventListener("change",h);return()=>mq.removeEventListener("change",h);},[]);
   useEffect(()=>{const go=()=>setIsOnline(true);const off=()=>setIsOnline(false);window.addEventListener("online",go);window.addEventListener("offline",off);return()=>{window.removeEventListener("online",go);window.removeEventListener("offline",off);};},[]);
@@ -691,7 +724,7 @@ function App(){
       try{await window.storage.set("bgt9-ct","1");lR=!!(await window.storage.get("bgt9-ct"));lW=true;}catch{}
       setConnStatus({localRead:lR,localWrite:lW});
       try{const r=await window.storage.get("bgt9-cfg");if(r){const c=JSON.parse(r.value);if(c.disp)setDisp(c.disp);if(c.darkMode)setDarkMode(c.darkMode);if(c.mode)setMode(c.mode);if(c.advancedCats!==undefined)setAdvancedCats(c.advancedCats);if(c.showDecimals!==undefined)setShowDecimals(c.showDecimals);if(c.isPro!==undefined)setIsPro(c.isPro);}}catch{}
-      try{const{data:row}=await sb.from("user_data").select("data,updated_at").eq("user_id",session.user.id).single();if(row?.data){const d=row.data;if(Array.isArray(d.txs))setTxs(cleanTxs(d.txs));if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.balAnchor!==undefined)setBalAnchor(d.balAnchor);if(d.budgets)setBudgets(d.budgets);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.showDecimals!==undefined)setShowDecimals(d.showDecimals);if(d.customCats)setCustomCats(d.customCats);if(d.customSubcats)setCustomSubcats(d.customSubcats);if(d.subcatGroupOverrides)setSubcatGroupOverrides(d.subcatGroupOverrides);if(Array.isArray(d.goals))setGoals(d.goals);setLastSync(new Date(row.updated_at));}}catch{}
+      try{const{data:row}=await sb.from("user_data").select("data,updated_at").eq("user_id",session.user.id).single();if(row?.data){const d=row.data;if(Array.isArray(d.txs))setTxs(cleanTxs(d.txs));if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.balAnchor!==undefined)setBalAnchor(d.balAnchor);if(d.budgets)setBudgets(d.budgets);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.showDecimals!==undefined)setShowDecimals(d.showDecimals);if(d.customCats)setCustomCats(d.customCats);if(d.customSubcats)setCustomSubcats(d.customSubcats);if(d.subcatGroupOverrides)setSubcatGroupOverrides(d.subcatGroupOverrides);if(Array.isArray(d.goals))setGoals(d.goals);if(Array.isArray(d.wishes))setWishes(d.wishes);setLastSync(new Date(row.updated_at));}}catch{}
       setLoaded(true);
     })();
   },[session]);
@@ -700,14 +733,14 @@ function App(){
     if(!loaded||!session)return;
     clearTimeout(sbSaveTimer.current);setIsSyncing(true);
     sbSaveTimer.current=setTimeout(async()=>{
-      try{if(isPro){const snap={txs,initBal,balAnchor,disp,darkMode,showDecimals,budgets,customCats,customSubcats,subcatGroupOverrides,goals};await sb.from("user_data").upsert({user_id:session.user.id,data:snap,updated_at:new Date().toISOString()});setLastSync(new Date());}}
+      try{if(isPro){const snap={txs,initBal,balAnchor,disp,darkMode,showDecimals,budgets,customCats,customSubcats,subcatGroupOverrides,goals,wishes};await sb.from("user_data").upsert({user_id:session.user.id,data:snap,updated_at:new Date().toISOString()});setLastSync(new Date());}}
       catch{}finally{setIsSyncing(false);}
     },3000);
     return()=>clearTimeout(sbSaveTimer.current);
-  },[txs,initBal,balAnchor,budgets,disp,darkMode,showDecimals,customCats,customSubcats,subcatGroupOverrides,goals,loaded,session,isPro]);
+  },[txs,initBal,balAnchor,budgets,disp,darkMode,showDecimals,customCats,customSubcats,subcatGroupOverrides,goals,wishes,loaded,session,isPro]);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
-  const handleLogout=async()=>{await sb.auth.signOut();setLoaded(false);setTxs([]);setInitBal(1000);setBalAnchor(null);setBudgets({});setGoals([]);};
+  const handleLogout=async()=>{await sb.auth.signOut();setLoaded(false);setTxs([]);setInitBal(1000);setBalAnchor(null);setBudgets({});setGoals([]);setWishes([]);};
   const deleteAccount=async()=>{if(session)try{await sb.from("user_data").delete().eq("user_id",session.user.id);}catch{}try{await window.storage.delete("bgt9-cfg");}catch{}await sb.auth.signOut();};
   const startEditBal=()=>{setBalInput(String(curBalVal.toFixed(2)));setEditingBal(true);setTimeout(()=>{balInputRef.current?.focus();balInputRef.current?.select();},50);};
   const commitEditBal=()=>{const v=parseFloat(balInput);if(!isNaN(v))setBalAnchor({dateStr:dStr(TODAY),amount:v});setEditingBal(false);};
@@ -755,6 +788,23 @@ function App(){
   const saveGoal=()=>{if(!goalForm?.label?.trim()||!goalForm?.target)return;const tgt=parseFloat(goalForm.target);if(isNaN(tgt)||tgt<=0)return;const sav=parseFloat(goalForm.saved||0)||0;if(goalForm.id)setGoals(prev=>prev.map(g=>g.id===goalForm.id?{...g,...goalForm,target:tgt,saved:sav}:g));else setGoals(prev=>[...prev,{...goalForm,id:"goal_"+Date.now(),target:tgt,saved:sav}]);setGoalForm(null);};
   const deleteGoal=id=>setGoals(prev=>prev.filter(g=>g.id!==id));
   const updateGoalSaved=(id,raw)=>{const v=parseFloat(raw);if(!isNaN(v)&&v>=0)setGoals(prev=>prev.map(g=>g.id===id?{...g,saved:v}:g));};
+
+  // ── Handlers envies ───────────────────────────────────────────────────────
+  const saveWish=()=>{
+    if(!wishForm?.name?.trim())return;
+    const price=parseFloat(wishForm.price);
+    if(isNaN(price)||price<0)return;
+    const base={name:wishForm.name.trim(),price,happiness:wishForm.happiness||5,duration:wishForm.duration||2,frequency:wishForm.frequency||2};
+    if(wishForm.id){
+      // Modifier — on conserve le created_at original
+      setWishes(prev=>prev.map(w=>w.id===wishForm.id?{...w,...base}:w));
+    }else{
+      setWishes(prev=>[...prev,{...base,id:"wish_"+Date.now(),created_at:new Date().toISOString()}]);
+    }
+    setWishForm(null);
+  };
+  const deleteWish=id=>setWishes(prev=>prev.filter(w=>w.id!==id));
+
   const addCustomCat=()=>{if(!addCatForm?.label?.trim())return;const id="ccat_"+Date.now();setCustomCats(prev=>[...prev,{id,emoji:addCatForm.emoji||"📦",color:addCatForm.color||"#6366f1",label:addCatForm.label.trim()}]);setAddCatForm(null);};
   const editCustomCat=()=>{if(!editCatForm?.label?.trim())return;setCustomCats(prev=>prev.map(c=>c.id===editCatForm.id?{...c,emoji:editCatForm.emoji,color:editCatForm.color,label:editCatForm.label.trim()}:c));setEditCatForm(null);};
   const deleteCustomCat=id=>{setCustomCats(prev=>prev.filter(c=>c.id!==id));setCustomSubcats(prev=>prev.filter(s=>s.category!==id));setBudgets(prev=>{const n={...prev};delete n[id];return n;});};
@@ -763,7 +813,7 @@ function App(){
   const setSubcatGroup=(subcatId,group)=>{if(SUBCATS.some(s=>s.id===subcatId))setSubcatGroupOverrides(prev=>({...prev,[subcatId]:group}));else setCustomSubcats(prev=>prev.map(s=>s.id===subcatId?{...s,group}:s));};
   const resetSubcatGroup=subcatId=>setSubcatGroupOverrides(prev=>{const n={...prev};delete n[subcatId];return n;});
   const handleCopy=()=>{if(navigator.clipboard?.writeText)navigator.clipboard.writeText(getExportJSON()).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2500);});};
-  const handleImport=()=>{try{const d=JSON.parse(importText);if(Array.isArray(d.txs))setTxs(cleanTxs(d.txs));if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.balAnchor!==undefined)setBalAnchor(d.balAnchor);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.showDecimals!==undefined)setShowDecimals(d.showDecimals);if(d.budgets)setBudgets(d.budgets);if(d.customCats)setCustomCats(d.customCats);if(d.customSubcats)setCustomSubcats(d.customSubcats);if(d.subcatGroupOverrides)setSubcatGroupOverrides(d.subcatGroupOverrides);if(Array.isArray(d.goals))setGoals(d.goals);setImportMod(false);setImportText("");}catch{}};
+  const handleImport=()=>{try{const d=JSON.parse(importText);if(Array.isArray(d.txs))setTxs(cleanTxs(d.txs));if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.balAnchor!==undefined)setBalAnchor(d.balAnchor);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.showDecimals!==undefined)setShowDecimals(d.showDecimals);if(d.budgets)setBudgets(d.budgets);if(d.customCats)setCustomCats(d.customCats);if(d.customSubcats)setCustomSubcats(d.customSubcats);if(d.subcatGroupOverrides)setSubcatGroupOverrides(d.subcatGroupOverrides);if(Array.isArray(d.goals))setGoals(d.goals);if(Array.isArray(d.wishes))setWishes(d.wishes);setImportMod(false);setImportText("");}catch{}};
   const handleTitleClick=e=>{e.stopPropagation();const now=Date.now();if(now-lastTapRef.current<350){setTab("home");setMo(TODAY.getMonth());setYr(TODAY.getFullYear());}lastTapRef.current=now;};
   const handleVersionClick=()=>{clearTimeout(vClickTimer.current);const next=versionClicks+1;setVersionClicks(next);if(next>=5){setShowTroubleshoot(true);setVersionClicks(0);}else vClickTimer.current=setTimeout(()=>setVersionClicks(0),3000);};
   const prevMo=()=>{if(isPrevMoDisabled)return;setSlideDir("right");mo===0?(setMo(11),setYr(y=>y-1)):setMo(m=>m-1);};
@@ -775,7 +825,7 @@ function App(){
   const dayModalList=dayMod?txs.filter(tx=>monthOccs.get(tx.id)?.includes(dayMod.day)):[];
   const dayModalDateStr=dayMod?yr+"-"+String(mo+1).padStart(2,"0")+"-"+String(dayMod.day).padStart(2,"0"):"";
   const showFabActions=activeTx&&tab==="transactions";
-  const anyModal=!!(dayMod||formMod||delMod||delAccMod||exportMod||importMod||dupMod||goalForm||catsMod||expandedGoal||fabMenuOpen);
+  const anyModal=!!(dayMod||formMod||delMod||delAccMod||exportMod||importMod||dupMod||goalForm||catsMod||expandedGoal||fabMenuOpen||wishForm);
 
   useEffect(()=>{document.body.style.overflow=anyModal?"hidden":"";return()=>{document.body.style.overflow="";};},[anyModal]);
 
@@ -805,6 +855,8 @@ function App(){
       {label:"Réinitialiser les budgets",icon:"restart_alt",onClick:()=>{setBudgets({});closeFabMenu();}},
     ]};
     if(tab==="budget"&&curSub==="objectifs"&&isPro)return{type:"direct",icon:"add",action:()=>setGoalForm({id:null,label:"",emoji:"🎯",target:"",saved:0,deadline:"",color:"#6366f1"})};
+    // ── Envies FAB ──
+    if(tab==="budget"&&curSub==="envies")return{type:"direct",icon:"add",action:()=>setWishForm({id:null,name:"",price:"",happiness:7,duration:2,frequency:2})};
     if(tab==="analyse")return{type:"menu",actions:[
       {label:"Réinitialiser la vue",icon:"refresh",onClick:()=>{setChart12Offset(0);setTopCatOffset(0);closeFabMenu();}},
     ]};
@@ -905,8 +957,6 @@ function App(){
         <>
           {fabOpen&&<div onClick={()=>{closeFabMenu();if(fabIsActive)setActiveTx(null);}} style={{position:"fixed",inset:0,zIndex:97,background:"transparent"}}/>}
           <div style={{position:"fixed",bottom:80,right:16,zIndex:99,display:"flex",flexDirection:"column",alignItems:"flex-end",gap:10}}>
-
-            {/* Actions activeTx */}
             {fabIsActive&&showFabActions&&(<>
               <div style={{animation:"popIn 0.22s cubic-bezier(0.34,1.56,0.64,1) both"}}>
                 <button title="Modifier" onClick={()=>{openForm(activeTx);setActiveTx(null);}} style={{...fabBtn(th.btnBg,th.btnText)}}>
@@ -919,16 +969,12 @@ function App(){
                 </button>
               </div>}
             </>)}
-
-            {/* Actions menu contextuel */}
             {fabIsMenu&&(fabMenuOpen||fabMenuClosing)&&fabCfg.actions.map((a,i)=>(
               <div key={i} onClick={()=>a.onClick()} style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",animation:fabMenuClosing?"popOut 0.18s cubic-bezier(0.4,0,1,1) forwards":"popIn 0.2s cubic-bezier(0.34,1.56,0.64,1) "+(i*0.05)+"s both"}}>
                 <div style={{background:th.bg,border:"1px solid "+th.border,borderRadius:10,padding:"6px 14px",fontSize:13,color:th.text,fontWeight:500,whiteSpace:"nowrap",boxShadow:"0 2px 12px rgba(0,0,0,0.12)"}}>{a.label}</div>
                 <div style={{...fabBtn(th.btnBg,th.btnText)}}><span className="ms" style={{fontSize:20}}>{a.icon}</span></div>
               </div>
             ))}
-
-            {/* Bouton principal */}
             <button
               onClick={()=>{
                 if(fabIsActive){showFabActions?setActiveTx(null):openForm();}
@@ -1074,6 +1120,116 @@ function App(){
           </ProGate>
         )}
 
+        {/* ════ Budget — Envies ════ */}
+        {tab==="budget"&&curSub==="envies"&&(
+          <div>
+            {/* ── En-tête + contrôles ── */}
+            <div style={{marginBottom:16}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+                <div>
+                  <p style={{fontSize:16,fontWeight:700,color:th.text,margin:"0 0 2px"}}>Liste d'envies</p>
+                  <p style={{fontSize:11,color:th.muted,margin:0}}>Priorisé par bonheur × durée × fréquence / log(prix)</p>
+                </div>
+                {wishes.length>0&&<span style={{fontSize:11,padding:"3px 10px",borderRadius:20,background:th.surface,color:th.sub,border:"1px solid "+th.border}}>{wishes.length} envie{wishes.length>1?"s":""}</span>}
+              </div>
+
+              {/* Tri */}
+              <SegCtrl
+                options={[["score","Score"],["price","Prix ↑"],["happiness_per_dollar","Bonheur/$"]]}
+                value={wishSort} onChange={setWishSort} th={th}
+              />
+
+              {/* Filtre */}
+              {wishes.length>1&&(
+                <div style={{display:"flex",gap:6,marginTop:10}}>
+                  {[["all","Toutes"],["top","Top priorités"],["reconsider","À reconsidérer"]].map(([v,l])=>(
+                    <button key={v} onClick={()=>setWishFilter(v)} style={{flex:1,padding:"6px 0",fontSize:11,borderRadius:8,border:"1.5px solid "+(wishFilter===v?th.text:th.border),background:wishFilter===v?th.surface:"none",color:wishFilter===v?th.text:th.muted,cursor:"pointer",fontWeight:wishFilter===v?600:400,transition:"all 0.15s"}}>{l}</button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* ── Liste vide ── */}
+            {wishes.length===0&&(
+              <div style={{textAlign:"center",padding:"60px 0"}}>
+                <p style={{fontSize:40,marginBottom:12}}>✨</p>
+                <p style={{fontSize:14,color:th.muted,marginBottom:4}}>Aucune envie</p>
+                <p style={{fontSize:12,color:th.muted,marginBottom:20}}>Ajoute un achat potentiel pour évaluer s'il en vaut vraiment la peine.</p>
+                <button onClick={()=>setWishForm({id:null,name:"",price:"",happiness:7,duration:2,frequency:2})} style={{padding:"10px 20px",borderRadius:12,border:"none",background:th.btnBg,color:th.btnText,fontSize:13,fontWeight:600,cursor:"pointer"}}>+ Ajouter une envie</button>
+              </div>
+            )}
+
+            {/* ── Cards envies ── */}
+            {scoredWishes.length===0&&wishes.length>0&&(
+              <div style={{textAlign:"center",padding:"40px 0"}}><p style={{fontSize:13,color:th.muted}}>Aucun résultat pour ce filtre</p></div>
+            )}
+
+            <div style={{display:"flex",flexDirection:"column",gap:12}}>
+              {scoredWishes.map((w,rank)=>{
+                const pri=WISH_PRIORITY[wishPriority(w.score)];
+                const ageDays=Math.floor((Date.now()-new Date(w.created_at).getTime())/86400000);
+                const isOld=ageDays>7;
+                return(
+                  <div key={w.id} style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"16px",position:"relative",overflow:"hidden"}}>
+                    {/* Badge rang */}
+                    <div style={{position:"absolute",top:12,right:12,fontSize:11,fontWeight:700,color:th.muted}}>#{rank+1}</div>
+
+                    <div style={{display:"flex",alignItems:"flex-start",gap:12,paddingRight:28}}>
+                      {/* Indicateur priorité */}
+                      <div style={{width:42,height:42,borderRadius:12,background:pri.color+"18",border:"2px solid "+pri.color+"44",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                        <span style={{fontSize:16,lineHeight:1}}>{pri.icon}</span>
+                      </div>
+
+                      <div style={{flex:1,minWidth:0}}>
+                        {/* Nom + prix */}
+                        <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:4}}>
+                          <p style={{fontSize:14,fontWeight:600,color:th.text,margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1,paddingRight:8}}>{w.name}</p>
+                          <span style={{fontSize:14,fontWeight:700,fontVariantNumeric:"tabular-nums",color:th.text,flexShrink:0}}>{w.price===0?"Gratuit":fA(w.price,false,true)}</span>
+                        </div>
+
+                        {/* Métadonnées */}
+                        <div style={{display:"flex",flexWrap:"wrap",gap:"4px 10px",marginBottom:10}}>
+                          <span style={{fontSize:11,color:th.muted}}>😊 {w.happiness}/10</span>
+                          <span style={{fontSize:11,color:th.muted}}>{["","Court","Moyen","Long"][w.duration]}</span>
+                          <span style={{fontSize:11,color:th.muted}}>{["","Rare","Occasionnel","Fréquent","Quotidien"][w.frequency]}</span>
+                          {isOld&&<span style={{fontSize:10,padding:"1px 7px",borderRadius:20,background:"#6366f118",color:"#6366f1",fontWeight:500}}>+{ageDays}j ↑</span>}
+                        </div>
+
+                        {/* Score + bonheur/$ */}
+                        <div style={{display:"flex",alignItems:"center",gap:8}}>
+                          <div style={{flex:1,background:th.surface,borderRadius:8,padding:"6px 10px"}}>
+                            <p style={{fontSize:9,color:th.muted,letterSpacing:"0.08em",textTransform:"uppercase",margin:"0 0 1px"}}>Score</p>
+                            <p style={{fontSize:16,fontWeight:800,color:pri.color,margin:0,lineHeight:1,fontVariantNumeric:"tabular-nums"}}>{w.score}</p>
+                          </div>
+                          {w.price>0&&(
+                            <div style={{flex:1,background:th.surface,borderRadius:8,padding:"6px 10px"}}>
+                              <p style={{fontSize:9,color:th.muted,letterSpacing:"0.08em",textTransform:"uppercase",margin:"0 0 1px"}}>Bonheur / $</p>
+                              <p style={{fontSize:16,fontWeight:800,color:"#8b5cf6",margin:0,lineHeight:1,fontVariantNumeric:"tabular-nums"}}>{w.hpd}</p>
+                            </div>
+                          )}
+                          <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                            <button onClick={()=>setWishForm({...w,price:String(w.price)})} style={{width:32,height:32,borderRadius:8,border:"1px solid "+th.border,background:"none",color:th.sub,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                              <span className="ms" style={{fontSize:16}}>edit</span>
+                            </button>
+                            <button onClick={()=>deleteWish(w.id)} style={{width:32,height:32,borderRadius:8,border:"1px solid "+th.border,background:"none",color:th.danger,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                              <span className="ms" style={{fontSize:16}}>delete</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Barre de score visuelle */}
+                    <div style={{marginTop:12,height:3,background:th.surface,borderRadius:2,overflow:"hidden"}}>
+                      <div style={{height:"100%",width:Math.min(w.score/50*100,100)+"%",background:"linear-gradient(90deg,"+pri.color+","+pri.color+"88)",borderRadius:2,transition:"width 0.4s"}}/>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* ════ Analyse — Statistiques ════ */}
         {tab==="analyse"&&curSub==="statistiques"&&(
           <ProGate isPro={isPro} th={th} title="Statistiques" desc="Taux d'épargne, évolution du solde, moyennes sur 12 mois. Fonctionnalité réservée à la version Pro.">
@@ -1209,6 +1365,86 @@ function App(){
       </div>
 
       {/* ── Modales ── */}
+
+      {/* ── Modal : Formulaire envie ── */}
+      {wishForm&&(
+        <Sheet onClose={()=>setWishForm(null)} th={th}>
+          <SheetHead title={wishForm.id?"Modifier l'envie":"Nouvelle envie"} onClose={()=>setWishForm(null)} th={th}/>
+
+          <div style={{display:"flex",flexDirection:"column",gap:18}}>
+            {/* Nom */}
+            <div>
+              <label style={lbl}>Nom de l'envie</label>
+              <input type="text" value={wishForm.name} onChange={e=>setWishForm(f=>({...f,name:e.target.value}))} placeholder="Ex. MacBook, Vélo, Voyage..." style={{...iSt,fontSize:16}}/>
+            </div>
+
+            {/* Prix */}
+            <div>
+              <label style={lbl}>Prix ($)</label>
+              <input type="number" min="0" step="10" value={wishForm.price} onChange={e=>setWishForm(f=>({...f,price:e.target.value}))} placeholder="0" style={{...iSt,fontSize:20,fontWeight:600,fontVariantNumeric:"tabular-nums"}}/>
+            </div>
+
+            {/* Bonheur — slider */}
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                <label style={lbl}>Bonheur procuré</label>
+                <span style={{fontSize:18,fontWeight:800,color:"#f59e0b"}}>{wishForm.happiness}/10</span>
+              </div>
+              <input type="range" min="1" max="10" step="1" value={wishForm.happiness}
+                onChange={e=>setWishForm(f=>({...f,happiness:+e.target.value}))}
+                style={{width:"100%",accentColor:"#f59e0b",cursor:"pointer"}}
+              />
+              <div style={{display:"flex",justifyContent:"space-between",marginTop:2}}>
+                <span style={{fontSize:10,color:th.muted}}>Indifférent</span>
+                <span style={{fontSize:10,color:th.muted}}>Coup de cœur</span>
+              </div>
+            </div>
+
+            {/* Durée */}
+            <div>
+              <label style={lbl}>Durée de satisfaction</label>
+              <div style={{display:"flex",gap:6,marginTop:8}}>
+                {DUR_OPTS.map(o=>(
+                  <button key={o.v} onClick={()=>setWishForm(f=>({...f,duration:o.v}))}
+                    style={{flex:1,padding:"9px 0",borderRadius:10,fontSize:13,border:"1.5px solid "+(wishForm.duration===o.v?th.text:th.border),background:wishForm.duration===o.v?th.surface:"none",color:wishForm.duration===o.v?th.text:th.muted,cursor:"pointer",fontWeight:wishForm.duration===o.v?600:400}}>{o.l}</button>
+                ))}
+              </div>
+              <p style={{fontSize:10,color:th.muted,margin:"6px 0 0"}}>Court = jours, Moyen = semaines/mois, Long = années</p>
+            </div>
+
+            {/* Fréquence d'utilisation */}
+            <div>
+              <label style={lbl}>Fréquence d'utilisation</label>
+              <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
+                {FREQ_OPTS.map(o=>(
+                  <button key={o.v} onClick={()=>setWishForm(f=>({...f,frequency:o.v}))}
+                    style={{flex:"1 1 calc(50% - 3px)",padding:"9px 0",borderRadius:10,fontSize:12,border:"1.5px solid "+(wishForm.frequency===o.v?th.text:th.border),background:wishForm.frequency===o.v?th.surface:"none",color:wishForm.frequency===o.v?th.text:th.muted,cursor:"pointer",fontWeight:wishForm.frequency===o.v?600:400}}>{o.l}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* Aperçu du score */}
+            {wishForm.name.trim()&&wishForm.price!==""&&(()=>{
+              const preview=calcWishScore({...wishForm,price:parseFloat(wishForm.price)||0,created_at:new Date().toISOString()});
+              const pri=WISH_PRIORITY[wishPriority(preview)];
+              return(
+                <div style={{background:pri.color+"12",border:"1px solid "+pri.color+"33",borderRadius:12,padding:"12px 14px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                  <span style={{fontSize:13,color:pri.color,fontWeight:600}}>{pri.icon} Priorité {pri.label.toLowerCase()}</span>
+                  <span style={{fontSize:20,fontWeight:800,color:pri.color,fontVariantNumeric:"tabular-nums"}}>Score : {preview}</span>
+                </div>
+              );
+            })()}
+          </div>
+
+          <div style={{display:"flex",gap:8,marginTop:20}}>
+            <button onClick={()=>setWishForm(null)} style={{flex:1,padding:"12px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>Annuler</button>
+            <button onClick={saveWish} disabled={!wishForm.name?.trim()||wishForm.price===""} style={{flex:2,padding:"12px 0",fontSize:13,border:"none",borderRadius:12,background:wishForm.name?.trim()&&wishForm.price!==""?th.btnBg:th.surface,color:wishForm.name?.trim()&&wishForm.price!==""?th.btnText:th.muted,cursor:wishForm.name?.trim()&&wishForm.price!==""?"pointer":"default",fontWeight:600}}>
+              {wishForm.id?"Enregistrer":"Ajouter l'envie"}
+            </button>
+          </div>
+        </Sheet>
+      )}
+
       {dupMod&&(<Sheet onClose={()=>setDupMod(null)} th={th}><SheetHead title="Dupliquer la transaction" onClose={()=>setDupMod(null)} th={th}/><div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 14px",background:th.surface,borderRadius:12,marginBottom:20}}><div style={{width:36,height:36,borderRadius:9,background:dynCatById(dupMod.tx.category||"other").color+"22",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><CatIcon cat={dynCatById(dupMod.tx.category||"other")} size={18}/></div><div><p style={{fontSize:13,fontWeight:500,color:th.text,margin:0}}>{dupMod.tx.description}</p><p style={{fontSize:11,color:th.muted,margin:"2px 0 0"}}>{f(dupMod.tx.amount,true)} · {getCatName(dupMod.tx.category||"other")}</p></div></div><label style={{...lbl,display:"block",marginBottom:8}}>Date de la copie</label><input type="date" value={dupMod.date} onChange={e=>e.target.value&&setDupMod(m=>({...m,date:e.target.value}))} style={{display:"block",width:"100%",padding:"12px 14px",fontSize:15,color:th.text,background:th.surface,border:"1px solid "+th.inputBorder,borderRadius:12,outline:"none",boxSizing:"border-box",colorScheme:isDark?"dark":"light",marginBottom:20}}/><div style={{display:"flex",gap:8}}><button onClick={()=>setDupMod(null)} style={{flex:1,padding:"12px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>Annuler</button><button onClick={()=>{duplicateTx(dupMod.tx,dupMod.date);setDupMod(null);}} style={{flex:2,padding:"12px 0",fontSize:13,border:"none",borderRadius:12,background:th.btnBg,color:th.btnText,cursor:"pointer",fontWeight:600}}>Dupliquer</button></div></Sheet>)}
       {exportMod&&(<Sheet onClose={()=>setExportMod(false)} th={th}><SheetHead title="Exporter les données" onClose={()=>setExportMod(false)} th={th}/><p style={{fontSize:12,color:th.sub,marginBottom:12}}>Copiez ce JSON et conservez-le en lieu sûr.</p><textarea readOnly value={getExportJSON()} style={{width:"100%",height:180,padding:"10px 12px",fontSize:11,fontFamily:"monospace",color:th.sub,background:th.surface,border:"1px solid "+th.border,borderRadius:10,resize:"none",boxSizing:"border-box",lineHeight:1.5}}/><div style={{display:"flex",gap:8,marginTop:12}}><button onClick={()=>setExportMod(false)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>Fermer</button><button onClick={handleCopy} style={{flex:2,padding:"11px 0",fontSize:13,border:"none",borderRadius:12,background:copied?"#059669":th.btnBg,color:copied?"#fff":th.btnText,cursor:"pointer",fontWeight:500,transition:"background 0.2s"}}>{copied?"Copié":"Copier"}</button></div></Sheet>)}
       {importMod&&(<Sheet onClose={()=>setImportMod(false)} th={th}><SheetHead title="Importer les données" onClose={()=>setImportMod(false)} th={th}/><p style={{fontSize:12,color:th.sub,marginBottom:12}}>Collez un JSON exporté précédemment.</p><textarea value={importText} onChange={e=>setImportText(e.target.value)} placeholder="Collez votre JSON ici..." style={{width:"100%",height:200,padding:"10px 12px",fontSize:11,fontFamily:"monospace",color:th.text,background:th.surface,border:"1px solid "+th.border,borderRadius:10,resize:"none",boxSizing:"border-box",lineHeight:1.5}}/><div style={{display:"flex",gap:8,marginTop:12}}><button onClick={()=>setImportMod(false)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>Annuler</button><button onClick={handleImport} disabled={!importText.trim()} style={{flex:2,padding:"11px 0",fontSize:13,border:"none",borderRadius:12,background:importText.trim()?th.btnBg:th.surface,color:importText.trim()?th.btnText:th.muted,cursor:importText.trim()?"pointer":"default",fontWeight:500}}>Restaurer</button></div></Sheet>)}
