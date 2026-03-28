@@ -1114,7 +1114,7 @@ function App(){
         {tab==="transactions"&&curSub==="historique"&&(
           <div>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-              <MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} onToday={goToday} th={th} prevDisabled={isPrevMoDisabled}/>
+              <MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} onToday={goToday} th={th} prevDisabled={isPrevMoDisabled} showToday={false}/>
               <p style={{...lbl,margin:0}}>{monthTxs.length} transaction{monthTxs.length!==1?"s":""}</p>
             </div>
             {!isPro&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:"#6366f118",borderRadius:10,marginBottom:14,border:"1px solid #6366f130"}}><span style={{fontSize:14}}>🔒</span><p style={{fontSize:12,color:"#6366f1",margin:0}}>Version gratuite — historique limité aux 3 derniers mois</p></div>}
