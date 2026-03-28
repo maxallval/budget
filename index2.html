@@ -385,42 +385,63 @@ function LineChart({data,color,th,height=120}){
     {yTicks.map((v,i)=><text key={i} x={pad.l-4} y={py(v)+3.5} textAnchor="end" fontSize="9" fill={th.muted}>{v>=1000?(v/1000).toFixed(1)+"k":v.toFixed(0)}</text>)}
   </svg>);
 }
-function MirrorChart({data,th,height=160}){
-  if(!data||!data.length)return null;
-  const W=560,H=height,pad={t:16,b:16,l:4,r:4};
-  const mid=H/2;
+function StreamChart({data,th,height=160}){
+  if(!data||data.length<2)return null;
+  const W=560,H=height,pad={t:20,b:20,l:4,r:4};
   const maxV=Math.max(...data.map(d=>Math.max(d.inc,d.exp)),1);
-  const arm=(H/2-pad.t);
-  const bh=v=>Math.max((v/maxV)*arm,1);
-  const slotW=(W-pad.l-pad.r)/data.length;
-  const barW=slotW*0.42;
-  const gap=slotW*0.08;
+  const py=v=>pad.t+(1-v/maxV)*(H-pad.t-pad.b);
+  const px=i=>pad.l+(i/(data.length-1))*(W-pad.l-pad.r);
+  const pts=data.map((d,i)=>({x:px(i),yi:py(d.inc),ye:py(d.exp),label:d.label,net:d.inc-d.exp}));
+
+  // Courbe cubic Bézier helper
+  const bezier=yKey=>pts.reduce((d,p,i)=>{
+    if(i===0)return`M${p.x.toFixed(1)},${p[yKey].toFixed(1)}`;
+    const prev=pts[i-1],cpx=(prev.x+p.x)/2;
+    return d+` C${cpx.toFixed(1)},${prev[yKey].toFixed(1)} ${cpx.toFixed(1)},${p[yKey].toFixed(1)} ${p.x.toFixed(1)},${p[yKey].toFixed(1)}`;
+  },"");
+
+  const incPath=bezier("yi");
+  const expPath=bezier("ye");
+  const incArea=incPath+`L${pts[pts.length-1].x},${H-pad.b} L${pts[0].x},${H-pad.b}Z`;
+  const expArea=expPath+`L${pts[pts.length-1].x},${H-pad.b} L${pts[0].x},${H-pad.b}Z`;
+
+  // Zone entre les deux courbes (épargne ou déficit)
+  const revExpPath=incPath+" "+bezier("ye").replace(/^M/,"L")
+    .split(" ").reverse().map((seg,i,arr)=>{
+      if(i===0)return`L${pts[pts.length-1].x.toFixed(1)},${pts[pts.length-1].ye.toFixed(1)}`;
+      return seg;
+    }).join(" ")+"Z";
+
+  const gid=`sc${Math.random().toString(36).slice(2,6)}`;
   return(<svg viewBox={"0 0 "+W+" "+H} style={{width:"100%",height,display:"block",overflow:"visible"}}>
-    {/* Ligne centrale */}
-    <line x1={pad.l} x2={W-pad.r} y1={mid} y2={mid} stroke={th.border} strokeWidth="1.5"/>
-    {data.map((d,i)=>{
-      const x=pad.l+i*slotW;
-      const cx=x+slotW/2;
-      const incH=bh(d.inc),expH=bh(d.exp);
-      const net=d.inc-d.exp,netY=net>=0?mid-incH-6:mid+expH+6;
+    <defs>
+      <linearGradient id={gid+"i"} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#10b981" stopOpacity="0.25"/><stop offset="100%" stopColor="#10b981" stopOpacity="0.03"/></linearGradient>
+      <linearGradient id={gid+"e"} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#f87171" stopOpacity="0.18"/><stop offset="100%" stopColor="#f87171" stopOpacity="0.03"/></linearGradient>
+    </defs>
+
+    {/* Aires remplies */}
+    <path d={incArea} fill={`url(#${gid}i)`}/>
+    <path d={expArea} fill={`url(#${gid}e)`}/>
+
+    {/* Courbes principales */}
+    <path d={incPath} fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d={expPath} fill="none" stroke="#f87171" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="5 3"/>
+
+    {/* Points + labels */}
+    {pts.map((p,i)=>{
       const showLabel=i%2===0||data.length<=7;
       return(<g key={i}>
-        {/* Revenu — vers le haut, arrondi en haut */}
-        <rect x={cx-barW-gap/2} y={mid-incH} width={barW} height={incH} rx="3" ry="3" fill="#10b981" opacity="0.8"/>
-        {/* Dépense — vers le bas, arrondi en bas */}
-        <rect x={cx+gap/2} y={mid} width={barW} height={expH} rx="3" ry="3" fill="#f87171" opacity="0.75"/>
-        {/* Pastille net */}
-        <circle cx={cx} cy={netY} r="3.5" fill={net>=0?"#10b981":"#f87171"}/>
-        {showLabel&&<text x={cx} y={H-2} textAnchor="middle" fontSize="9" fill={th.muted}>{d.label}</text>}
+        <circle cx={p.x} cy={p.yi} r="3" fill="#10b981" stroke={th.sheetBg} strokeWidth="1.5"/>
+        <circle cx={p.x} cy={p.ye} r="3" fill="#f87171" stroke={th.sheetBg} strokeWidth="1.5"/>
+        {showLabel&&<text x={p.x} y={H-4} textAnchor="middle" fontSize="9" fill={th.muted}>{p.label}</text>}
       </g>);
     })}
+
     {/* Légende */}
-    <rect x={pad.l} y={2} width={8} height={8} rx="2" fill="#10b981" opacity="0.8"/>
-    <text x={pad.l+11} y={10} fontSize="9" fill={th.muted}>Revenus</text>
-    <rect x={pad.l+56} y={2} width={8} height={8} rx="2" fill="#f87171" opacity="0.75"/>
-    <text x={pad.l+67} y={10} fontSize="9" fill={th.muted}>Dépenses</text>
-    <circle cx={pad.l+120} cy={6} r="3.5" fill={th.sub}/>
-    <text x={pad.l+127} y={10} fontSize="9" fill={th.muted}>Net</text>
+    <line x1={pad.l} y1={8} x2={pad.l+14} y2={8} stroke="#10b981" strokeWidth="2" strokeLinecap="round"/>
+    <text x={pad.l+18} y={12} fontSize="9" fill={th.muted}>Revenus</text>
+    <line x1={pad.l+62} y1={8} x2={pad.l+76} y2={8} stroke="#f87171" strokeWidth="2" strokeLinecap="round" strokeDasharray="4 2"/>
+    <text x={pad.l+80} y={12} fontSize="9" fill={th.muted}>Dépenses</text>
   </svg>);
 }
 const StatCard=({label,value,sub,color,th})=>(
@@ -1279,7 +1300,7 @@ function App(){
                   <StatCard label="Net mensuel moyen" value={(statsKPIs.avgNet12>=0?"+":"-")+f(statsKPIs.avgNet12)} sub="12 derniers mois" color={statsKPIs.avgNet12>=0?"#059669":"#ef4444"} th={th}/>
                 </div>
                 <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}><p style={{fontSize:13,fontWeight:600,color:th.text,margin:0}}>Évolution du solde</p><MiniNav label={chart12Label} onPrev={()=>setChart12Offset(o=>o-1)} onNext={()=>setChart12Offset(o=>Math.min(o+1,12))} nextDisabled={chart12Offset>=12} th={th}/></div><LineChart data={last12.map(m=>({y:m.endBal,label:m.label}))} color={last12[last12.length-1]?.endBal>=0?"#10b981":"#ef4444"} th={th} height={130}/></div>
-                <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><p style={{fontSize:13,fontWeight:600,color:th.text,margin:0}}>Revenus vs Dépenses</p><MiniNav label={chart12Label} onPrev={()=>setChart12Offset(o=>o-1)} onNext={()=>setChart12Offset(o=>Math.min(o+1,12))} nextDisabled={chart12Offset>=12} th={th}/></div>                <MirrorChart data={last12.map(m=>({inc:m.inc,exp:m.exp,label:m.label}))} th={th} height={160}/></div>
+                <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><p style={{fontSize:13,fontWeight:600,color:th.text,margin:0}}>Revenus vs Dépenses</p><MiniNav label={chart12Label} onPrev={()=>setChart12Offset(o=>o-1)} onNext={()=>setChart12Offset(o=>Math.min(o+1,12))} nextDisabled={chart12Offset>=12} th={th}/></div>                <StreamChart data={last12.map(m=>({inc:m.inc,exp:m.exp,label:m.label}))} th={th} height={160}/></div>
                 {topCats.length>0&&(<div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}><p style={{fontSize:13,fontWeight:600,color:th.text,margin:0}}>Top catégories</p><MiniNav label={topCatLabel} onPrev={()=>setTopCatOffset(o=>o-1)} onNext={()=>setTopCatOffset(o=>Math.min(o+1,12))} nextDisabled={topCatOffset>=12} th={th}/></div><div style={{display:"flex",flexDirection:"column",gap:10}}>{topCats.map(cat=>{const pct=topCats[0].spent>0?cat.spent/topCats[0].spent*100:0;return(<div key={cat.id}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:5}}><div style={{display:"flex",alignItems:"center",gap:8}}><CatIcon cat={cat} size={18}/><span style={{fontSize:13,color:th.text}}>{getCatName(cat.id)}</span></div><span style={{fontSize:13,fontVariantNumeric:"tabular-nums",fontWeight:500,color:th.text}}>{f(cat.spent,true)}</span></div><div style={{height:6,background:th.surface,borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",width:pct+"%",background:cat.color,borderRadius:3,opacity:0.85}}/></div></div>);})}</div></div>)}
               </div>}
             </div>
