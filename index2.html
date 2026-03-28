@@ -842,7 +842,10 @@ function App(){
   // ── FAB config contextuelle ────────────────────────────────────────────────
   const fabCfg=(()=>{
     if(showFabActions)return{type:"activeTx"};
-    if(tab==="home")return{type:"direct",icon:"add",action:()=>openForm()};
+    if(tab==="home")return{type:"menu",actions:[
+      {label:"Ajouter une transaction",icon:"add_circle",onClick:()=>{openForm();closeFabMenu();}},
+      {label:"Aller à aujourd'hui",icon:"today",onClick:()=>{goToday();closeFabMenu();}},
+    ]};
     if(tab==="transactions"&&curSub==="historique")return{type:"menu",actions:[
       {label:"Ajouter une transaction",icon:"add_circle",onClick:()=>{openForm();closeFabMenu();}},
       {label:"Aller à aujourd'hui",icon:"today",onClick:()=>{goToday();closeFabMenu();}},
@@ -1001,7 +1004,6 @@ function App(){
           <div>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
               {disp.showSavingsRate!==false?(savingsRate!==null?<span style={{fontSize:11,padding:"3px 10px",borderRadius:20,background:savingsRate>=0?"rgba(5,150,105,0.1)":"rgba(239,68,68,0.1)",color:savingsRate>=0?"#059669":"#ef4444",fontWeight:500}}>{savingsRate>=0?"+":""}{savingsRate}% épargne</span>:<span/>):<span/>}
-              {isNotToday?<button onClick={goToday} style={{fontSize:11,padding:"3px 9px",borderRadius:8,border:"1px solid "+th.border,background:"none",color:th.sub,cursor:"pointer",whiteSpace:"nowrap"}}>Aujourd'hui</button>:<button style={{fontSize:11,padding:"3px 9px",borderRadius:8,border:"1px solid transparent",background:"none",color:"transparent",cursor:"default",whiteSpace:"nowrap",pointerEvents:"none"}}>Aujourd'hui</button>}
               {disp.showModeCtrl!==false&&<SegCtrl options={[["daily","Journée"],["balance","Solde"]]} value={mode} onChange={setMode} th={th}/>}
             </div>
             {hasSummary&&(
