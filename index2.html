@@ -368,8 +368,13 @@ function LineChart({data,color,th,height=120}){
   const px=i=>pad.l+(i/(data.length-1))*(W-pad.l-pad.r);
   const py=v=>pad.t+(1-(v-mn)/rng)*(H-pad.t-pad.b);
   const pts=data.map((d,i)=>({x:px(i),y:py(d.y),label:d.label}));
-  const pathD="M"+pts.map(p=>p.x.toFixed(1)+","+p.y.toFixed(1)).join("L");
-  const areaD=pathD+"L"+pts[pts.length-1].x.toFixed(1)+","+(H-pad.b).toFixed(1)+"L"+pts[0].x.toFixed(1)+","+(H-pad.b).toFixed(1)+"Z";
+  const curve=pts.reduce((d,p,i)=>{
+    if(i===0)return`M${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+    const prev=pts[i-1],cpx=(prev.x+p.x)/2;
+    return d+` C${cpx.toFixed(1)},${prev.y.toFixed(1)} ${cpx.toFixed(1)},${p.y.toFixed(1)} ${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+  },"");
+  const pathD=curve;
+  const areaD=curve+"L"+pts[pts.length-1].x.toFixed(1)+","+(H-pad.b).toFixed(1)+"L"+pts[0].x.toFixed(1)+","+(H-pad.b).toFixed(1)+"Z";
   const gid="lg_"+color.replace("#",""),yTicks=[mn,mn+rng/2,mx];
   return(<svg viewBox={"0 0 "+W+" "+H} style={{width:"100%",height,display:"block",overflow:"visible"}}>
     <defs><linearGradient id={gid} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.18"/><stop offset="100%" stopColor={color} stopOpacity="0.01"/></linearGradient></defs>
@@ -380,16 +385,42 @@ function LineChart({data,color,th,height=120}){
     {yTicks.map((v,i)=><text key={i} x={pad.l-4} y={py(v)+3.5} textAnchor="end" fontSize="9" fill={th.muted}>{v>=1000?(v/1000).toFixed(1)+"k":v.toFixed(0)}</text>)}
   </svg>);
 }
-function BarChart2({data,th,height=140}){
+function MirrorChart({data,th,height=160}){
   if(!data||!data.length)return null;
-  const W=560,H=height,pad={t:8,b:28,l:4,r:4};
+  const W=560,H=height,pad={t:16,b:16,l:4,r:4};
+  const mid=H/2;
   const maxV=Math.max(...data.map(d=>Math.max(d.inc,d.exp)),1);
-  const slotW=(W-pad.l-pad.r)/data.length,barW=slotW*0.7,gap=slotW*0.15,bh=v=>(v/maxV)*(H-pad.t-pad.b);
+  const arm=(H/2-pad.t);
+  const bh=v=>Math.max((v/maxV)*arm,1);
+  const slotW=(W-pad.l-pad.r)/data.length;
+  const barW=slotW*0.42;
+  const gap=slotW*0.08;
   return(<svg viewBox={"0 0 "+W+" "+H} style={{width:"100%",height,display:"block",overflow:"visible"}}>
-    {data.map((d,i)=>{const x=pad.l+i*slotW+gap,incH=bh(d.inc),expH=bh(d.exp),bw=barW/2-1;return(
-      <g key={i}><rect x={x} y={H-pad.b-incH} width={bw} height={Math.max(incH,1)} rx="2" fill="#10b981" opacity="0.85"/><rect x={x+bw+2} y={H-pad.b-expH} width={bw} height={Math.max(expH,1)} rx="2" fill="#ef4444" opacity="0.75"/>{(i%2===0||data.length<=7)&&<text x={x+bw} y={H-6} textAnchor="middle" fontSize="9" fill={th.muted}>{d.label}</text>}</g>
-    );})}
-    <line x1={pad.l} x2={W-pad.r} y1={H-pad.b} y2={H-pad.b} stroke={th.border} strokeWidth="1"/>
+    {/* Ligne centrale */}
+    <line x1={pad.l} x2={W-pad.r} y1={mid} y2={mid} stroke={th.border} strokeWidth="1.5"/>
+    {data.map((d,i)=>{
+      const x=pad.l+i*slotW;
+      const cx=x+slotW/2;
+      const incH=bh(d.inc),expH=bh(d.exp);
+      const net=d.inc-d.exp,netY=net>=0?mid-incH-6:mid+expH+6;
+      const showLabel=i%2===0||data.length<=7;
+      return(<g key={i}>
+        {/* Revenu — vers le haut, arrondi en haut */}
+        <rect x={cx-barW-gap/2} y={mid-incH} width={barW} height={incH} rx="3" ry="3" fill="#10b981" opacity="0.8"/>
+        {/* Dépense — vers le bas, arrondi en bas */}
+        <rect x={cx+gap/2} y={mid} width={barW} height={expH} rx="3" ry="3" fill="#f87171" opacity="0.75"/>
+        {/* Pastille net */}
+        <circle cx={cx} cy={netY} r="3.5" fill={net>=0?"#10b981":"#f87171"}/>
+        {showLabel&&<text x={cx} y={H-2} textAnchor="middle" fontSize="9" fill={th.muted}>{d.label}</text>}
+      </g>);
+    })}
+    {/* Légende */}
+    <rect x={pad.l} y={2} width={8} height={8} rx="2" fill="#10b981" opacity="0.8"/>
+    <text x={pad.l+11} y={10} fontSize="9" fill={th.muted}>Revenus</text>
+    <rect x={pad.l+56} y={2} width={8} height={8} rx="2" fill="#f87171" opacity="0.75"/>
+    <text x={pad.l+67} y={10} fontSize="9" fill={th.muted}>Dépenses</text>
+    <circle cx={pad.l+120} cy={6} r="3.5" fill={th.sub}/>
+    <text x={pad.l+127} y={10} fontSize="9" fill={th.muted}>Net</text>
   </svg>);
 }
 const StatCard=({label,value,sub,color,th})=>(
@@ -1248,7 +1279,7 @@ function App(){
                   <StatCard label="Net mensuel moyen" value={(statsKPIs.avgNet12>=0?"+":"-")+f(statsKPIs.avgNet12)} sub="12 derniers mois" color={statsKPIs.avgNet12>=0?"#059669":"#ef4444"} th={th}/>
                 </div>
                 <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}><p style={{fontSize:13,fontWeight:600,color:th.text,margin:0}}>Évolution du solde</p><MiniNav label={chart12Label} onPrev={()=>setChart12Offset(o=>o-1)} onNext={()=>setChart12Offset(o=>Math.min(o+1,12))} nextDisabled={chart12Offset>=12} th={th}/></div><LineChart data={last12.map(m=>({y:m.endBal,label:m.label}))} color={last12[last12.length-1]?.endBal>=0?"#10b981":"#ef4444"} th={th} height={130}/></div>
-                <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><p style={{fontSize:13,fontWeight:600,color:th.text,margin:0}}>Revenus vs Dépenses</p><MiniNav label={chart12Label} onPrev={()=>setChart12Offset(o=>o-1)} onNext={()=>setChart12Offset(o=>Math.min(o+1,12))} nextDisabled={chart12Offset>=12} th={th}/></div><BarChart2 data={last12.map(m=>({inc:m.inc,exp:m.exp,label:m.label}))} th={th} height={140}/></div>
+                <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><p style={{fontSize:13,fontWeight:600,color:th.text,margin:0}}>Revenus vs Dépenses</p><MiniNav label={chart12Label} onPrev={()=>setChart12Offset(o=>o-1)} onNext={()=>setChart12Offset(o=>Math.min(o+1,12))} nextDisabled={chart12Offset>=12} th={th}/></div>                <MirrorChart data={last12.map(m=>({inc:m.inc,exp:m.exp,label:m.label}))} th={th} height={160}/></div>
                 {topCats.length>0&&(<div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}><p style={{fontSize:13,fontWeight:600,color:th.text,margin:0}}>Top catégories</p><MiniNav label={topCatLabel} onPrev={()=>setTopCatOffset(o=>o-1)} onNext={()=>setTopCatOffset(o=>Math.min(o+1,12))} nextDisabled={topCatOffset>=12} th={th}/></div><div style={{display:"flex",flexDirection:"column",gap:10}}>{topCats.map(cat=>{const pct=topCats[0].spent>0?cat.spent/topCats[0].spent*100:0;return(<div key={cat.id}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:5}}><div style={{display:"flex",alignItems:"center",gap:8}}><CatIcon cat={cat} size={18}/><span style={{fontSize:13,color:th.text}}>{getCatName(cat.id)}</span></div><span style={{fontSize:13,fontVariantNumeric:"tabular-nums",fontWeight:500,color:th.text}}>{f(cat.spent,true)}</span></div><div style={{height:6,background:th.surface,borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",width:pct+"%",background:cat.color,borderRadius:3,opacity:0.85}}/></div></div>);})}</div></div>)}
               </div>}
             </div>
