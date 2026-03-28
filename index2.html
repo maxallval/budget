@@ -135,12 +135,15 @@ const UNITS_FR={day:"jours",week:"semaines",month:"mois",year:"années"};
 
 // ─── Envies — constantes métier ───────────────────────────────────────────────
 // score = (bonheur × durée × fréquence) / ln(prix + 2) × facteur_ancienneté
+// Seuils nommés pour faciliter les ajustements futurs
+const WISH_SCORE_HIGH=20;
+const WISH_SCORE_MID=8;
 const calcWishScore=w=>{
   const ageDays=(Date.now()-new Date(w.created_at).getTime())/86400000;
-  const ageFactor=ageDays>7?1.1:1; // +10% si envie persistante (>7j)
+  const ageFactor=ageDays>7?1.1:1;
   return+((w.happiness*(w.duration||1)*(w.frequency||1))/Math.log(w.price+2)*ageFactor).toFixed(2);
 };
-const wishPriority=s=>s>=20?"high":s>=8?"mid":"low";
+const wishPriority=s=>s>=WISH_SCORE_HIGH?"high":s>=WISH_SCORE_MID?"mid":"low";
 const WISH_PRIORITY={
   high:{icon:"🟢",label:"Haute",color:"#10b981"},
   mid: {icon:"🟡",label:"Moyenne",color:"#f59e0b"},
@@ -154,6 +157,7 @@ const FREQ_OPTS=[{v:1,l:"Rare"},{v:2,l:"Occasionnel"},{v:3,l:"Fréquent"},{v:4,l
 const _pdCache=new Map();
 const _pdCacheMaxSize=500;
 const parseD=s=>{
+  if(!s)return new Date(NaN);
   let v=_pdCache.get(s);
   if(!v){
     if(_pdCache.size>=_pdCacheMaxSize)_pdCache.delete(_pdCache.keys().next().value);
@@ -504,6 +508,22 @@ function LoginScreen(){
 }
 
 // ─── App ──────────────────────────────────────────────────────────────────────
+class ErrorBoundary extends React.Component{
+  state={error:null};
+  static getDerivedStateFromError(e){return{error:e};}
+  render(){
+    const{error}=this.state;
+    if(!error)return this.props.children;
+    const th=mkTh(false);
+    return(<div style={{minHeight:"100vh",background:th.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:32,fontFamily:"'Radio Canada',system-ui,sans-serif",textAlign:"center"}}>
+      <div style={{width:64,height:64,borderRadius:20,background:"#ef444418",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:20}}><span style={{fontSize:32}}>⚠️</span></div>
+      <p style={{fontSize:16,fontWeight:700,color:th.text,margin:"0 0 8px"}}>Une erreur est survenue</p>
+      <p style={{fontSize:12,color:th.muted,margin:"0 0 24px",maxWidth:280,lineHeight:1.6}}>{error.message||"Erreur inattendue"}</p>
+      <button onClick={()=>this.setState({error:null})} style={{padding:"10px 22px",borderRadius:12,border:"none",background:th.btnBg,color:th.btnText,fontSize:13,fontWeight:600,cursor:"pointer"}}>Réessayer</button>
+    </div>);
+  }
+}
+
 function App(){
   // ── State ──────────────────────────────────────────────────────────────────
   const[authLoading,setAuthLoading]=useState(true);
@@ -609,7 +629,7 @@ function App(){
   const getCatName=useCallback(id=>catNameMap[id]||id,[catNameMap]);
   const dynCatById=useCallback(id=>catMap.get(id)||allCats[allCats.length-1],[catMap,allCats]);
   const dynSubcatById=useCallback(id=>id?subcatMap.get(id)||null:null,[subcatMap]);
-  const getBalAt=useMemo(()=>date=>{
+  const getBalAt=useCallback(date=>{
     if(!balAnchor)return rawBalAt(txs,initBal,date);
     const aDate=parseD(balAnchor.dateStr);
     if(date<aDate)return rawBalAt(txs,initBal,date);
@@ -672,11 +692,14 @@ function App(){
 
   // ── Envies — données dérivées ─────────────────────────────────────────────
   // Calcule le score en temps réel et trie/filtre la liste
+  // Tri unique réutilisé pour médiane + filtre (évite 2 sorts)
   const scoredWishes=useMemo(()=>{
+    if(!wishes.length)return[];
     const scored=wishes.map(w=>({...w,score:calcWishScore(w),hpd:w.price>0?+(w.happiness/w.price).toFixed(3):w.happiness}));
-    const medianScore=scored.length?[...scored].sort((a,b)=>a.score-b.score)[Math.floor(scored.length/2)]?.score??0:0;
-    const filtered=wishFilter==="top"?scored.filter(w=>w.score>=medianScore):wishFilter==="reconsider"?scored.filter(w=>w.score<medianScore):scored;
-    return[...filtered].sort((a,b)=>wishSort==="price"?a.price-b.price:wishSort==="happiness_per_dollar"?b.hpd-a.hpd:b.score-a.score);
+    const byScore=[...scored].sort((a,b)=>b.score-a.score);
+    const medianScore=byScore[Math.floor(byScore.length/2)]?.score??0;
+    const filtered=wishFilter==="top"?byScore.filter(w=>w.score>=medianScore):wishFilter==="reconsider"?byScore.filter(w=>w.score<medianScore):byScore;
+    return wishSort==="score"?filtered:[...filtered].sort((a,b)=>wishSort==="price"?a.price-b.price:b.hpd-a.hpd);
   },[wishes,wishSort,wishFilter]);
 
   // ── Effects ────────────────────────────────────────────────────────────────
@@ -824,7 +847,7 @@ function App(){
   const dayModalList=dayMod?txs.filter(tx=>monthOccs.get(tx.id)?.includes(dayMod.day)):[];
   const dayModalDateStr=dayMod?yr+"-"+String(mo+1).padStart(2,"0")+"-"+String(dayMod.day).padStart(2,"0"):"";
   const showFabActions=activeTx&&tab==="transactions";
-  const anyModal=!!(dayMod||formMod||delMod||delAccMod||exportMod||importMod||dupMod||goalForm||catsMod||expandedGoal||fabMenuOpen||wishForm);
+  const anyModal=[dayMod,formMod,delMod,delAccMod,exportMod,importMod,dupMod,goalForm,catsMod,expandedGoal,fabMenuOpen,wishForm].some(Boolean);
 
   useEffect(()=>{document.body.style.overflow=anyModal?"hidden":"";return()=>{document.body.style.overflow="";};},[anyModal]);
 
@@ -1554,7 +1577,7 @@ function App(){
   );
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+ReactDOM.createRoot(document.getElementById("root")).render(<ErrorBoundary><App/></ErrorBoundary>);
 </script>
 </body>
 </html>
