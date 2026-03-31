@@ -11,7 +11,7 @@
   <title>Budget</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Radio+Canada:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Radio+Canada:wght@400;500;600;700;800&family=Lora:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20,300,0,0" rel="stylesheet"/>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -46,6 +46,7 @@
     @keyframes popIn{0%{opacity:0;transform:scale(0.4) translateY(10px)}70%{transform:scale(1.05) translateY(0)}100%{opacity:1;transform:scale(1) translateY(0)}}
     @keyframes popOut{0%{opacity:1;transform:scale(1) translateY(0)}100%{opacity:0;transform:scale(0.4) translateY(10px)}}
     @keyframes slideOut{from{transform:translateX(0);opacity:1;max-height:120px}to{transform:translateX(-60px);opacity:0;max-height:0;padding:0;margin:0;border:none}}
+    @keyframes delTimerBar{from{transform:scaleX(1)}to{transform:scaleX(0)}}
   </style>
 </head>
 <body>
@@ -126,6 +127,7 @@ const SUBCAT_GROUPS=[
 ];
 const PRESET_COLORS=["#3b82f6","#f97316","#10b981","#8b5cf6","#ef4444","#06b6d4","#ec4899","#6366f1","#eab308","#22c55e","#f43f5e","#84cc16"];
 const GOAL_ICONS=["star","rocket_launch","home","directions_car","diamond","school","beach_access","laptop","chair","pets","music_note","sailing","flight","shopping_bag","fitness_center","restaurant","favorite","palette"];
+const SERIF="'Lora',serif";
 const MOTD_URL="https://maxallval.github.io/budget/messages/messages.txt";
 const DAYS_FR=["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"];
 const MONTHS_FR=["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
@@ -133,9 +135,6 @@ const NTH_FR=["","1er","2e","3e","4e","5e"];
 const DS_FR=["D","L","M","M","J","V","S"];
 const UNITS_FR={day:"jours",week:"semaines",month:"mois",year:"années"};
 
-// ─── Envies — constantes métier ───────────────────────────────────────────────
-// score = (bonheur × durée × fréquence) / ln(prix + 2) × facteur_ancienneté
-// Seuils nommés pour faciliter les ajustements futurs
 const WISH_SCORE_HIGH=20;
 const WISH_SCORE_MID=8;
 const calcWishScore=w=>{
@@ -149,11 +148,9 @@ const WISH_PRIORITY={
   mid: {icon:"🟡",label:"Moyenne",color:"#f59e0b"},
   low: {icon:"🔴",label:"Faible",color:"#ef4444"},
 };
-// Options d'interface pour durée et fréquence
 const DUR_OPTS=[{v:1,l:"Court"},{v:2,l:"Moyen"},{v:3,l:"Long"}];
 const FREQ_OPTS=[{v:1,l:"Rare"},{v:2,l:"Occasionnel"},{v:3,l:"Fréquent"},{v:4,l:"Quotidien"}];
 
-// ─── Utilitaires ──────────────────────────────────────────────────────────────
 const _pdCache=new Map();
 const _pdCacheMaxSize=500;
 const parseD=s=>{
@@ -233,7 +230,6 @@ function recLabel(tx){
 }
 const fabBtn=(bg,color)=>({width:40,height:40,borderRadius:"50%",background:bg,color,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(0,0,0,0.22)",flexShrink:0});
 
-// ─── Constantes dérivées (après utilitaires) ──────────────────────────────────
 const FREE_LIMIT=addMths(TODAY.getFullYear(),TODAY.getMonth(),-2);
 const LOCKED_SUB_IDS=new Set(["objectifs","envies","statistiques","graphiques","controle"]);
 const SUB_NAV={
@@ -245,21 +241,17 @@ const SUB_NAV={
 const DEFAULT_SUB={transactions:"historique",budget:"categories",analyse:"statistiques",troubleshoot:"connexions"};
 const NAV_BASE=[["home","Accueil"],["transactions","Transactions"],["budget","Budget"],["analyse","Analyse"],["settings","Paramètres"]];
 
-// ─── Icône catégorie ──────────────────────────────────────────────────────────
 const CatIcon=({cat,size=20})=>{
   if(cat.emoji)return<span style={{fontSize:size,lineHeight:1}}>{cat.emoji}</span>;
   return<span className="ms" style={{fontSize:size,color:cat.color,lineHeight:1}}>{cat.icon||"category"}</span>;
 };
 
-// ─── Contexte fermeture animée ────────────────────────────────────────────────
 const ModalCloseCtx=createContext(null);
 
-// ─── Thème ────────────────────────────────────────────────────────────────────
 const mkTh=d=>d
   ?{bg:"#0d0d0d",bgSub:"#161616",surface:"#1c1c1c",border:"#252525",inputBorder:"#333",text:"#f0f0f0",sub:"#888",muted:"#555",btnBg:"#efefef",btnText:"#111",togOff:"#3a3a3a",sheetBg:"#161616",danger:"#f87171",cardBg:"#181818"}
   :{bg:"#fff",bgSub:"#f9fafb",surface:"#f3f4f6",border:"#f0f0f0",inputBorder:"#e5e7eb",text:"#111",sub:"#6b7280",muted:"#9ca3af",btnBg:"#111",btnText:"#fff",togOff:"#d1d5db",sheetBg:"#fff",danger:"#ef4444",cardBg:"#fafafa"};
 
-// ─── Composants UI ────────────────────────────────────────────────────────────
 function ProGate({isPro,th,title,desc,children}){
   if(isPro)return children;
   return(<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"56px 32px",textAlign:"center"}}>
@@ -363,7 +355,7 @@ function SubNav({tabs,activeId,onSelect,isSubLocked,showAdd,onAdd,th}){
 }
 function LineChart({data,color,th,height=120}){
   if(!data||data.length<2)return null;
-  const W=560,H=height,pad={t:12,b:28,l:44,r:12};
+  const W=560,H=height,pad={t:12,b:32,l:50,r:12};
   const vals=data.map(d=>d.y),mn=Math.min(...vals),mx=Math.max(...vals),rng=mx-mn||1;
   const px=i=>pad.l+(i/(data.length-1))*(W-pad.l-pad.r);
   const py=v=>pad.t+(1-(v-mn)/rng)*(H-pad.t-pad.b);
@@ -381,73 +373,54 @@ function LineChart({data,color,th,height=120}){
     {yTicks.map((v,i)=><line key={i} x1={pad.l} x2={W-pad.r} y1={py(v)} y2={py(v)} stroke={th.border} strokeWidth="1"/>)}
     <path d={areaD} fill={"url(#"+gid+")"}/><path d={pathD} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     {pts.map((p,i)=><circle key={i} cx={p.x} cy={p.y} r="3" fill={color} stroke={th.sheetBg} strokeWidth="1.5"/>)}
-    {pts.filter((_,i)=>i%2===0||data.length<=7).map((p,i)=><text key={i} x={p.x} y={H-6} textAnchor="middle" fontSize="9" fill={th.muted}>{p.label}</text>)}
-    {yTicks.map((v,i)=><text key={i} x={pad.l-4} y={py(v)+3.5} textAnchor="end" fontSize="9" fill={th.muted}>{v>=1000?(v/1000).toFixed(1)+"k":v.toFixed(0)}</text>)}
+    {pts.filter((_,i)=>i%2===0||data.length<=7).map((p,i)=><text key={i} x={p.x} y={H-4} textAnchor="middle" fontSize="12" fill={th.muted}>{p.label}</text>)}
+    {yTicks.map((v,i)=><text key={i} x={pad.l-4} y={py(v)+4} textAnchor="end" fontSize="12" fill={th.muted}>{v>=1000?(v/1000).toFixed(1)+"k":v.toFixed(0)}</text>)}
   </svg>);
 }
 function StreamChart({data,th,height=160}){
   if(!data||data.length<2)return null;
-  const W=560,H=height,pad={t:20,b:20,l:4,r:4};
+  const W=560,H=height,pad={t:20,b:24,l:4,r:4};
   const maxV=Math.max(...data.map(d=>Math.max(d.inc,d.exp)),1);
   const py=v=>pad.t+(1-v/maxV)*(H-pad.t-pad.b);
   const px=i=>pad.l+(i/(data.length-1))*(W-pad.l-pad.r);
   const pts=data.map((d,i)=>({x:px(i),yi:py(d.inc),ye:py(d.exp),label:d.label,net:d.inc-d.exp}));
-
-  // Courbe cubic Bézier helper
   const bezier=yKey=>pts.reduce((d,p,i)=>{
     if(i===0)return`M${p.x.toFixed(1)},${p[yKey].toFixed(1)}`;
     const prev=pts[i-1],cpx=(prev.x+p.x)/2;
     return d+` C${cpx.toFixed(1)},${prev[yKey].toFixed(1)} ${cpx.toFixed(1)},${p[yKey].toFixed(1)} ${p.x.toFixed(1)},${p[yKey].toFixed(1)}`;
   },"");
-
   const incPath=bezier("yi");
   const expPath=bezier("ye");
   const incArea=incPath+`L${pts[pts.length-1].x},${H-pad.b} L${pts[0].x},${H-pad.b}Z`;
   const expArea=expPath+`L${pts[pts.length-1].x},${H-pad.b} L${pts[0].x},${H-pad.b}Z`;
-
-  // Zone entre les deux courbes (épargne ou déficit)
-  const revExpPath=incPath+" "+bezier("ye").replace(/^M/,"L")
-    .split(" ").reverse().map((seg,i,arr)=>{
-      if(i===0)return`L${pts[pts.length-1].x.toFixed(1)},${pts[pts.length-1].ye.toFixed(1)}`;
-      return seg;
-    }).join(" ")+"Z";
-
   const gid=`sc${Math.random().toString(36).slice(2,6)}`;
   return(<svg viewBox={"0 0 "+W+" "+H} style={{width:"100%",height,display:"block",overflow:"visible"}}>
     <defs>
       <linearGradient id={gid+"i"} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#10b981" stopOpacity="0.25"/><stop offset="100%" stopColor="#10b981" stopOpacity="0.03"/></linearGradient>
       <linearGradient id={gid+"e"} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#f87171" stopOpacity="0.18"/><stop offset="100%" stopColor="#f87171" stopOpacity="0.03"/></linearGradient>
     </defs>
-
-    {/* Aires remplies */}
     <path d={incArea} fill={`url(#${gid}i)`}/>
     <path d={expArea} fill={`url(#${gid}e)`}/>
-
-    {/* Courbes principales */}
     <path d={incPath} fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     <path d={expPath} fill="none" stroke="#f87171" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="5 3"/>
-
-    {/* Points + labels */}
     {pts.map((p,i)=>{
       const showLabel=i%2===0||data.length<=7;
       return(<g key={i}>
         <circle cx={p.x} cy={p.yi} r="3" fill="#10b981" stroke={th.sheetBg} strokeWidth="1.5"/>
         <circle cx={p.x} cy={p.ye} r="3" fill="#f87171" stroke={th.sheetBg} strokeWidth="1.5"/>
-        {showLabel&&<text x={p.x} y={H-4} textAnchor="middle" fontSize="9" fill={th.muted}>{p.label}</text>}
+        {showLabel&&<text x={p.x} y={H-2} textAnchor="middle" fontSize="12" fill={th.muted}>{p.label}</text>}
       </g>);
     })}
-
-    {/* Légende */}
     <line x1={pad.l} y1={8} x2={pad.l+14} y2={8} stroke="#10b981" strokeWidth="2" strokeLinecap="round"/>
-    <text x={pad.l+18} y={12} fontSize="9" fill={th.muted}>Revenus</text>
-    <line x1={pad.l+62} y1={8} x2={pad.l+76} y2={8} stroke="#f87171" strokeWidth="2" strokeLinecap="round" strokeDasharray="4 2"/>
-    <text x={pad.l+80} y={12} fontSize="9" fill={th.muted}>Dépenses</text>
+    <text x={pad.l+18} y={12} fontSize="12" fill={th.muted}>Revenus</text>
+    <line x1={pad.l+72} y1={8} x2={pad.l+86} y2={8} stroke="#f87171" strokeWidth="2" strokeLinecap="round" strokeDasharray="4 2"/>
+    <text x={pad.l+90} y={12} fontSize="12" fill={th.muted}>Dépenses</text>
   </svg>);
 }
 const StatCard=({label,value,sub,color,th})=>(
   <div style={{flex:"1 1 140px",background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:"14px 16px",minWidth:0}}>
     <p style={{fontSize:10,color:th.muted,letterSpacing:"0.1em",textTransform:"uppercase",margin:"0 0 8px"}}>{label}</p>
-    <p style={{fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",color:color||th.text,margin:"0 0 2px",lineHeight:1}}>{value}</p>
+    <p style={{fontSize:22,fontFamily:SERIF,fontWeight:400,fontVariantNumeric:"tabular-nums",color:color||th.text,margin:"0 0 2px",lineHeight:1}}>{value}</p>
     {sub&&<p style={{fontSize:11,color:th.muted,margin:0}}>{sub}</p>}
   </div>
 );
@@ -546,7 +519,7 @@ function LoginScreen(){
     <div style={{width:"100%",maxWidth:360,animation:"contentIn 0.5s ease"}}>
       <div style={{textAlign:"center",marginBottom:40}}>
         <div style={{width:72,height:72,borderRadius:20,background:"linear-gradient(135deg,#6366f1,#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px",boxShadow:"0 8px 24px rgba(99,102,241,0.3)"}}><span style={{fontSize:34}}>💰</span></div>
-        <h1 style={{fontSize:26,fontWeight:800,color:th.text,margin:"0 0 6px",letterSpacing:"-0.02em"}}>Budget</h1>
+        <h1 style={{fontSize:28,fontFamily:SERIF,fontWeight:400,color:th.text,margin:"0 0 6px",letterSpacing:"-0.02em"}}>Budget</h1>
         <p style={{fontSize:14,color:th.sub,margin:0}}>Gestion financière personnelle</p>
       </div>
       <button onClick={handleGoogle} disabled={loading} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:12,padding:"14px 20px",borderRadius:14,border:"1px solid "+th.border,background:th.bg,color:th.text,fontSize:15,fontWeight:600,cursor:loading?"default":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.06)",opacity:loading?0.7:1,fontFamily:"'Radio Canada',system-ui,sans-serif"}}>
@@ -559,7 +532,6 @@ function LoginScreen(){
   </div>);
 }
 
-// ─── App ──────────────────────────────────────────────────────────────────────
 class ErrorBoundary extends React.Component{
   state={error:null};
   static getDerivedStateFromError(e){return{error:e};}
@@ -577,7 +549,6 @@ class ErrorBoundary extends React.Component{
 }
 
 function App(){
-  // ── State ──────────────────────────────────────────────────────────────────
   const[authLoading,setAuthLoading]=useState(true);
   const[session,setSession]=useState(null);
   const[txs,setTxs]=useState([]);
@@ -585,12 +556,10 @@ function App(){
   const[balAnchor,setBalAnchor]=useState(null);
   const[budgets,setBudgets]=useState({});
   const[goals,setGoals]=useState([]);
-  // ── Envies ────────────────────────────────────────────────────────────────
   const[wishes,setWishes]=useState([]);
-  const[wishForm,setWishForm]=useState(null);   // null | {id,name,price,happiness,duration,frequency}
-  const[wishSort,setWishSort]=useState("score"); // "score" | "price" | "happiness_per_dollar"
-  const[wishFilter,setWishFilter]=useState("all"); // "all" | "top" | "reconsider"
-  // ─────────────────────────────────────────────────────────────────────────
+  const[wishForm,setWishForm]=useState(null);
+  const[wishSort,setWishSort]=useState("score");
+  const[wishFilter,setWishFilter]=useState("all");
   const[loaded,setLoaded]=useState(false);
   const[tab,setTab]=useState("home");
   const[subTab,setSubTab]=useState({});
@@ -657,14 +626,12 @@ function App(){
   const[fabMenuOpen,setFabMenuOpen]=useState(false);
   const[fabMenuClosing,setFabMenuClosing]=useState(false);
 
-  // ── Refs ───────────────────────────────────────────────────────────────────
   const balInputRef=useRef(null),balSettRef=useRef(null),dateInputRef=useRef(null);
   const formModRef=useRef(null),lastTapRef=useRef(0),sbSaveTimer=useRef(null);
   const cfgTimer=useRef(null),vClickTimer=useRef(null),touchStartX=useRef(null);
   const syncHideTimer=useRef(null),syncFadeTimer=useRef(null);
-  const overrunTimer=useRef(null),motdFadeTimer=useRef(null),motdCountdownRef=useRef(null);
+  const overrunTimer=useRef(null),motdFadeTimer=useRef(null),motdCountdownRef=useRef(null),pendingDelTimer=useRef(null);
 
-  // ── Derived ────────────────────────────────────────────────────────────────
   const isDark=darkMode==="on"||(darkMode==="auto"&&sysDark);
   const th=useMemo(()=>mkTh(isDark),[isDark]);
   const lbl={fontSize:10,color:th.muted,letterSpacing:"0.12em",textTransform:"uppercase"};
@@ -721,8 +688,8 @@ function App(){
   const isTod=d=>d===TODAY.getDate()&&mo===TODAY.getMonth()&&yr===TODAY.getFullYear();
   const isNotToday=yr!==TODAY.getFullYear()||mo!==TODAY.getMonth();
   const chart12End=useMemo(()=>addMths(yr,mo,chart12Offset),[yr,mo,chart12Offset]);
-  const chart12Start=useMemo(()=>addMths(chart12End.yr,chart12End.mo,-11),[chart12End]);
-  const last12=useMemo(()=>{const ms=[];let y2=chart12Start.yr,m2=chart12Start.mo;for(let i=0;i<12;i++){const lastDay=new Date(y2,m2+1,0);let inc=0,exp=0;txs.forEach(tx=>{const n=occsInMonth(tx,y2,m2).length;if(tx.type==="income")inc+=tx.amount*n;else exp+=tx.amount*n;});ms.push({label:MONTHS_FR[m2].slice(0,3),inc,exp,net:inc-exp,endBal:getBalAt(lastDay)});m2++;if(m2>11){m2=0;y2++;}}return ms;},[txs,getBalAt,chart12Start]);
+  const chart12Start=useMemo(()=>addMths(chart12End.yr,chart12End.mo,-5),[chart12End]);
+  const last12=useMemo(()=>{const ms=[];let y2=chart12Start.yr,m2=chart12Start.mo;for(let i=0;i<6;i++){const lastDay=new Date(y2,m2+1,0);let inc=0,exp=0;txs.forEach(tx=>{const n=occsInMonth(tx,y2,m2).length;if(tx.type==="income")inc+=tx.amount*n;else exp+=tx.amount*n;});ms.push({label:MONTHS_FR[m2].slice(0,3),inc,exp,net:inc-exp,endBal:getBalAt(lastDay)});m2++;if(m2>11){m2=0;y2++;}}return ms;},[txs,getBalAt,chart12Start]);
   const chart12Label=chart12Offset===0?"Ce mois":MONTHS_FR[chart12End.mo].slice(0,3)+" "+chart12End.yr;
   const topCatEnd=useMemo(()=>addMths(yr,mo,topCatOffset),[yr,mo,topCatOffset]);
   const topCats=useMemo(()=>{const s={};allCats.forEach(c=>{s[c.id]={spent:0};});txs.forEach(tx=>{if(tx.type==="income")return;const n=occsInMonth(tx,topCatEnd.yr,topCatEnd.mo).length;if(!n)return;const cat=tx.category||"other";if(!s[cat])s[cat]={spent:0};s[cat].spent+=tx.amount*n;});return allCats.filter(c=>c.id!=="income").map(c=>({...c,spent:s[c.id]?.spent||0})).filter(c=>c.spent>0).sort((a,b)=>b.spent-a.spent).slice(0,5);},[txs,topCatEnd,allCats]);
@@ -742,9 +709,6 @@ function App(){
   },[txs,monthOccs,dynSubcatById]);
   const isPrevMoDisabled=!isPro&&(yr<FREE_LIMIT.yr||(yr===FREE_LIMIT.yr&&mo<=FREE_LIMIT.mo));
 
-  // ── Envies — données dérivées ─────────────────────────────────────────────
-  // Calcule le score en temps réel et trie/filtre la liste
-  // Tri unique réutilisé pour médiane + filtre (évite 2 sorts)
   const scoredWishes=useMemo(()=>{
     if(!wishes.length)return[];
     const scored=wishes.map(w=>({...w,score:calcWishScore(w),hpd:w.price>0?+(w.happiness/w.price).toFixed(3):w.happiness}));
@@ -754,7 +718,6 @@ function App(){
     return wishSort==="score"?filtered:[...filtered].sort((a,b)=>wishSort==="price"?a.price-b.price:b.hpd-a.hpd);
   },[wishes,wishSort,wishFilter]);
 
-  // ── Effects ────────────────────────────────────────────────────────────────
   const closeFabMenu=useCallback(()=>{
     if(!fabMenuOpen)return;
     setFabMenuClosing(true);
@@ -763,6 +726,12 @@ function App(){
 
   useEffect(()=>{if(tab!=="transactions")setActiveTx(null);},[tab]);
   useEffect(()=>{closeFabMenu();},[tab,curSub]);
+  // Auto-dismiss pendingDel after 3s
+  useEffect(()=>{
+    clearTimeout(pendingDelTimer.current);
+    if(pendingDel){pendingDelTimer.current=setTimeout(()=>setPendingDel(null),3000);}
+    return()=>clearTimeout(pendingDelTimer.current);
+  },[pendingDel]);
   useEffect(()=>{sb.auth.getSession().then(({data:{session}})=>{setSession(session);setAuthLoading(false);});const{data:{subscription}}=sb.auth.onAuthStateChange((_,session)=>{setSession(session);if(!session)setLoaded(false);});return()=>subscription.unsubscribe();},[]);
   useEffect(()=>{const t=setTimeout(()=>setShowSplash(false),2250);return()=>clearTimeout(t);},[]);
   useEffect(()=>{
@@ -813,7 +782,6 @@ function App(){
     return()=>clearTimeout(sbSaveTimer.current);
   },[txs,initBal,balAnchor,budgets,disp,darkMode,showDecimals,customCats,customSubcats,subcatGroupOverrides,goals,wishes,loaded,session,isPro]);
 
-  // ── Handlers ───────────────────────────────────────────────────────────────
   const handleLogout=async()=>{await sb.auth.signOut();setLoaded(false);setTxs([]);setInitBal(1000);setBalAnchor(null);setBudgets({});setGoals([]);setWishes([]);};
   const deleteAccount=async()=>{if(session)try{await sb.from("user_data").delete().eq("user_id",session.user.id);}catch{}try{await window.storage.delete("bgt9-cfg");}catch{}await sb.auth.signOut();};
   const startEditBal=()=>{setBalInput(String(curBalVal.toFixed(2)));setEditingBal(true);setTimeout(()=>{balInputRef.current?.focus();balInputRef.current?.select();},50);};
@@ -863,14 +831,12 @@ function App(){
   const deleteGoal=id=>setGoals(prev=>prev.filter(g=>g.id!==id));
   const updateGoalSaved=(id,raw)=>{const v=parseFloat(raw);if(!isNaN(v)&&v>=0)setGoals(prev=>prev.map(g=>g.id===id?{...g,saved:v}:g));};
 
-  // ── Handlers envies ───────────────────────────────────────────────────────
   const saveWish=()=>{
     if(!wishForm?.name?.trim())return;
     const price=parseFloat(wishForm.price);
     if(isNaN(price)||price<0)return;
     const base={name:wishForm.name.trim(),price,happiness:wishForm.happiness||5,duration:wishForm.duration||2,frequency:wishForm.frequency||2};
     if(wishForm.id){
-      // Modifier — on conserve le created_at original
       setWishes(prev=>prev.map(w=>w.id===wishForm.id?{...w,...base}:w));
     }else{
       setWishes(prev=>[...prev,{...base,id:"wish_"+Date.now(),created_at:new Date().toISOString()}]);
@@ -895,7 +861,6 @@ function App(){
   const goToday=()=>{setSlideDir(null);setMo(TODAY.getMonth());setYr(TODAY.getFullYear());};
   const handleSwipe=dx=>{if(Math.abs(dx)<40)return;const dir=dx<0?1:-1;const subs=SUB_NAV[tab];if(subs&&subs.length>1){const idx=subs.findIndex(s=>s.id===curSub);const next=idx+dir;if(next>=0&&next<subs.length)setSubTab(prev=>({...prev,[tab]:subs[next].id}));}else{dir>0?nextMo():prevMo();}};
 
-  // ── Variables de render ────────────────────────────────────────────────────
   const dayModalList=dayMod?txs.filter(tx=>monthOccs.get(tx.id)?.includes(dayMod.day)):[];
   const dayModalDateStr=dayMod?yr+"-"+String(mo+1).padStart(2,"0")+"-"+String(dayMod.day).padStart(2,"0"):"";
   const showFabActions=activeTx&&tab==="transactions";
@@ -903,7 +868,6 @@ function App(){
 
   useEffect(()=>{document.body.style.overflow=anyModal?"hidden":"";return()=>{document.body.style.overflow="";};},[anyModal]);
 
-  // ── Render guards ──────────────────────────────────────────────────────────
   if(authLoading)return(<div style={{minHeight:"100vh",background:"#fff",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:8,height:8,borderRadius:"50%",background:"#6366f1",animation:"pulse 1s ease infinite"}}/></div>);
   if(!session)return <LoginScreen/>;
 
@@ -914,7 +878,6 @@ function App(){
   const barVisible=syncShow||isOverrun||isMotd;
   const barFading=syncFade||(overrunDismissing&&!syncShow)||(motdFading&&isMotd);
 
-  // ── FAB config contextuelle ────────────────────────────────────────────────
   const fabCfg=(()=>{
     if(showFabActions)return{type:"activeTx"};
     if(tab==="home")return{type:"menu",actions:[
@@ -932,7 +895,6 @@ function App(){
       {label:"Réinitialiser les budgets",icon:"restart_alt",onClick:()=>{setBudgets({});closeFabMenu();}},
     ]};
     if(tab==="budget"&&curSub==="objectifs"&&isPro)return{type:"direct",icon:"add",action:()=>setGoalForm({id:null,label:"",emoji:"🎯",target:"",saved:0,deadline:"",color:"#6366f1"})};
-    // ── Envies FAB ──
     if(tab==="budget"&&curSub==="envies"&&isPro)return{type:"direct",icon:"add",action:()=>setWishForm({id:null,name:"",price:"",happiness:7,duration:2,frequency:2})};
     if(tab==="analyse")return{type:"menu",actions:[
       {label:"Réinitialiser la vue",icon:"refresh",onClick:()=>{setChart12Offset(0);setTopCatOffset(0);closeFabMenu();}},
@@ -949,7 +911,6 @@ function App(){
       onTouchEnd={e=>{if(!touchStartX.current)return;const dx=e.changedTouches[0].clientX-touchStartX.current[0],dy=e.changedTouches[0].clientY-touchStartX.current[1];touchStartX.current=null;if(Math.abs(dx)<Math.abs(dy)*1.5)return;handleSwipe(dx);}}
       style={{minHeight:"100vh",background:th.bg,fontFamily:"'Radio Canada',system-ui,sans-serif"}}
     >
-      {/* ── Splash ── */}
       {showSplash&&(
         <div style={{position:"fixed",inset:0,background:isDark?"#0d0d0d":"#fff",zIndex:999,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",animation:"splashFadeOut 2.25s ease forwards"}}>
           <div style={{position:"relative",width:160,height:160,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:8}}>
@@ -973,13 +934,12 @@ function App(){
             {[0,1,2].map(i=><div key={i} style={{position:"absolute",top:110+i*8,left:76,width:8,height:3,borderRadius:4,background:"#f97316",opacity:0.6,animation:"trailDot 0.3s ease "+(0.2+i*0.08)+"s forwards"}}/>)}
           </div>
           <div style={{animation:"textPop 0.5s ease 0.7s both"}}>
-            <p style={{fontSize:22,fontWeight:700,color:isDark?"#f0f0f0":"#111",letterSpacing:"0.02em",margin:0,textAlign:"center"}}>Budget</p>
+            <p style={{fontSize:26,fontFamily:SERIF,fontWeight:400,color:isDark?"#f0f0f0":"#111",letterSpacing:"0.02em",margin:0,textAlign:"center"}}>Budget</p>
             <p style={{fontSize:12,color:isDark?"#888":"#9ca3af",textAlign:"center",margin:"4px 0 0",letterSpacing:"0.1em",textTransform:"uppercase"}}>Gestion financière</p>
           </div>
         </div>
       )}
 
-      {/* ── Barre de statut ── */}
       <div style={{position:"fixed",top:0,left:0,right:0,zIndex:98,pointerEvents:isOverrun?"auto":"none",transform:barVisible&&!barFading?"translateY(0)":"translateY(-100%)",opacity:barFading?0:barVisible?1:0,transition:"transform 0.3s ease,opacity 0.5s ease",background:isOverrun?"#f97316":isDark?"rgba(13,13,13,0.65)":"rgba(255,255,255,0.65)",backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",borderBottom:"1px solid "+(isOverrun?"rgba(255,255,255,0.2)":th.border)}}>
         {isOverrun?(
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"5px 16px",gap:8}}>
@@ -1003,13 +963,12 @@ function App(){
         )}
       </div>
 
-      {/* ── Header ── */}
       <div onMouseEnter={()=>setHeaderHovered(true)} onMouseLeave={()=>setHeaderHovered(false)} style={{position:"sticky",top:0,zIndex:90,background:th.bg,padding:"36px 24px 20px",borderBottom:"1px solid "+th.border}}>
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
           <div>
             <p style={{...lbl,marginBottom:4}}>Gestion financière</p>
             <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <h1 onClick={handleTitleClick} style={{fontSize:20,color:th.text,fontWeight:700,margin:0,cursor:"pointer",userSelect:"none"}}>Budget</h1>
+              <h1 onClick={handleTitleClick} style={{fontSize:22,color:th.text,fontFamily:SERIF,fontWeight:400,margin:0,cursor:"pointer",userSelect:"none"}}>Budget</h1>
               {!isOnline&&<span style={{fontSize:10,padding:"2px 8px",borderRadius:20,background:"#ef444422",color:"#ef4444",border:"1px solid #ef444440",fontWeight:500}}>HORS LIGNE</span>}
             </div>
           </div>
@@ -1017,19 +976,17 @@ function App(){
             <p style={{...lbl,margin:"0 0 3px"}}>Solde actuel</p>
             {editingBal
               ?<input ref={balInputRef} type="number" inputMode="decimal" step="0.01" value={balInput} onChange={e=>setBalInput(e.target.value)} onBlur={commitEditBal} onKeyDown={e=>{if(e.key==="Enter")commitEditBal();if(e.key==="Escape")setEditingBal(false);}} style={{width:130,textAlign:"right",fontSize:20,fontWeight:600,color:th.text,background:"transparent",border:"none",borderBottom:"2px solid "+th.text,outline:"none",fontVariantNumeric:"tabular-nums"}}/>
-              :<p style={{fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",margin:0,color:curBalVal>=0?"#059669":"#ef4444"}}>{f(curBalVal,true)}</p>}
+              :<p style={{fontSize:22,fontFamily:SERIF,fontWeight:400,fontVariantNumeric:"tabular-nums",margin:0,color:curBalVal>=0?"#059669":"#ef4444"}}>{f(curBalVal,true)}</p>}
           </div>
         </div>
       </div>
 
-      {/* ── Sub-nav ── */}
       {curSubNav&&(
         <div style={{position:"sticky",top:0,zIndex:89}}>
           <SubNav tabs={curSubNav} activeId={curSub} onSelect={id=>setSubTab(prev=>({...prev,[tab]:id}))} isSubLocked={isSubLocked} showAdd={tab==="transactions"} onAdd={()=>openForm()} th={th}/>
         </div>
       )}
 
-      {/* ── FAB ── */}
       {fabCfg&&(
         <>
           {fabOpen&&<div onClick={()=>{closeFabMenu();if(fabIsActive)setActiveTx(null);}} style={{position:"fixed",inset:0,zIndex:97,background:"transparent"}}/>}
@@ -1071,10 +1028,8 @@ function App(){
         </>
       )}
 
-      {/* ── Contenu principal ── */}
       <div key={tab+"-"+(curSub||"")+(tab==="home"?"-"+yr+"-"+mo:"")} style={{padding:"24px",paddingBottom:"176px",maxWidth:640,animation:tab==="home"&&slideDir?(slideDir==="left"?"slideInFromRight":"slideInFromLeft")+" 1.04s cubic-bezier(0.22,1,0.36,1)":"tabIn 0.84s cubic-bezier(0.22,1,0.36,1)"}}>
 
-        {/* ════ Accueil ════ */}
         {tab==="home"&&(
           <div>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
@@ -1110,7 +1065,6 @@ function App(){
           </div>
         )}
 
-        {/* ════ Transactions — Historique ════ */}
         {tab==="transactions"&&curSub==="historique"&&(
           <div>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
@@ -1129,7 +1083,6 @@ function App(){
           </div>
         )}
 
-        {/* ════ Transactions — Récurrent ════ */}
         {tab==="transactions"&&curSub==="recurrent"&&(
           <div>
             {recurTxs.length===0?<div style={{textAlign:"center",padding:"60px 0"}}><p style={{fontSize:32,color:th.border,margin:"0 0 8px"}}>○</p><p style={{fontSize:13,color:th.muted}}>Aucune transaction récurrente</p></div>
@@ -1138,7 +1091,6 @@ function App(){
           </div>
         )}
 
-        {/* ════ Budget — Catégories ════ */}
         {tab==="budget"&&curSub==="categories"&&(
           <div>
             <div style={{display:"flex",alignItems:"center",marginBottom:20}}><MonthNav yr={yr} mo={mo} onPrev={prevMo} onNext={nextMo} onDbl={goToday} onToday={goToday} th={th} prevDisabled={isPrevMoDisabled}/></div>
@@ -1165,7 +1117,6 @@ function App(){
           </div>
         )}
 
-        {/* ════ Budget — Objectifs ════ */}
         {tab==="budget"&&curSub==="objectifs"&&(
           <ProGate isPro={isPro} th={th} title="Objectifs d'épargne" desc="Fixe-toi des objectifs financiers et suis ta progression. Fonctionnalité réservée à la version Pro.">
             <div>
@@ -1196,11 +1147,9 @@ function App(){
           </ProGate>
         )}
 
-        {/* ════ Budget — Envies ════ */}
         {tab==="budget"&&curSub==="envies"&&(
           <ProGate isPro={isPro} th={th} title="Liste d'envies" desc="Évalue et priorise tes achats potentiels selon leur valeur réelle. Fonctionnalité réservée à la version Pro.">
           <div>
-            {/* En-tête + contrôles */}
             <div style={{marginBottom:16}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
                 <p style={{...lbl,margin:0}}>Classement par score</p>
@@ -1215,8 +1164,6 @@ function App(){
                 </div>
               )}
             </div>
-
-            {/* Liste vide */}
             {wishes.length===0&&(
               <div style={{textAlign:"center",padding:"60px 0"}}>
                 <p style={{fontSize:40,marginBottom:12}}>✨</p>
@@ -1228,7 +1175,6 @@ function App(){
             {scoredWishes.length===0&&wishes.length>0&&(
               <div style={{textAlign:"center",padding:"40px 0"}}><p style={{fontSize:13,color:th.muted}}>Aucun résultat pour ce filtre</p></div>
             )}
-
             <div style={{display:"flex",flexDirection:"column",gap:12}}>
               {scoredWishes.map((w,rank)=>{
                 const pri=WISH_PRIORITY[wishPriority(w.score)];
@@ -1238,22 +1184,18 @@ function App(){
                   <div key={w.id} style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:14,padding:"14px 16px",position:"relative"}}>
                     <div style={{position:"absolute",top:14,right:14,fontSize:11,fontWeight:500,color:th.muted}}>#{rank+1}</div>
                     <div style={{display:"flex",alignItems:"flex-start",gap:12,paddingRight:24}}>
-                      {/* Indicateur priorité — même dimensions que les icônes catégorie */}
                       <div style={{width:40,height:40,borderRadius:11,background:pri.color+"18",border:"2px solid "+pri.color+"44",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                         <span style={{fontSize:18,lineHeight:1}}>{pri.icon}</span>
                       </div>
                       <div style={{flex:1,minWidth:0}}>
-                        {/* Nom + prix */}
                         <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:4}}>
                           <p style={{fontSize:13,fontWeight:500,color:th.text,margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1,paddingRight:8}}>{w.name}</p>
                           <span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:th.text,flexShrink:0}}>{w.price===0?"Gratuit":fA(w.price,false,true)}</span>
                         </div>
-                        {/* Métadonnées */}
                         <p style={{fontSize:11,color:th.muted,margin:"0 0 10px"}}>
                           😊 {w.happiness}/10 · {["","Court","Moyen","Long"][w.duration]} · {["","Rare","Occ.","Fréquent","Quotidien"][w.frequency]}
                           {ageDays>7&&<span style={{marginLeft:6,fontSize:10,padding:"1px 6px",borderRadius:20,background:"#6366f118",color:"#6366f1",fontWeight:500}}>+{ageDays}j ↑</span>}
                         </p>
-                        {/* Score + Bon.$ + actions */}
                         <div style={{display:"flex",alignItems:"stretch",gap:6}}>
                           <div style={{flex:1,background:th.surface,borderRadius:8,padding:"8px 10px"}}>
                             <p style={{...lbl,margin:"0 0 3px"}}>Score</p>
@@ -1276,7 +1218,6 @@ function App(){
                         </div>
                       </div>
                     </div>
-                    {/* Barre relative au score max de la liste */}
                     <div style={{marginTop:10,height:4,background:th.surface,borderRadius:2,overflow:"hidden"}}>
                       <div style={{height:"100%",width:(w.score/maxScore*100)+"%",background:pri.color,borderRadius:2,opacity:0.55,transition:"width 0.4s"}}/>
                     </div>
@@ -1288,7 +1229,6 @@ function App(){
           </ProGate>
         )}
 
-        {/* ════ Analyse — Statistiques ════ */}
         {tab==="analyse"&&curSub==="statistiques"&&(
           <ProGate isPro={isPro} th={th} title="Statistiques" desc="Taux d'épargne, évolution du solde, moyennes sur 12 mois. Fonctionnalité réservée à la version Pro.">
             <div>
@@ -1297,11 +1237,11 @@ function App(){
                 <div style={{display:"flex",flexWrap:"wrap",gap:10}}>
                   <StatCard label="Taux d'épargne" value={statsKPIs.savingsRate!==null?statsKPIs.savingsRate+"%":"--"} sub={MONTHS_FR[mo]} color={statsKPIs.savingsRate===null?th.muted:statsKPIs.savingsRate>=0?"#059669":"#ef4444"} th={th}/>
                   <StatCard label="Moy. dépenses / mois" value={f(statsKPIs.avgExp3)} sub="3 mois" color="#ef4444" th={th}/>
-                  <StatCard label="Net mensuel moyen" value={(statsKPIs.avgNet12>=0?"+":"-")+f(statsKPIs.avgNet12)} sub="12 derniers mois" color={statsKPIs.avgNet12>=0?"#059669":"#ef4444"} th={th}/>
+                  <StatCard label="Net mensuel moyen" value={(statsKPIs.avgNet12>=0?"+":"-")+f(statsKPIs.avgNet12)} sub="6 derniers mois" color={statsKPIs.avgNet12>=0?"#059669":"#ef4444"} th={th}/>
                 </div>
-                <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}><p style={{fontSize:13,fontWeight:600,color:th.text,margin:0}}>Évolution du solde</p><MiniNav label={chart12Label} onPrev={()=>setChart12Offset(o=>o-1)} onNext={()=>setChart12Offset(o=>Math.min(o+1,12))} nextDisabled={chart12Offset>=12} th={th}/></div><LineChart data={last12.map(m=>({y:m.endBal,label:m.label}))} color={last12[last12.length-1]?.endBal>=0?"#10b981":"#ef4444"} th={th} height={130}/></div>
-                <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><p style={{fontSize:13,fontWeight:600,color:th.text,margin:0}}>Revenus vs Dépenses</p><MiniNav label={chart12Label} onPrev={()=>setChart12Offset(o=>o-1)} onNext={()=>setChart12Offset(o=>Math.min(o+1,12))} nextDisabled={chart12Offset>=12} th={th}/></div>                <StreamChart data={last12.map(m=>({inc:m.inc,exp:m.exp,label:m.label}))} th={th} height={160}/></div>
-                {topCats.length>0&&(<div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}><p style={{fontSize:13,fontWeight:600,color:th.text,margin:0}}>Top catégories</p><MiniNav label={topCatLabel} onPrev={()=>setTopCatOffset(o=>o-1)} onNext={()=>setTopCatOffset(o=>Math.min(o+1,12))} nextDisabled={topCatOffset>=12} th={th}/></div><div style={{display:"flex",flexDirection:"column",gap:10}}>{topCats.map(cat=>{const pct=topCats[0].spent>0?cat.spent/topCats[0].spent*100:0;return(<div key={cat.id}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:5}}><div style={{display:"flex",alignItems:"center",gap:8}}><CatIcon cat={cat} size={18}/><span style={{fontSize:13,color:th.text}}>{getCatName(cat.id)}</span></div><span style={{fontSize:13,fontVariantNumeric:"tabular-nums",fontWeight:500,color:th.text}}>{f(cat.spent,true)}</span></div><div style={{height:6,background:th.surface,borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",width:pct+"%",background:cat.color,borderRadius:3,opacity:0.85}}/></div></div>);})}</div></div>)}
+                <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}><p style={{fontSize:13,fontWeight:600,color:th.text,margin:0}}>Évolution du solde</p><MiniNav label={chart12Label} onPrev={()=>setChart12Offset(o=>o-1)} onNext={()=>setChart12Offset(o=>Math.min(o+1,6))} nextDisabled={chart12Offset>=6} th={th}/></div><LineChart data={last12.map(m=>({y:m.endBal,label:m.label}))} color={last12[last12.length-1]?.endBal>=0?"#10b981":"#ef4444"} th={th} height={130}/></div>
+                <div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><p style={{fontSize:13,fontWeight:600,color:th.text,margin:0}}>Revenus vs Dépenses</p><MiniNav label={chart12Label} onPrev={()=>setChart12Offset(o=>o-1)} onNext={()=>setChart12Offset(o=>Math.min(o+1,6))} nextDisabled={chart12Offset>=6} th={th}/></div>                <StreamChart data={last12.map(m=>({inc:m.inc,exp:m.exp,label:m.label}))} th={th} height={160}/></div>
+                {topCats.length>0&&(<div style={{background:th.cardBg,border:"1px solid "+th.border,borderRadius:16,padding:"18px 16px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}><p style={{fontSize:13,fontWeight:600,color:th.text,margin:0}}>Top catégories</p><MiniNav label={topCatLabel} onPrev={()=>setTopCatOffset(o=>o-1)} onNext={()=>setTopCatOffset(o=>Math.min(o+1,6))} nextDisabled={topCatOffset>=6} th={th}/></div><div style={{display:"flex",flexDirection:"column",gap:10}}>{topCats.map(cat=>{const pct=topCats[0].spent>0?cat.spent/topCats[0].spent*100:0;return(<div key={cat.id}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:5}}><div style={{display:"flex",alignItems:"center",gap:8}}><CatIcon cat={cat} size={18}/><span style={{fontSize:13,color:th.text}}>{getCatName(cat.id)}</span></div><span style={{fontSize:13,fontVariantNumeric:"tabular-nums",fontWeight:500,color:th.text}}>{f(cat.spent,true)}</span></div><div style={{height:6,background:th.surface,borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",width:pct+"%",background:cat.color,borderRadius:3,opacity:0.85}}/></div></div>);})}</div></div>)}
               </div>}
             </div>
           </ProGate>
@@ -1332,7 +1272,6 @@ function App(){
           </ProGate>
         )}
 
-        {/* ════ Troubleshoot ════ */}
         {tab==="troubleshoot"&&curSub==="connexions"&&(
           <div>
             <p style={{...lbl,marginBottom:20}}>Connexions</p>
@@ -1367,7 +1306,6 @@ function App(){
           </div>
         )}
 
-        {/* ════ Paramètres ════ */}
         {tab==="settings"&&(
           <div>
             <p style={{...lbl,marginBottom:8}}>Paramètres</p>
@@ -1412,7 +1350,6 @@ function App(){
         )}
       </div>
 
-      {/* ── Nav bar ── */}
       <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:100,background:th.bg,borderTop:"1px solid "+th.border,display:"flex",paddingBottom:"env(safe-area-inset-bottom,0px)"}}>
         {NAV_ITEMS.map(([k])=>(
           <button key={k} onClick={()=>setTab(k)} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"12px 0 8px",border:"none",background:"none",cursor:"pointer",color:tab===k?th.text:th.muted,transition:"color 0.15s",gap:5}}>
@@ -1422,27 +1359,18 @@ function App(){
         ))}
       </div>
 
-      {/* ── Modales ── */}
-
-      {/* ── Modal : Formulaire envie ── */}
       {wishForm&&(
         <Sheet onClose={()=>setWishForm(null)} th={th}>
           <SheetHead title={wishForm.id?"Modifier l'envie":"Nouvelle envie"} onClose={()=>setWishForm(null)} th={th}/>
-
           <div style={{display:"flex",flexDirection:"column",gap:18}}>
-            {/* Nom */}
             <div>
               <label style={lbl}>Nom de l'envie</label>
               <input type="text" value={wishForm.name} onChange={e=>setWishForm(f=>({...f,name:e.target.value}))} placeholder="Ex. MacBook, Vélo, Voyage..." style={{...iSt,fontSize:16}}/>
             </div>
-
-            {/* Prix */}
             <div>
               <label style={lbl}>Prix ($)</label>
               <input type="number" min="0" step="10" value={wishForm.price} onChange={e=>setWishForm(f=>({...f,price:e.target.value}))} placeholder="0" style={{...iSt,fontSize:20,fontWeight:600,fontVariantNumeric:"tabular-nums"}}/>
             </div>
-
-            {/* Bonheur — slider */}
             <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
                 <label style={lbl}>Bonheur procuré</label>
@@ -1457,8 +1385,6 @@ function App(){
                 <span style={{fontSize:10,color:th.muted}}>Coup de cœur</span>
               </div>
             </div>
-
-            {/* Durée */}
             <div>
               <label style={lbl}>Durée de satisfaction</label>
               <div style={{display:"flex",gap:6,marginTop:8}}>
@@ -1469,8 +1395,6 @@ function App(){
               </div>
               <p style={{fontSize:10,color:th.muted,margin:"6px 0 0"}}>Court = jours, Moyen = semaines/mois, Long = années</p>
             </div>
-
-            {/* Fréquence d'utilisation */}
             <div>
               <label style={lbl}>Fréquence d'utilisation</label>
               <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
@@ -1480,8 +1404,6 @@ function App(){
                 ))}
               </div>
             </div>
-
-            {/* Aperçu du score */}
             {wishForm.name.trim()&&wishForm.price!==""&&(()=>{
               const preview=calcWishScore({...wishForm,price:parseFloat(wishForm.price)||0,created_at:new Date().toISOString()});
               const pri=WISH_PRIORITY[wishPriority(preview)];
@@ -1493,7 +1415,6 @@ function App(){
               );
             })()}
           </div>
-
           <div style={{display:"flex",gap:8,marginTop:20}}>
             <button onClick={()=>setWishForm(null)} style={{flex:1,padding:"12px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>Annuler</button>
             <button onClick={saveWish} disabled={!wishForm.name?.trim()||wishForm.price===""} style={{flex:2,padding:"12px 0",fontSize:13,border:"none",borderRadius:12,background:wishForm.name?.trim()&&wishForm.price!==""?th.btnBg:th.surface,color:wishForm.name?.trim()&&wishForm.price!==""?th.btnText:th.muted,cursor:wishForm.name?.trim()&&wishForm.price!==""?"pointer":"default",fontWeight:600}}>
@@ -1533,13 +1454,28 @@ function App(){
                 </div>
                 <p style={{fontSize:10,color:"#ef4444",letterSpacing:"0.1em",textTransform:"uppercase",margin:"0 0 6px",paddingLeft:2,opacity:0.8}}>Supprimer</p>
                 <div style={{display:"flex",flexDirection:"column",gap:3}}>
-                  {(normRec(tx.recurrence,parseD(tx.startDate)).type==="once"?[["this","Cette occurrence"]]:[["this","Cette occurrence"],["follow","Cette occurrence et les suivantes"],["anterior","Toutes les occurrences antérieures"],["all","Toutes les occurrences"]]).map(([sc2,lb])=>{const isPending=pendingDel?.txId===tx.id&&pendingDel?.scope===sc2;return(
-                    <button key={sc2} onClick={()=>{if(isPending){handleDirectDel(tx,dayModalDateStr,sc2);setPendingDel(null);}else setPendingDel({txId:tx.id,scope:sc2});}} style={{textAlign:"left",padding:"9px 12px",fontSize:13,color:"#ef4444",background:isPending?(isDark?"rgba(239,68,68,0.18)":"#fee2e2"):th.surface,border:"1px solid "+(isPending?"#ef4444":"transparent"),borderRadius:9,cursor:"pointer",lineHeight:1.3,transition:"all 0.15s"}}>{isPending?"Confirmer - "+lb:lb}</button>
-                  );})}
+                  {(normRec(tx.recurrence,parseD(tx.startDate)).type==="once"?[["this","Cette occurrence"]]:[["this","Cette occurrence"],["follow","Cette occurrence et les suivantes"],["anterior","Toutes les occurrences antérieures"],["all","Toutes les occurrences"]]).map(([sc2,lb])=>(
+                    <button key={sc2} onClick={()=>setPendingDel({txId:tx.id,scope:sc2,label:lb})} style={{textAlign:"left",padding:"9px 12px",fontSize:13,color:"#ef4444",background:pendingDel?.txId===tx.id&&pendingDel?.scope===sc2?(isDark?"rgba(239,68,68,0.18)":"#fee2e2"):th.surface,border:"1px solid "+(pendingDel?.txId===tx.id&&pendingDel?.scope===sc2?"#ef4444":"transparent"),borderRadius:9,cursor:"pointer",lineHeight:1.3,transition:"all 0.15s"}}>{lb}</button>
+                  ))}
                 </div>
               </div>)}
             </div>);
           })}
+          {pendingDel&&(
+            <div key={pendingDel.txId+"-"+pendingDel.scope} style={{marginTop:12,padding:"12px 16px",background:isDark?"rgba(239,68,68,0.12)":"#fef2f2",border:"1px solid #ef444444",borderRadius:12,animation:"fadeIn 0.2s ease"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+                <span style={{fontSize:12,color:"#ef4444",fontWeight:600}}>{pendingDel.label}</span>
+                <span style={{fontSize:11,color:th.muted}}>3s</span>
+              </div>
+              <div style={{height:3,background:"#ef444433",borderRadius:2,overflow:"hidden",marginBottom:10}}>
+                <div style={{height:"100%",background:"#ef4444",borderRadius:2,transformOrigin:"left",animation:"delTimerBar 3s linear forwards"}}/>
+              </div>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={()=>setPendingDel(null)} style={{flex:1,padding:"8px 0",fontSize:12,borderRadius:8,border:"1px solid #ef444444",background:"none",color:"#ef4444",cursor:"pointer",fontWeight:500}}>Annuler</button>
+                <button onClick={()=>{const tx2=txs.find(t=>t.id===pendingDel.txId);if(tx2)handleDirectDel(tx2,dayModalDateStr,pendingDel.scope);setPendingDel(null);}} style={{flex:1,padding:"8px 0",fontSize:12,borderRadius:8,border:"none",background:"#ef4444",color:"#fff",cursor:"pointer",fontWeight:600}}>Confirmer</button>
+              </div>
+            </div>
+          )}
         </Sheet>
       )}
 
