@@ -355,7 +355,7 @@ function SubNav({tabs,activeId,onSelect,isSubLocked,showAdd,onAdd,th}){
 }
 function LineChart({data,color,th,height=120}){
   if(!data||data.length<2)return null;
-  const W=560,H=height,pad={t:12,b:28,l:44,r:12};
+  const W=560,H=height,pad={t:12,b:32,l:50,r:12};
   const vals=data.map(d=>d.y),mn=Math.min(...vals),mx=Math.max(...vals),rng=mx-mn||1;
   const px=i=>pad.l+(i/(data.length-1))*(W-pad.l-pad.r);
   const py=v=>pad.t+(1-(v-mn)/rng)*(H-pad.t-pad.b);
@@ -373,13 +373,13 @@ function LineChart({data,color,th,height=120}){
     {yTicks.map((v,i)=><line key={i} x1={pad.l} x2={W-pad.r} y1={py(v)} y2={py(v)} stroke={th.border} strokeWidth="1"/>)}
     <path d={areaD} fill={"url(#"+gid+")"}/><path d={pathD} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     {pts.map((p,i)=><circle key={i} cx={p.x} cy={p.y} r="3" fill={color} stroke={th.sheetBg} strokeWidth="1.5"/>)}
-    {pts.filter((_,i)=>i%2===0||data.length<=7).map((p,i)=><text key={i} x={p.x} y={H-6} textAnchor="middle" fontSize="9" fill={th.muted}>{p.label}</text>)}
-    {yTicks.map((v,i)=><text key={i} x={pad.l-4} y={py(v)+3.5} textAnchor="end" fontSize="9" fill={th.muted}>{v>=1000?(v/1000).toFixed(1)+"k":v.toFixed(0)}</text>)}
+    {pts.filter((_,i)=>i%2===0||data.length<=7).map((p,i)=><text key={i} x={p.x} y={H-4} textAnchor="middle" fontSize="12" fill={th.muted}>{p.label}</text>)}
+    {yTicks.map((v,i)=><text key={i} x={pad.l-4} y={py(v)+4} textAnchor="end" fontSize="12" fill={th.muted}>{v>=1000?(v/1000).toFixed(1)+"k":v.toFixed(0)}</text>)}
   </svg>);
 }
 function StreamChart({data,th,height=160}){
   if(!data||data.length<2)return null;
-  const W=560,H=height,pad={t:20,b:20,l:4,r:4};
+  const W=560,H=height,pad={t:20,b:24,l:4,r:4};
   const maxV=Math.max(...data.map(d=>Math.max(d.inc,d.exp)),1);
   const py=v=>pad.t+(1-v/maxV)*(H-pad.t-pad.b);
   const px=i=>pad.l+(i/(data.length-1))*(W-pad.l-pad.r);
@@ -408,13 +408,13 @@ function StreamChart({data,th,height=160}){
       return(<g key={i}>
         <circle cx={p.x} cy={p.yi} r="3" fill="#10b981" stroke={th.sheetBg} strokeWidth="1.5"/>
         <circle cx={p.x} cy={p.ye} r="3" fill="#f87171" stroke={th.sheetBg} strokeWidth="1.5"/>
-        {showLabel&&<text x={p.x} y={H-4} textAnchor="middle" fontSize="9" fill={th.muted}>{p.label}</text>}
+        {showLabel&&<text x={p.x} y={H-2} textAnchor="middle" fontSize="12" fill={th.muted}>{p.label}</text>}
       </g>);
     })}
     <line x1={pad.l} y1={8} x2={pad.l+14} y2={8} stroke="#10b981" strokeWidth="2" strokeLinecap="round"/>
-    <text x={pad.l+18} y={12} fontSize="9" fill={th.muted}>Revenus</text>
-    <line x1={pad.l+62} y1={8} x2={pad.l+76} y2={8} stroke="#f87171" strokeWidth="2" strokeLinecap="round" strokeDasharray="4 2"/>
-    <text x={pad.l+80} y={12} fontSize="9" fill={th.muted}>Dépenses</text>
+    <text x={pad.l+18} y={12} fontSize="12" fill={th.muted}>Revenus</text>
+    <line x1={pad.l+72} y1={8} x2={pad.l+86} y2={8} stroke="#f87171" strokeWidth="2" strokeLinecap="round" strokeDasharray="4 2"/>
+    <text x={pad.l+90} y={12} fontSize="12" fill={th.muted}>Dépenses</text>
   </svg>);
 }
 const StatCard=({label,value,sub,color,th})=>(
