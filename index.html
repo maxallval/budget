@@ -249,8 +249,8 @@ const CatIcon=({cat,size=20})=>{
 const ModalCloseCtx=createContext(null);
 
 const mkTh=d=>d
-  ?{bg:"#0d0d0d",bgSub:"#161616",surface:"#1c1c1c",border:"#252525",inputBorder:"#333",text:"#f0f0f0",sub:"#888",muted:"#555",btnBg:"#efefef",btnText:"#111",togOff:"#3a3a3a",sheetBg:"#161616",danger:"#f87171",cardBg:"#181818"}
-  :{bg:"#fff",bgSub:"#f9fafb",surface:"#f3f4f6",border:"#f0f0f0",inputBorder:"#e5e7eb",text:"#111",sub:"#6b7280",muted:"#9ca3af",btnBg:"#111",btnText:"#fff",togOff:"#d1d5db",sheetBg:"#fff",danger:"#ef4444",cardBg:"#fafafa"};
+  ?{bg:"#0d0d0d",bgSub:"#141428",surface:"#1c1c1c",border:"#252525",inputBorder:"#333",text:"#f0f0f0",sub:"#888",muted:"#555",btnBg:"#efefef",btnText:"#111",togOff:"#3a3a3a",sheetBg:"#161616",danger:"#f87171",cardBg:"#181818",headerBg:"#141428"}
+  :{bg:"#fff",bgSub:"#eef0ff",surface:"#f3f4f6",border:"#f0f0f0",inputBorder:"#e5e7eb",text:"#111",sub:"#6b7280",muted:"#9ca3af",btnBg:"#111",btnText:"#fff",togOff:"#d1d5db",sheetBg:"#fff",danger:"#ef4444",cardBg:"#fafafa",headerBg:"#eef0ff"};
 
 function ProGate({isPro,th,title,desc,children}){
   if(isPro)return children;
@@ -909,7 +909,7 @@ function App(){
     <div
       onTouchStart={e=>{touchStartX.current=[e.touches[0].clientX,e.touches[0].clientY];}}
       onTouchEnd={e=>{if(!touchStartX.current)return;const dx=e.changedTouches[0].clientX-touchStartX.current[0],dy=e.changedTouches[0].clientY-touchStartX.current[1];touchStartX.current=null;if(Math.abs(dx)<Math.abs(dy)*1.5)return;handleSwipe(dx);}}
-      style={{minHeight:"100vh",background:th.bg,fontFamily:"'Radio Canada',system-ui,sans-serif"}}
+      style={{minHeight:"100vh",background:th.headerBg,fontFamily:"'Radio Canada',system-ui,sans-serif"}}
     >
       {showSplash&&(
         <div style={{position:"fixed",inset:0,background:isDark?"#0d0d0d":"#fff",zIndex:999,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",animation:"splashFadeOut 2.25s ease forwards"}}>
@@ -963,7 +963,7 @@ function App(){
         )}
       </div>
 
-      <div onMouseEnter={()=>setHeaderHovered(true)} onMouseLeave={()=>setHeaderHovered(false)} style={{position:"sticky",top:0,zIndex:90,background:th.bg,padding:"36px 24px 20px",borderBottom:"1px solid "+th.border}}>
+      <div onMouseEnter={()=>setHeaderHovered(true)} onMouseLeave={()=>setHeaderHovered(false)} style={{position:"sticky",top:0,zIndex:90,background:th.headerBg,padding:"36px 24px 20px"}}>
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
           <div>
             <p style={{...lbl,marginBottom:4}}>Gestion financière</p>
@@ -1028,7 +1028,8 @@ function App(){
         </>
       )}
 
-      <div key={tab+"-"+(curSub||"")+(tab==="home"?"-"+yr+"-"+mo:"")} style={{padding:"24px",paddingBottom:"176px",maxWidth:640,animation:tab==="home"&&slideDir?(slideDir==="left"?"slideInFromRight":"slideInFromLeft")+" 1.04s cubic-bezier(0.22,1,0.36,1)":"tabIn 0.84s cubic-bezier(0.22,1,0.36,1)"}}>
+      <div key={tab+"-"+(curSub||"")+(tab==="home"?"-"+yr+"-"+mo:"")} style={{padding:"14px 24px 176px",maxWidth:640,background:th.bg,borderRadius:"24px 24px 0 0",position:"relative",zIndex:1,minHeight:"80vh",margin:"0 auto",animation:tab==="home"&&slideDir?(slideDir==="left"?"slideInFromRight":"slideInFromLeft")+" 1.04s cubic-bezier(0.22,1,0.36,1)":"tabIn 0.84s cubic-bezier(0.22,1,0.36,1)"}}>
+        <div style={{width:36,height:4,borderRadius:2,background:isDark?"#333":"#ddd",margin:"0 auto 14px"}}/>
 
         {tab==="home"&&(
           <div>
