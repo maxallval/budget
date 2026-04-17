@@ -1504,7 +1504,7 @@ function App(){
           {(()=>{const amt=parseFloat(formMod.form.amt),valid=formMod.form.desc.trim().length>0&&!isNaN(amt)&&amt>0;return(
             <div style={{position:"fixed",bottom:0,left:0,right:0,padding:"16px 24px",background:th.sheetBg,borderTop:"1px solid "+th.border,display:"flex",gap:10,zIndex:201,maxWidth:640,margin:"0 auto"}}>
               <button onClick={()=>setFormMod(null)} style={{flex:1,padding:"13px 0",fontSize:14,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>Annuler</button>
-              <button onClick={()=>{if(valid)saveForm(dateInputRef.current?.value);}} style={{flex:3,padding:"13px 0",fontSize:14,border:"none",borderRadius:12,background:valid?th.btnBg:th.surface,color:valid?th.btnText:th.muted,cursor:valid?"pointer":"default",fontWeight:600,transition:"background 0.2s,color 0.2s"}}>{formMod.tx?"Enregistrer":"Ajouter"}</button>
+              <button onClick={()=>{if(valid)saveForm(dateInputRef.current?.value);document.activeElement?.blur();}} style={{flex:3,padding:"13px 0",fontSize:14,border:"none",borderRadius:12,background:valid?th.btnBg:th.surface,color:valid?th.btnText:th.muted,cursor:valid?"pointer":"default",fontWeight:600,transition:"background 0.2s,color 0.2s"}}>{formMod.tx?"Enregistrer":"Ajouter"}</button>
             </div>
           );})()}
         </FullSheet>
