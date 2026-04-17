@@ -1507,7 +1507,7 @@ function App(){
 			  return(
 				<div style={{position:"fixed",bottom:0,left:0,right:0,padding:"16px 24px",background:th.sheetBg,borderTop:"1px solid "+th.border,display:"flex",gap:10,zIndex:201,maxWidth:640,margin:"0 auto"}}>
 				  <button onClick={()=>setFormMod(null)} style={{flex:1,padding:"13px 0",fontSize:14,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>Annuler</button>
-				  <button onClick={()=>{if(valid){if(document.activeElement instanceof HTMLInputElement){document.activeElement.blur();}setTimeout(()=>{document.body.click();saveForm(dateInputRef.current?.value);setFormMod(null);},50);}}} style={{flex:3,padding:"13px 0",fontSize:14,border:"none",borderRadius:12,background:valid?th.btnBg:th.surface,color:valid?th.btnText:th.muted,cursor:valid?"pointer":"default",fontWeight:600,transition:"background 0.2s,color 0.2s"}}>{formMod.tx?"Enregistrer":"Ajouter"}</button>
+				  <button onClick={()=>{if(valid){document.querySelectorAll('input, textarea, select').forEach(el=>el.blur());setTimeout(()=>{saveForm(dateInputRef.current?.value);setFormMod(null);},50);}}} style={{flex:3,padding:"13px 0",fontSize:14,border:"none",borderRadius:12,background:valid?th.btnBg:th.surface,color:valid?th.btnText:th.muted,cursor:valid?"pointer":"default",fontWeight:600,transition:"background 0.2s,color 0.2s"}}>{formMod.tx?"Enregistrer":"Ajouter"}</button>
 				</div>
 			  );
 			})()}
