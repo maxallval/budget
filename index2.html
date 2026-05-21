@@ -135,6 +135,31 @@ const NTH_FR=["","1er","2e","3e","4e","5e"];
 const DS_FR=["D","L","M","M","J","V","S"];
 const UNITS_FR={day:"jours",week:"semaines",month:"mois",year:"années"};
 
+function nextWorkday(date){
+  const d=new Date(date.getTime());
+  while(d.getDay()===0||d.getDay()===6)d.setDate(d.getDate()+1);
+  return d;
+}
+function shiftOccs(days,yr,mo,tx){
+  if(!tx.shiftToWorkday)return days;
+  const shifted=new Set();
+  days.forEach(day=>{
+    const d=new Date(yr,mo,day);
+    const nd=nextWorkday(d);
+    shifted.add(nd.getDate()+((nd.getMonth()!==mo||nd.getFullYear()!==yr)?1000:0));
+  });
+  return[...shifted].filter(d=>d<1000).sort((a,b)=>a-b);
+}
+function getOriginalDay(shiftedDay,yr,mo,tx){
+  if(!tx.shiftToWorkday)return null;
+  const rawDays=occsInMonthRaw(tx,yr,mo);
+  for(const day of rawDays){
+    const d=new Date(yr,mo,day);
+    const nd=nextWorkday(d);
+    if(nd.getMonth()===mo&&nd.getFullYear()===yr&&nd.getDate()===shiftedDay&&day!==shiftedDay)return day;
+  }
+  return null;
+}
 const WISH_SCORE_HIGH=20;
 const WISH_SCORE_MID=8;
 const calcWishScore=w=>{
@@ -174,7 +199,7 @@ const fA=(n,full=false,dec=true)=>{
 };
 function getNthWD(date){let c=0;const d=new Date(date.getFullYear(),date.getMonth(),1);while(d<=date){if(d.getDay()===date.getDay())c++;d.setDate(d.getDate()+1);}return c;}
 function normRec(rec,s){if(rec&&typeof rec==="object")return rec;const wd=s instanceof Date?s.getDay():parseD(String(s||"2024-01-01")).getDay();return({once:{type:"once"},daily:{type:"daily"},weekly:{type:"weekly",weekday:wd},monthly:{type:"monthly_day"},annual:{type:"annually"}})[rec]||{type:"once"};}
-function occsInMonth(tx,yr,mo){
+function occsInMonthRaw(tx,yr,mo){
   const ms=new Date(yr,mo,1),me=new Date(yr,mo+1,0);
   const s=parseD(tx.startDate),e=tx.endDate?parseD(tx.endDate):null;
   const ex=new Set(tx.exceptions||[]),r=normRec(tx.recurrence,s);
@@ -197,6 +222,9 @@ function occsInMonth(tx,yr,mo){
     return res;
   }
   return[];
+}
+function occsInMonth(tx,yr,mo){
+  return shiftOccs(occsInMonthRaw(tx,yr,mo),yr,mo,tx);
 }
 function countOccs(tx,upTo){
   const s=parseD(tx.startDate);if(s>upTo)return 0;
@@ -594,6 +622,7 @@ function App(){
   const[motdVisible,setMotdVisible]=useState(false);
   const[motdFading,setMotdFading]=useState(false);
   const[motdCountdown,setMotdCountdown]=useState(8);
+  const[shiftWorkdayEnabled,setShiftWorkdayEnabled]=useState(false);
   const[advancedCats,setAdvancedCats]=useState(false);
   const[customCats,setCustomCats]=useState([]);
   const[customSubcats,setCustomSubcats]=useState([]);
@@ -768,12 +797,12 @@ function App(){
       let lR=false,lW=false;
       try{await window.storage.set("bgt9-ct","1");lR=!!(await window.storage.get("bgt9-ct"));lW=true;}catch{}
       setConnStatus({localRead:lR,localWrite:lW});
-      try{const r=await window.storage.get("bgt9-cfg");if(r){const c=JSON.parse(r.value);if(c.disp)setDisp(c.disp);if(c.darkMode)setDarkMode(c.darkMode);if(c.mode)setMode(c.mode);if(c.advancedCats!==undefined)setAdvancedCats(c.advancedCats);if(c.showDecimals!==undefined)setShowDecimals(c.showDecimals);if(c.isPro!==undefined)setIsPro(c.isPro);}}catch{}
+      try{const r=await window.storage.get("bgt9-cfg");if(r){const c=JSON.parse(r.value);if(c.disp)setDisp(c.disp);if(c.darkMode)setDarkMode(c.darkMode);if(c.mode)setMode(c.mode);if(c.advancedCats!==undefined)setAdvancedCats(c.advancedCats);if(c.showDecimals!==undefined)setShowDecimals(c.showDecimals);if(c.isPro!==undefined)setIsPro(c.isPro);if(c.shiftWorkdayEnabled!==undefined)setShiftWorkdayEnabled(c.shiftWorkdayEnabled);}}catch{}
       try{const{data:row}=await sb.from("user_data").select("data,updated_at").eq("user_id",session.user.id).single();if(row?.data){const d=row.data;if(Array.isArray(d.txs))setTxs(cleanTxs(d.txs));if(typeof d.initBal==="number")setInitBal(d.initBal);if(d.balAnchor!==undefined)setBalAnchor(d.balAnchor);if(d.budgets)setBudgets(d.budgets);if(d.disp)setDisp(d.disp);if(d.darkMode)setDarkMode(d.darkMode);if(d.showDecimals!==undefined)setShowDecimals(d.showDecimals);if(d.customCats)setCustomCats(d.customCats);if(d.customSubcats)setCustomSubcats(d.customSubcats);if(d.subcatGroupOverrides)setSubcatGroupOverrides(d.subcatGroupOverrides);if(Array.isArray(d.goals))setGoals(d.goals);if(Array.isArray(d.wishes))setWishes(d.wishes);setLastSync(new Date(row.updated_at));}}catch{}
       setLoaded(true);
     })();
   },[session]);
-  useEffect(()=>{if(!loaded)return;clearTimeout(cfgTimer.current);cfgTimer.current=setTimeout(async()=>{try{await window.storage.set("bgt9-cfg",JSON.stringify({disp,darkMode,mode,advancedCats,showDecimals,isPro}));}catch{}},400);},[disp,darkMode,mode,advancedCats,showDecimals,isPro,loaded]);
+  useEffect(()=>{if(!loaded)return;clearTimeout(cfgTimer.current);cfgTimer.current=setTimeout(async()=>{try{await window.storage.set("bgt9-cfg",JSON.stringify({disp,darkMode,mode,advancedCats,showDecimals,isPro,shiftWorkdayEnabled}));}catch{}},400);},[disp,darkMode,mode,advancedCats,showDecimals,isPro,shiftWorkdayEnabled,loaded]);
   useEffect(()=>{
     if(!loaded||!session)return;
     clearTimeout(sbSaveTimer.current);setIsSyncing(true);
@@ -790,7 +819,7 @@ function App(){
   const commitEditBal=()=>{const v=parseFloat(balInput);if(!isNaN(v))setBalAnchor({dateStr:dStr(TODAY),amount:v});setEditingBal(false);};
   const startEditBalSett=()=>{setBalInputSett(String(curBalVal.toFixed(2)));setEditingBalSett(true);setTimeout(()=>{balSettRef.current?.focus();balSettRef.current?.select();},50);};
   const commitEditBalSett=()=>{const v=parseFloat(balInputSett);if(!isNaN(v))setBalAnchor({dateStr:dStr(TODAY),amount:v});setEditingBalSett(false);};
-  const openForm=(tx=null,prefill=null)=>{const dt=prefill||dStr(TODAY);setFormMod({tx,editScope:null,editDateStr:null,form:tx?{desc:tx.description,amt:String(tx.amount),type:tx.type,rec:normRec(tx.recurrence,parseD(tx.startDate)),date:tx.startDate,cat:tx.category||"other",subCat:tx.subCategory||null}:{desc:"",amt:"",type:"expense",rec:{type:"once"},date:dt,cat:"other",subCat:null}});};
+  const openForm=(tx=null,prefill=null)=>{const dt=prefill||dStr(TODAY);setFormMod({tx,editScope:null,editDateStr:null,form:tx?{desc:tx.description,amt:String(tx.amount),type:tx.type,rec:normRec(tx.recurrence,parseD(tx.startDate)),date:tx.startDate,cat:tx.category||"other",subCat:tx.subCategory||null,shiftToWorkday:tx.shiftToWorkday||false}:{desc:"",amt:"",type:"expense",rec:{type:"once"},date:dt,cat:"other",subCat:null,shiftToWorkday:false}});};
   const setFF=k=>v=>setFormMod(m=>({...m,form:{...m.form,[k]:v}}));
   const handleTypeChange=v=>setFormMod(m=>({...m,form:{...m.form,type:v,cat:v==="income"?"income":"other",subCat:null}}));
   const handleCatChange=v=>setFormMod(m=>({...m,form:{...m.form,cat:v,subCat:null}}));
@@ -800,7 +829,7 @@ function App(){
     const{tx,editScope,editDateStr}=mod,form=mod.form;
     const amt=parseFloat(form.amt);if(!form.desc.trim()||isNaN(amt)||amt<=0)return;
     const finalDate=forcedDate||dateInputRef.current?.value||form.date;if(!finalDate)return;
-    const data={description:form.desc,amount:amt,type:form.type,recurrence:form.rec,startDate:finalDate,category:form.cat,subCategory:form.subCat||undefined};
+    const data={description:form.desc,amount:amt,type:form.type,recurrence:form.rec,startDate:finalDate,category:form.cat,subCategory:form.subCat||undefined,shiftToWorkday:form.shiftToWorkday||false};
     if(!tx)setTxs(prev=>[...prev,{id:Date.now().toString(),...data,exceptions:[]}]);
     else if(editScope==="this")setTxs(prev=>{const upd=prev.map(t=>t.id!==tx.id?t:{...t,exceptions:[...(t.exceptions||[]),editDateStr]});return[...upd,{id:Date.now().toString(),...data,startDate:finalDate,recurrence:{type:"once"},exceptions:[]}];});
     else if(editScope==="follow"){const ne=dayBef(editDateStr);setTxs(prev=>{const orig=prev.find(t=>t.id===tx.id),tooEarly=orig&&parseD(ne)<parseD(orig.startDate),base=tooEarly?prev.filter(t=>t.id!==tx.id):prev.map(t=>t.id!==tx.id?t:{...t,endDate:ne});return[...base,{id:Date.now().toString(),...data,startDate:finalDate,exceptions:[]}];});}
@@ -1334,6 +1363,7 @@ function App(){
               <SegCtrl options={[["daily","Journée"],["balance","Solde"]]} value={mode} onChange={setMode} th={th}/>
             </div>
             <Tog label="Taux d'épargne" sub="Afficher le badge d'épargne sur la page d'accueil" value={disp.showSavingsRate!==false} onChange={v=>setDisp(d=>({...d,showSavingsRate:v}))} th={th}/>
+            <Tog label="Reporter au prochain jour ouvrable" sub="Affiche l'option par transaction récurrente" value={shiftWorkdayEnabled} onChange={setShiftWorkdayEnabled} th={th}/>
             <p style={{...lbl,margin:"24px 0 4px"}}>Mode nuit</p>
             <div style={{paddingBottom:16,borderBottom:"1px solid "+th.border}}><SegCtrl options={[["off","Désactivé"],["auto","Automatique"],["on","Activé"]]} value={darkMode} onChange={setDarkMode} th={th}/></div>
             <p style={{...lbl,margin:"24px 0 4px"}}>Catégories</p>
@@ -1494,6 +1524,30 @@ function App(){
             <div><label style={lbl}>Description</label><input type="text" value={formMod.form.desc} onChange={e=>setFF("desc")(e.target.value)} style={{...iSt,fontSize:16}}/></div>
             <div><label style={lbl}>Montant</label><input type="number" value={formMod.form.amt} step="0.01" placeholder="0.00" onChange={e=>setFF("amt")(e.target.value)} onBlur={()=>{if(formMod.form.desc.trim().length>0&&!isNaN(parseFloat(formMod.form.amt))&&parseFloat(formMod.form.amt)>0)saveForm(dateInputRef.current?.value);}} style={{...iSt,fontSize:22,fontWeight:600,fontVariantNumeric:"tabular-nums",borderBottomColor:formMod.form.amt&&(isNaN(parseFloat(formMod.form.amt))||parseFloat(formMod.form.amt)<=0)?"#ef4444":th.inputBorder,transition:"border-color 0.2s"}}/></div>
             {!formMod.editScope&&<RecurrencePicker value={formMod.form.rec} onChange={v=>setFF("rec")(v)} startDate={formMod.form.date||dStr(TODAY)} th={th}/>}
+            {!formMod.editScope&&shiftWorkdayEnabled&&normRec(formMod.form.rec,parseD(formMod.form.date||dStr(TODAY))).type!=="once"&&(
+              <div style={{padding:"12px 14px",background:th.surface,borderRadius:12,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <div>
+                  <p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>Reporter au prochain jour ouvrable</p>
+                  <p style={{fontSize:11,color:th.muted,margin:"3px 0 0"}}>Si l'occurrence tombe un samedi ou dimanche</p>
+                </div>
+                <button onClick={()=>setFF("shiftToWorkday")(!formMod.form.shiftToWorkday)} style={{width:36,height:20,borderRadius:10,background:formMod.form.shiftToWorkday?th.btnBg:th.togOff,border:"none",cursor:"pointer",position:"relative",flexShrink:0,transition:"background 0.2s"}}>
+                  <div style={{position:"absolute",top:2,left:formMod.form.shiftToWorkday?16:2,width:16,height:16,background:"#fff",borderRadius:"50%",transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.3)"}}/>
+                </button>
+              </div>
+            )}
+            {formMod.tx?.shiftToWorkday&&formMod.form.date&&(()=>{
+              const d=parseD(formMod.form.date);
+              const nd=nextWorkday(new Date(d.getTime()));
+              const isWeekend=d.getDay()===0||d.getDay()===6;
+              const wasShifted=nd.getDate()!==d.getDate();
+              if(!wasShifted)return null;
+              return(
+                <div style={{padding:"10px 14px",background:"#6366f118",border:"1px solid #6366f130",borderRadius:10,display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:14}}>📅</span>
+                  <p style={{fontSize:12,color:"#6366f1",margin:0}}>Date originale : <strong>{DAYS_FR[d.getDay()]} {d.getDate()} {MONTHS_FR[d.getMonth()]}</strong> — reportée au <strong>{DAYS_FR[nd.getDay()]} {nd.getDate()} {MONTHS_FR[nd.getMonth()]}</strong></p>
+                </div>
+              );
+            })()}
             <div><label style={lbl}>Date de début</label><input ref={dateInputRef} type="date" value={formMod.form.date} onChange={e=>e.target.value&&handleDateChange(e.target.value)} onBlur={e=>e.target.value&&handleDateChange(e.target.value)} style={{...iSt,colorScheme:isDark?"dark":"light"}}/></div>
             <CategoryPicker value={formMod.form.cat} onChange={handleCatChange} th={th} allCats={allCats} getCatName={getCatName}/>
             {isPro?<SubCategoryPicker category={formMod.form.cat} value={formMod.form.subCat} onChange={v=>setFF("subCat")(v)} th={th} allSubcats={allSubcats}/>:<div style={{padding:"10px 12px",background:th.surface,borderRadius:10,display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:13}}>🔒</span><p style={{fontSize:12,color:th.muted,margin:0}}>Sous-catégories réservées à la version Pro</p></div>}
