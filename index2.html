@@ -80,9 +80,10 @@ const CATS=[
   {id:"health",   icon:"favorite",        color:"#ef4444"},
   {id:"entertain",icon:"movie",           color:"#8b5cf6"},
   {id:"finances", icon:"account_balance", color:"#059669"},
+  {id:"goals",    icon:"star",            color:"#6366f1"},
   {id:"other",    icon:"category",        color:"#9ca3af"},
 ];
-const CAT_NAMES={income:"Revenus",housing:"Logement",services:"Services",transport:"Transport",food:"Alimentation",health:"Santé",entertain:"Loisirs",finances:"Finances",other:"Divers"};
+const CAT_NAMES={income:"Revenus",housing:"Logement",services:"Services",transport:"Transport",food:"Alimentation",health:"Santé",entertain:"Loisirs",finances:"Finances",goals:"Objectifs",other:"Divers"};
 const SUBCATS=[
   {id:"salaire",label:"Salaire",category:"income",group:null},{id:"prime",label:"Prime",category:"income",group:null},
   {id:"rev_autonome",label:"Revenu de travail autonome",category:"income",group:null},{id:"rev_location",label:"Revenu de location",category:"income",group:null},
@@ -290,7 +291,12 @@ function ProGate({isPro,th,title,desc,children}){
   </div>);
 }
 function StatusDot({ok,na,th}){return na?<span style={{fontSize:12,color:th.muted}}>-</span>:<span style={{fontSize:12,color:ok?"#10b981":"#ef4444",fontWeight:500}}>{ok?"OK":"Non"}</span>;}
-const TxRow=React.memo(function TxRow({tx,amount,recurrenceLabel,cat,sc,isActive,setActiveTx,fmt,getCatName,th}){
+const TxRow=React.memo(function TxRow({tx,amount,recurrenceLabel,cat,sc,isActive,setActiveTx,fmt,getCatName,th,shiftedFromDay,yr,mo}){
+  const shiftedLabel=useMemo(()=>{
+    if(!shiftedFromDay)return null;
+    const orig=new Date(yr,mo,shiftedFromDay);
+    return"Reporté du "+DAYS_FR[orig.getDay()]+" "+orig.getDate()+" "+MONTHS_FR[orig.getMonth()];
+  },[shiftedFromDay,yr,mo]);
   return(<div onPointerEnter={e=>{if(e.pointerType==="mouse")setActiveTx(tx);}} onPointerLeave={e=>{if(e.pointerType==="mouse")setActiveTx(null);}} onClick={()=>setActiveTx(tx)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 10px",borderBottom:"1px solid "+th.border,borderRadius:10,cursor:"pointer",background:isActive?th.surface:"transparent",transition:"background 0.15s",margin:"0 -10px"}}>
     <div style={{display:"flex",alignItems:"center",gap:10}}>
       <div style={{width:36,height:36,borderRadius:9,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,border:"2px solid "+(isActive?cat.color:"transparent"),transition:"border-color 0.15s"}}><CatIcon cat={cat} size={18}/></div>
@@ -298,6 +304,7 @@ const TxRow=React.memo(function TxRow({tx,amount,recurrenceLabel,cat,sc,isActive
         <p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p>
         <p style={{fontSize:11,color:th.muted,margin:"3px 0 0"}}>{getCatName(cat.id)}{sc?<span style={{color:th.sub}}> · {sc.label}</span>:null}</p>
         <p style={{fontSize:11,color:th.muted,margin:"2px 0 0"}}>{recurrenceLabel}</p>
+        {shiftedLabel&&<p style={{fontSize:10,color:"#6366f1",margin:"3px 0 0",fontWeight:500}}>📅 {shiftedLabel}</p>}
       </div>
     </div>
     <span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:tx.type==="income"?"#059669":"#ef4444",flexShrink:0}}>{tx.type==="income"?"+":"-"}{fmt(amount,true)}</span>
@@ -858,8 +865,28 @@ function App(){
   };
   const duplicateTx=(tx,dateStr)=>setTxs(prev=>[...prev,{...tx,id:Date.now().toString(),startDate:dateStr||dStr(TODAY),exceptions:[]}]);
   const acknowledgeOverruns=()=>{setOverrunDismissing(true);clearTimeout(overrunTimer.current);overrunTimer.current=setTimeout(()=>{setAcknowledgedOverruns(prev=>new Set([...prev,overrunKey]));setOverrunDismissing(false);},400);};
-  const saveGoal=()=>{if(!goalForm?.label?.trim()||!goalForm?.target)return;const tgt=parseFloat(goalForm.target);if(isNaN(tgt)||tgt<=0)return;const sav=parseFloat(goalForm.saved||0)||0;if(goalForm.id)setGoals(prev=>prev.map(g=>g.id===goalForm.id?{...g,...goalForm,target:tgt,saved:sav}:g));else setGoals(prev=>[...prev,{...goalForm,id:"goal_"+Date.now(),target:tgt,saved:sav}]);setGoalForm(null);};
-  const deleteGoal=id=>setGoals(prev=>prev.filter(g=>g.id!==id));
+  const saveGoal=()=>{
+    if(!goalForm?.label?.trim()||!goalForm?.target)return;
+    const tgt=parseFloat(goalForm.target);
+    if(isNaN(tgt)||tgt<=0)return;
+    const sav=parseFloat(goalForm.saved||0)||0;
+    const grp=goalForm.group||"essentiel";
+    const scId="goal_sc_"+(goalForm.id||"goal_"+Date.now());
+    if(goalForm.id){
+      setGoals(prev=>prev.map(g=>g.id===goalForm.id?{...g,...goalForm,target:tgt,saved:sav,group:grp}:g));
+      setCustomSubcats(prev=>prev.map(s=>s.id===scId?{...s,label:goalForm.label.trim(),group:grp}:s));
+    }else{
+      const newId="goal_"+Date.now();
+      const newScId="goal_sc_"+newId;
+      setGoals(prev=>[...prev,{...goalForm,id:newId,target:tgt,saved:sav,group:grp}]);
+      setCustomSubcats(prev=>[...prev,{id:newScId,label:goalForm.label.trim(),category:"goals",group:grp}]);
+    }
+    setGoalForm(null);
+  };
+  const deleteGoal=id=>{
+    setGoals(prev=>prev.filter(g=>g.id!==id));
+    setCustomSubcats(prev=>prev.filter(s=>s.id!=="goal_sc_"+id));
+  };
   const updateGoalSaved=(id,raw)=>{const v=parseFloat(raw);if(!isNaN(v)&&v>=0)setGoals(prev=>prev.map(g=>g.id===id?{...g,saved:v}:g));};
 
   const saveWish=()=>{
@@ -1110,8 +1137,11 @@ function App(){
               {searchQuery&&<button onClick={()=>setSearchQuery("")} style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",fontSize:13,color:th.muted,background:"none",border:"none",cursor:"pointer",padding:4}}>X</button>}
             </div>
             {monthTxs.length===0?<div style={{textAlign:"center",padding:"60px 0"}}><p style={{fontSize:32,color:th.border,margin:"0 0 8px"}}>○</p><p style={{fontSize:13,color:th.muted}}>{searchQuery?"Aucun résultat":"Aucune transaction"}</p></div>
-              :monthTxs.map(tx=>{const n=monthOccs.get(tx.id)?.length||1;return <TxRow key={tx.id} tx={tx} amount={tx.amount*n} recurrenceLabel={recLabel(tx)+(n>1?" x"+n:"")} cat={dynCatById(tx.category||"other")} sc={dynSubcatById(tx.subCategory)} isActive={activeTx?.id===tx.id} setActiveTx={setActiveTx} fmt={f} getCatName={getCatName} th={th}/>;})
-            }
+              :monthTxs.map(tx=>{
+                const n=monthOccs.get(tx.id)?.length||1;
+                const shiftedFromDay=tx.shiftToWorkday?getOriginalDay(monthOccs.get(tx.id)?.[0],yr,mo,tx):null;
+                return <TxRow key={tx.id} tx={tx} amount={tx.amount*n} recurrenceLabel={recLabel(tx)+(n>1?" x"+n:"")} cat={dynCatById(tx.category||"other")} sc={dynSubcatById(tx.subCategory)} isActive={activeTx?.id===tx.id} setActiveTx={setActiveTx} fmt={f} getCatName={getCatName} th={th} shiftedFromDay={shiftedFromDay} yr={yr} mo={mo}/>;
+              })
           </div>
         )}
 
@@ -1377,7 +1407,7 @@ function App(){
               <button onClick={()=>{setDelAccMod(true);setDelAccInput("");}} style={{fontSize:13,color:th.danger,background:"none",border:"1px solid "+th.danger,borderRadius:10,padding:"8px 16px",cursor:"pointer"}}>Supprimer le compte</button>
             </div>
             <div style={{marginTop:32,paddingTop:20,borderTop:"1px solid "+th.border,textAlign:"center"}}>
-              <p onClick={handleVersionClick} style={{fontSize:11,color:showTroubleshoot?"#6366f1":th.muted,letterSpacing:"0.1em",cursor:"pointer",userSelect:"none"}}>v0.039</p>
+              <p onClick={handleVersionClick} style={{fontSize:11,color:showTroubleshoot?"#6366f1":th.muted,letterSpacing:"0.1em",cursor:"pointer",userSelect:"none"}}>v0.041</p>
             </div>
           </div>
         )}
@@ -1460,7 +1490,7 @@ function App(){
       {dupMod&&(<Sheet onClose={()=>setDupMod(null)} th={th}><SheetHead title="Dupliquer la transaction" onClose={()=>setDupMod(null)} th={th}/><div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 14px",background:th.surface,borderRadius:12,marginBottom:20}}><div style={{width:36,height:36,borderRadius:9,background:dynCatById(dupMod.tx.category||"other").color+"22",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><CatIcon cat={dynCatById(dupMod.tx.category||"other")} size={18}/></div><div><p style={{fontSize:13,fontWeight:500,color:th.text,margin:0}}>{dupMod.tx.description}</p><p style={{fontSize:11,color:th.muted,margin:"2px 0 0"}}>{f(dupMod.tx.amount,true)} · {getCatName(dupMod.tx.category||"other")}</p></div></div><label style={{...lbl,display:"block",marginBottom:8}}>Date de la copie</label><input type="date" value={dupMod.date} onChange={e=>e.target.value&&setDupMod(m=>({...m,date:e.target.value}))} style={{display:"block",width:"100%",padding:"12px 14px",fontSize:15,color:th.text,background:th.surface,border:"1px solid "+th.inputBorder,borderRadius:12,outline:"none",boxSizing:"border-box",colorScheme:isDark?"dark":"light",marginBottom:20}}/><div style={{display:"flex",gap:8}}><button onClick={()=>setDupMod(null)} style={{flex:1,padding:"12px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>Annuler</button><button onClick={()=>{duplicateTx(dupMod.tx,dupMod.date);setDupMod(null);}} style={{flex:2,padding:"12px 0",fontSize:13,border:"none",borderRadius:12,background:th.btnBg,color:th.btnText,cursor:"pointer",fontWeight:600}}>Dupliquer</button></div></Sheet>)}
       {exportMod&&(<Sheet onClose={()=>setExportMod(false)} th={th}><SheetHead title="Exporter les données" onClose={()=>setExportMod(false)} th={th}/><p style={{fontSize:12,color:th.sub,marginBottom:12}}>Copiez ce JSON et conservez-le en lieu sûr.</p><textarea readOnly value={getExportJSON()} style={{width:"100%",height:180,padding:"10px 12px",fontSize:11,fontFamily:"monospace",color:th.sub,background:th.surface,border:"1px solid "+th.border,borderRadius:10,resize:"none",boxSizing:"border-box",lineHeight:1.5}}/><div style={{display:"flex",gap:8,marginTop:12}}><button onClick={()=>setExportMod(false)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>Fermer</button><button onClick={handleCopy} style={{flex:2,padding:"11px 0",fontSize:13,border:"none",borderRadius:12,background:copied?"#059669":th.btnBg,color:copied?"#fff":th.btnText,cursor:"pointer",fontWeight:500,transition:"background 0.2s"}}>{copied?"Copié":"Copier"}</button></div></Sheet>)}
       {importMod&&(<Sheet onClose={()=>setImportMod(false)} th={th}><SheetHead title="Importer les données" onClose={()=>setImportMod(false)} th={th}/><p style={{fontSize:12,color:th.sub,marginBottom:12}}>Collez un JSON exporté précédemment.</p><textarea value={importText} onChange={e=>setImportText(e.target.value)} placeholder="Collez votre JSON ici..." style={{width:"100%",height:200,padding:"10px 12px",fontSize:11,fontFamily:"monospace",color:th.text,background:th.surface,border:"1px solid "+th.border,borderRadius:10,resize:"none",boxSizing:"border-box",lineHeight:1.5}}/><div style={{display:"flex",gap:8,marginTop:12}}><button onClick={()=>setImportMod(false)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>Annuler</button><button onClick={handleImport} disabled={!importText.trim()} style={{flex:2,padding:"11px 0",fontSize:13,border:"none",borderRadius:12,background:importText.trim()?th.btnBg:th.surface,color:importText.trim()?th.btnText:th.muted,cursor:importText.trim()?"pointer":"default",fontWeight:500}}>Restaurer</button></div></Sheet>)}
-      {goalForm&&(<Sheet onClose={()=>setGoalForm(null)} th={th}><SheetHead title={goalForm.id?"Modifier l'objectif":"Nouvel objectif"} onClose={()=>setGoalForm(null)} th={th}/><div style={{display:"flex",flexDirection:"column",gap:18}}><div><label style={lbl}>Nom</label><input type="text" value={goalForm.label} onChange={e=>setGoalForm(f=>({...f,label:e.target.value}))} placeholder="Voyage, urgence..." style={{...iSt,fontSize:15}}/></div><div><label style={lbl}>Icône</label><div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:8}}>{GOAL_ICONS.map(ic=>{const sel=goalForm.icon===ic;return(<button key={ic} onClick={()=>setGoalForm(f=>({...f,icon:ic}))} style={{width:36,height:36,borderRadius:9,border:"2px solid "+(sel?goalForm.color:"transparent"),background:sel?goalForm.color+"22":th.surface,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}><span className="ms" style={{fontSize:18,color:sel?goalForm.color:th.muted}}>{ic}</span></button>);})}</div></div><div><label style={lbl}>Montant cible ($)</label><input type="number" min="1" step="100" value={goalForm.target} onChange={e=>setGoalForm(f=>({...f,target:e.target.value}))} placeholder="5000" style={{...iSt,fontSize:18,fontWeight:600,fontVariantNumeric:"tabular-nums"}}/></div><div><label style={lbl}>Déjà épargné ($)</label><input type="number" min="0" step="10" value={goalForm.saved||""} onChange={e=>setGoalForm(f=>({...f,saved:e.target.value}))} placeholder="0" style={{...iSt,fontSize:15}}/></div><div><label style={lbl}>Date cible (optionnel)</label><input type="date" value={goalForm.deadline||""} onChange={e=>setGoalForm(f=>({...f,deadline:e.target.value}))} style={{...iSt,colorScheme:isDark?"dark":"light"}}/></div><div><label style={lbl}>Couleur</label><div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:8}}>{PRESET_COLORS.map(c=><button key={c} onClick={()=>setGoalForm(f=>({...f,color:c}))} style={{width:28,height:28,borderRadius:"50%",background:c,border:goalForm.color===c?"3px solid "+th.text:"3px solid transparent",cursor:"pointer"}}/>)}</div></div></div><div style={{display:"flex",gap:8,marginTop:20}}><button onClick={()=>setGoalForm(null)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>Annuler</button><button onClick={saveGoal} disabled={!goalForm.label?.trim()||!goalForm.target} style={{flex:2,padding:"11px 0",fontSize:13,border:"none",borderRadius:12,background:goalForm.label?.trim()&&goalForm.target?th.btnBg:th.surface,color:goalForm.label?.trim()&&goalForm.target?th.btnText:th.muted,cursor:goalForm.label?.trim()&&goalForm.target?"pointer":"default",fontWeight:500}}>{goalForm.id?"Enregistrer":"Créer l'objectif"}</button></div></Sheet>)}
+      {goalForm&&(<Sheet onClose={()=>setGoalForm(null)} th={th}><SheetHead title={goalForm.id?"Modifier l'objectif":"Nouvel objectif"} onClose={()=>setGoalForm(null)} th={th}/><div style={{display:"flex",flexDirection:"column",gap:18}}><div><label style={lbl}>Nom</label><input type="text" value={goalForm.label} onChange={e=>setGoalForm(f=>({...f,label:e.target.value}))} placeholder="Voyage, urgence..." style={{...iSt,fontSize:15}}/></div><div><label style={lbl}>Icône</label><div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:8}}>{GOAL_ICONS.map(ic=>{const sel=goalForm.icon===ic;return(<button key={ic} onClick={()=>setGoalForm(f=>({...f,icon:ic}))} style={{width:36,height:36,borderRadius:9,border:"2px solid "+(sel?goalForm.color:"transparent"),background:sel?goalForm.color+"22":th.surface,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}><span className="ms" style={{fontSize:18,color:sel?goalForm.color:th.muted}}>{ic}</span></button>);})}</div></div><div><label style={lbl}>Montant cible ($)</label><input type="number" min="1" step="100" value={goalForm.target} onChange={e=>setGoalForm(f=>({...f,target:e.target.value}))} placeholder="5000" style={{...iSt,fontSize:18,fontWeight:600,fontVariantNumeric:"tabular-nums"}}/></div><div><label style={lbl}>Déjà épargné ($)</label><input type="number" min="0" step="10" value={goalForm.saved||""} onChange={e=>setGoalForm(f=>({...f,saved:e.target.value}))} placeholder="0" style={{...iSt,fontSize:15}}/></div><div><label style={lbl}>Date cible (optionnel)</label><input type="date" value={goalForm.deadline||""} onChange={e=>setGoalForm(f=>({...f,deadline:e.target.value}))} style={{...iSt,colorScheme:isDark?"dark":"light"}}/></div><div><label style={{...lbl,display:"block",marginBottom:8}}>Groupe de dépense</label><div style={{display:"flex",gap:6}}>{SUBCAT_GROUPS.map(g=>{const sel=(goalForm.group||"essentiel")===g.id;return(<button key={g.id} onClick={()=>setGoalForm(f=>({...f,group:g.id}))} style={{flex:1,padding:"8px 0",borderRadius:10,fontSize:12,border:"1.5px solid "+(sel?g.color:th.border),background:sel?g.color+"18":"none",color:sel?g.color:th.muted,cursor:"pointer",fontWeight:sel?600:400}}>{g.label}</button>);})}</div><p style={{fontSize:10,color:th.muted,margin:"6px 0 0"}}>Utilisé pour classer les transactions liées à cet objectif</p></div><div><label style={lbl}>Couleur</label><div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:8}}>{PRESET_COLORS.map(c=><button key={c} onClick={()=>setGoalForm(f=>({...f,color:c}))} style={{width:28,height:28,borderRadius:"50%",background:c,border:goalForm.color===c?"3px solid "+th.text:"3px solid transparent",cursor:"pointer"}}/>)}</div></div></div><div style={{display:"flex",gap:8,marginTop:20}}><button onClick={()=>setGoalForm(null)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:12,background:"none",color:th.sub,cursor:"pointer"}}>Annuler</button><button onClick={saveGoal} disabled={!goalForm.label?.trim()||!goalForm.target} style={{flex:2,padding:"11px 0",fontSize:13,border:"none",borderRadius:12,background:goalForm.label?.trim()&&goalForm.target?th.btnBg:th.surface,color:goalForm.label?.trim()&&goalForm.target?th.btnText:th.muted,cursor:goalForm.label?.trim()&&goalForm.target?"pointer":"default",fontWeight:500}}>{goalForm.id?"Enregistrer":"Créer l'objectif"}</button></div></Sheet>)}
 
       {dayMod&&(
         <Sheet onClose={()=>{setDayMod(null);setExpandedTx(null);setPendingDel(null);}} th={th}>
@@ -1472,7 +1502,11 @@ function App(){
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 0",borderBottom:isExp?"none":"1px solid "+th.border,cursor:"pointer"}} onClick={()=>{setExpandedTx(isExp?null:tx.id);setPendingDel(null);}}>
                 <div style={{display:"flex",alignItems:"center",gap:10,flex:1}}>
                   <div style={{width:36,height:36,borderRadius:10,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,border:"2px solid "+(isExp?cat.color:"transparent")}}><CatIcon cat={cat} size={18}/></div>
-                  <div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p><p style={{fontSize:11,margin:"2px 0 0",color:cat.color,fontWeight:500}}>{getCatName(cat.id)}{sc?<span style={{color:th.muted,fontWeight:400}}> - {sc.label}</span>:null}</p></div>
+                  <div>
+                    <p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p>
+                    <p style={{fontSize:11,margin:"2px 0 0",color:cat.color,fontWeight:500}}>{getCatName(cat.id)}{sc?<span style={{color:th.muted,fontWeight:400}}> - {sc.label}</span>:null}</p>
+                    {(()=>{const origDay=tx.shiftToWorkday?getOriginalDay(dayMod.day,yr,mo,tx):null;if(!origDay)return null;const orig=new Date(yr,mo,origDay);return<p style={{fontSize:10,color:"#6366f1",margin:"3px 0 0",fontWeight:500}}>📅 Reporté du {DAYS_FR[orig.getDay()]} {orig.getDate()} {MONTHS_FR[orig.getMonth()]}</p>;})()}
+                  </div>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
                   <span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:tx.type==="income"?"#059669":"#ef4444"}}>{tx.type==="income"?"+":"-"}{f(tx.amount,true)}</span>
