@@ -291,12 +291,7 @@ function ProGate({isPro,th,title,desc,children}){
   </div>);
 }
 function StatusDot({ok,na,th}){return na?<span style={{fontSize:12,color:th.muted}}>-</span>:<span style={{fontSize:12,color:ok?"#10b981":"#ef4444",fontWeight:500}}>{ok?"OK":"Non"}</span>;}
-const TxRow=React.memo(function TxRow({tx,amount,recurrenceLabel,cat,sc,isActive,setActiveTx,fmt,getCatName,th,shiftedFromDay,yr,mo}){
-  const shiftedLabel=useMemo(()=>{
-    if(!shiftedFromDay)return null;
-    const orig=new Date(yr,mo,shiftedFromDay);
-    return"Reporté du "+DAYS_FR[orig.getDay()]+" "+orig.getDate()+" "+MONTHS_FR[orig.getMonth()];
-  },[shiftedFromDay,yr,mo]);
+const TxRow=React.memo(function TxRow({tx,amount,recurrenceLabel,cat,sc,isActive,setActiveTx,fmt,getCatName,th}){
   return(<div onPointerEnter={e=>{if(e.pointerType==="mouse")setActiveTx(tx);}} onPointerLeave={e=>{if(e.pointerType==="mouse")setActiveTx(null);}} onClick={()=>setActiveTx(tx)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 10px",borderBottom:"1px solid "+th.border,borderRadius:10,cursor:"pointer",background:isActive?th.surface:"transparent",transition:"background 0.15s",margin:"0 -10px"}}>
     <div style={{display:"flex",alignItems:"center",gap:10}}>
       <div style={{width:36,height:36,borderRadius:9,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,border:"2px solid "+(isActive?cat.color:"transparent"),transition:"border-color 0.15s"}}><CatIcon cat={cat} size={18}/></div>
@@ -304,7 +299,6 @@ const TxRow=React.memo(function TxRow({tx,amount,recurrenceLabel,cat,sc,isActive
         <p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p>
         <p style={{fontSize:11,color:th.muted,margin:"3px 0 0"}}>{getCatName(cat.id)}{sc?<span style={{color:th.sub}}> · {sc.label}</span>:null}</p>
         <p style={{fontSize:11,color:th.muted,margin:"2px 0 0"}}>{recurrenceLabel}</p>
-        {shiftedLabel&&<p style={{fontSize:10,color:"#6366f1",margin:"3px 0 0",fontWeight:500}}>📅 {shiftedLabel}</p>}
       </div>
     </div>
     <span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:tx.type==="income"?"#059669":"#ef4444",flexShrink:0}}>{tx.type==="income"?"+":"-"}{fmt(amount,true)}</span>
@@ -1137,11 +1131,8 @@ function App(){
               {searchQuery&&<button onClick={()=>setSearchQuery("")} style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",fontSize:13,color:th.muted,background:"none",border:"none",cursor:"pointer",padding:4}}>X</button>}
             </div>
             {monthTxs.length===0?<div style={{textAlign:"center",padding:"60px 0"}}><p style={{fontSize:32,color:th.border,margin:"0 0 8px"}}>○</p><p style={{fontSize:13,color:th.muted}}>{searchQuery?"Aucun résultat":"Aucune transaction"}</p></div>
-              :monthTxs.map(tx=>{
-                const n=monthOccs.get(tx.id)?.length||1;
-                const shiftedFromDay=tx.shiftToWorkday?getOriginalDay(monthOccs.get(tx.id)?.[0],yr,mo,tx):null;
-                return <TxRow key={tx.id} tx={tx} amount={tx.amount*n} recurrenceLabel={recLabel(tx)+(n>1?" x"+n:"")} cat={dynCatById(tx.category||"other")} sc={dynSubcatById(tx.subCategory)} isActive={activeTx?.id===tx.id} setActiveTx={setActiveTx} fmt={f} getCatName={getCatName} th={th} shiftedFromDay={shiftedFromDay} yr={yr} mo={mo}/>;
-              })
+              :monthTxs.map(tx=>{const n=monthOccs.get(tx.id)?.length||1;return <TxRow key={tx.id} tx={tx} amount={tx.amount*n} recurrenceLabel={recLabel(tx)+(n>1?" x"+n:"")} cat={dynCatById(tx.category||"other")} sc={dynSubcatById(tx.subCategory)} isActive={activeTx?.id===tx.id} setActiveTx={setActiveTx} fmt={f} getCatName={getCatName} th={th}/>;})
+            }
           </div>
         )}
 
@@ -1407,7 +1398,7 @@ function App(){
               <button onClick={()=>{setDelAccMod(true);setDelAccInput("");}} style={{fontSize:13,color:th.danger,background:"none",border:"1px solid "+th.danger,borderRadius:10,padding:"8px 16px",cursor:"pointer"}}>Supprimer le compte</button>
             </div>
             <div style={{marginTop:32,paddingTop:20,borderTop:"1px solid "+th.border,textAlign:"center"}}>
-              <p onClick={handleVersionClick} style={{fontSize:11,color:showTroubleshoot?"#6366f1":th.muted,letterSpacing:"0.1em",cursor:"pointer",userSelect:"none"}}>v0.041</p>
+              <p onClick={handleVersionClick} style={{fontSize:11,color:showTroubleshoot?"#6366f1":th.muted,letterSpacing:"0.1em",cursor:"pointer",userSelect:"none"}}>v0.040</p>
             </div>
           </div>
         )}
@@ -1502,11 +1493,7 @@ function App(){
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 0",borderBottom:isExp?"none":"1px solid "+th.border,cursor:"pointer"}} onClick={()=>{setExpandedTx(isExp?null:tx.id);setPendingDel(null);}}>
                 <div style={{display:"flex",alignItems:"center",gap:10,flex:1}}>
                   <div style={{width:36,height:36,borderRadius:10,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,border:"2px solid "+(isExp?cat.color:"transparent")}}><CatIcon cat={cat} size={18}/></div>
-                  <div>
-                    <p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p>
-                    <p style={{fontSize:11,margin:"2px 0 0",color:cat.color,fontWeight:500}}>{getCatName(cat.id)}{sc?<span style={{color:th.muted,fontWeight:400}}> - {sc.label}</span>:null}</p>
-                    {(()=>{const origDay=tx.shiftToWorkday?getOriginalDay(dayMod.day,yr,mo,tx):null;if(!origDay)return null;const orig=new Date(yr,mo,origDay);return<p style={{fontSize:10,color:"#6366f1",margin:"3px 0 0",fontWeight:500}}>📅 Reporté du {DAYS_FR[orig.getDay()]} {orig.getDate()} {MONTHS_FR[orig.getMonth()]}</p>;})()}
-                  </div>
+                  <div><p style={{fontSize:13,color:th.text,margin:0,fontWeight:500}}>{tx.description}</p><p style={{fontSize:11,margin:"2px 0 0",color:cat.color,fontWeight:500}}>{getCatName(cat.id)}{sc?<span style={{color:th.muted,fontWeight:400}}> - {sc.label}</span>:null}</p></div>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
                   <span style={{fontSize:13,fontWeight:500,fontVariantNumeric:"tabular-nums",color:tx.type==="income"?"#059669":"#ef4444"}}>{tx.type==="income"?"+":"-"}{f(tx.amount,true)}</span>
