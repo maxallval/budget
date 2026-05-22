@@ -966,8 +966,8 @@ function App() {
   const handleDirectMod = (tx,dateStr,scope)=>{
     setExpandedTx(null); setPendingDel(null);
     const isOnce=normRec(tx.recurrence,parseD(tx.startDate)).type==="once",eff=(isOnce&&scope==="this")?"all":scope;
-    if(eff==="this"){setDayMod(null);setFormMod({tx,editScope:"this",editDateStr:dateStr,occurrenceDateStr:dateStr,form:{desc:tx.description,amt:String(tx.amount),type:tx.type,rec:{type:"once"},date:dateStr,cat:tx.category||"other",subCat:tx.subCategory||null,shiftToWorkday:tx.shiftToWorkday||false}});}
-    else if(eff==="follow"){setDayMod(null);setFormMod({tx,editScope:"follow",editDateStr:dateStr,occurrenceDateStr:dateStr,form:{desc:tx.description,amt:String(tx.amount),type:tx.type,rec:normRec(tx.recurrence,parseD(tx.startDate)),date:dateStr,cat:tx.category||"other",subCat:tx.subCategory||null,shiftToWorkday:tx.shiftToWorkday||false}});}
+    if(eff==="this"){setDayMod(null);setFormMod({tx,editScope:"this",editDateStr:dateStr,form:{desc:tx.description,amt:String(tx.amount),type:tx.type,rec:{type:"once"},date:dateStr,cat:tx.category||"other",subCat:tx.subCategory||null,shiftToWorkday:tx.shiftToWorkday||false}});}
+    else if(eff==="follow"){setDayMod(null);setFormMod({tx,editScope:"follow",editDateStr:dateStr,form:{desc:tx.description,amt:String(tx.amount),type:tx.type,rec:normRec(tx.recurrence,parseD(tx.startDate)),date:dateStr,cat:tx.category||"other",subCat:tx.subCategory||null,shiftToWorkday:tx.shiftToWorkday||false}});}
     else if(eff==="all"){setDayMod(null);openForm(tx);}
     else if(eff==="terminate")setTxs(prev=>prev.map(t=>t.id!==tx.id?t:{...t,endDate:dateStr}));
   };
@@ -1893,17 +1893,10 @@ ReactDOM.createRoot(document.getElementById("root")).render(<ErrorBoundary><App/
                 </button>
               </div>
             )}
-            {formMod.tx?.shiftToWorkday&&(()=>{
-              const dateToCheck=formMod.occurrenceDateStr||formMod.form.date;
-              const d=parseD(dateToCheck);
-              const nd=nextWorkday(new Date(d.getTime()));
-              if(nd.getDate()===d.getDate()&&nd.getMonth()===d.getMonth())return null;
-              return(
-                <div style={{padding:"10px 14px",background:"#6366f118",border:"1px solid #6366f130",borderRadius:10,display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{fontSize:14}}>📅</span>
-                  <p style={{fontSize:12,color:"#6366f1",margin:0}}>Date originale : <strong>{DAYS_FR[d.getDay()]} {d.getDate()} {MONTHS_FR[d.getMonth()]}</strong> — reportée au <strong>{DAYS_FR[nd.getDay()]} {nd.getDate()} {MONTHS_FR[nd.getMonth()]}</strong></p>
-                </div>
-              );
+            {formMod.tx?.shiftToWorkday&&formMod.form.date&&(()=>{
+              const d=parseD(formMod.form.date), nd=nextWorkday(new Date(d.getTime()));
+              if(nd.getDate()===d.getDate())return null;
+              return <div style={{padding:"10px 14px",background:"#6366f118",border:"1px solid #6366f130",borderRadius:10,display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>📅</span><p style={{fontSize:12,color:"#6366f1",margin:0}}>Date originale : <strong>{DAYS_FR[d.getDay()]} {d.getDate()} {MONTHS_FR[d.getMonth()]}</strong> — reportée au <strong>{DAYS_FR[nd.getDay()]} {nd.getDate()} {MONTHS_FR[nd.getMonth()]}</strong></p></div>;
             })()}
             <div><label style={lbl}>Date de début</label><input ref={dateInputRef} type="date" value={formMod.form.date} onChange={e=>e.target.value&&handleDateChange(e.target.value)} onBlur={e=>e.target.value&&handleDateChange(e.target.value)} style={{...iSt,colorScheme:isDark?"dark":"light"}}/></div>
             <CategoryPicker value={formMod.form.cat} onChange={handleCatChange} th={th} allCats={allCats} getCatName={getCatName}/>
