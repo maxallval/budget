@@ -571,6 +571,7 @@ class ErrorBoundary extends React.Component{
     </div>);
   }
 }
+// ══════ FIN PARTIE 1 — la Partie 2 contient App() + render ══════
 // ══════ PARTIE 2/3 — coller à la suite de la Partie 1 ══════
 // Contient : états, valeurs dérivées (memos), effets et handlers de App()
 // La Partie 3/3 contient le JSX (return) + render
@@ -943,6 +944,7 @@ function App(){
   if(authLoading)return(<div style={{minHeight:"100vh",background:"#fff",...ctr}}><div style={{width:8,height:8,borderRadius:"50%",background:"#6366f1",animation:"pulse 1s ease infinite"}}/></div>);
   if(!session)return <LoginScreen/>;
 
+// ══════ FIN PARTIE 2/3 — la Partie 3/3 commence par « return( » ══════
 // ══════ PARTIE 3/3 — coller à la suite de la Partie 2, avant </script> ══════
 // JSX (return de App) + render
 
@@ -1503,4 +1505,5 @@ function App(){
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(<ErrorBoundary><App/></ErrorBoundary>);
+// ══════ FIN — fermer avec </script></body></html> ══════
 </script></body></html>
