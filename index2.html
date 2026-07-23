@@ -674,7 +674,7 @@ function App(){
   const getBalAt=useCallback(date=>{
     if(!balAnchor)return rawBalAt(txs,initBal,date);
     const aDate=parseD(balAnchor.dateStr);
-    if(date<aDate){const delta=txs.reduce((b,tx)=>b+(tx.type==="income"?1:-1)*tx.amount*(countOccs(tx,aDate)-countOccs(tx,date)),0);return balAnchor.amount-delta;}
+    if(date<aDate)return rawBalAt(txs,initBal,date);
     const delta=txs.reduce((b,tx)=>b+(tx.type==="income"?1:-1)*tx.amount*(countOccs(tx,date)-countOccs(tx,aDate)),0);
     return balAnchor.amount+delta;
   },[txs,initBal,balAnchor]);
@@ -682,16 +682,22 @@ function App(){
   const dim=new Date(yr,mo+1,0).getDate();
   const cells=useMemo(()=>{const fd=new Date(yr,mo,1).getDay();return[...Array(fd).fill(null),...Array.from({length:dim},(_,i)=>i+1)];},[yr,mo,dim]);
   const monthOccs=useMemo(()=>{const m=new Map();txs.forEach(tx=>{const days=occsInMonth(tx,yr,mo);if(days.length)m.set(tx.id,days);});return m;},[txs,yr,mo]);
+  const anchorDayInMonth=useMemo(()=>{
+    if(!balAnchor)return null;
+    const a=parseD(balAnchor.dateStr);
+    return(a.getFullYear()===yr&&a.getMonth()===mo)?a.getDate():null;
+  },[balAnchor,yr,mo]);
   const dayData=useMemo(()=>{
     const d={};let bal=getBalAt(new Date(yr,mo,0));
     for(let day=1;day<=dim;day++){
       const dayTxs=txs.filter(tx=>monthOccs.get(tx.id)?.includes(day));
       let net=0;const cats=[];
       dayTxs.forEach(tx=>{net+=tx.type==="income"?tx.amount:-tx.amount;cats.push(dynCatById(tx.category||"other"));});
-      bal+=net;d[day]={net,bal,count:dayTxs.length,cats};
+      if(day===anchorDayInMonth)bal=balAnchor.amount;else bal+=net;
+      d[day]={net,bal,count:dayTxs.length,cats};
     }
     return d;
-  },[txs,yr,mo,dim,getBalAt,dynCatById,monthOccs]);
+  },[txs,yr,mo,dim,getBalAt,dynCatById,monthOccs,anchorDayInMonth,balAnchor]);
   const{monthStats,catStats}=useMemo(()=>{
     const ms={inc:0,exp:0,net:0},cs={};
     allCats.forEach(c=>cs[c.id]={spent:0,income:0});
@@ -928,7 +934,6 @@ function App(){
 
   if(authLoading)return(<div style={{minHeight:"100vh",background:"#fff",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:8,height:8,borderRadius:"50%",background:"#6366f1",animation:"pulse 1s ease infinite"}}/></div>);
   if(!session)return <LoginScreen/>;
-
   return(
     <div onTouchStart={e=>{touchStartX.current=[e.touches[0].clientX,e.touches[0].clientY];}} onTouchEnd={e=>{if(!touchStartX.current)return;const dx=e.changedTouches[0].clientX-touchStartX.current[0],dy=e.changedTouches[0].clientY-touchStartX.current[1];touchStartX.current=null;if(Math.abs(dx)<Math.abs(dy)*1.5)return;handleSwipe(dx);}} style={{minHeight:"100vh",background:th.headerBg,fontFamily:"'Radio Canada',system-ui,sans-serif"}}>
 
@@ -1241,7 +1246,7 @@ function App(){
           <p style={{...lbl,margin:"24px 0 8px"}}>Données</p>
           {isPro?(<div style={{display:"flex",gap:8,paddingBottom:20,borderBottom:"1px solid "+th.border}}><button onClick={()=>setExportMod(true)} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:10,background:"none",color:th.text,cursor:"pointer"}}>Exporter</button><button onClick={()=>{setImportText("");setImportMod(true);}} style={{flex:1,padding:"11px 0",fontSize:13,border:"1px solid "+th.border,borderRadius:10,background:"none",color:th.text,cursor:"pointer"}}>Importer</button></div>):(<div style={{paddingBottom:20,borderBottom:"1px solid "+th.border}}><div style={{display:"flex",alignItems:"center",gap:8,padding:"11px 14px",background:th.surface,borderRadius:10,border:"1px solid "+th.border}}><span style={{fontSize:14}}>🔒</span><p style={{fontSize:12,color:th.muted,margin:0}}>Export / Import réservé à la version Pro</p></div></div>)}
           <div style={{marginTop:20,padding:"16px",background:isDark?"rgba(239,68,68,0.07)":"#fff5f5",border:"1px solid "+th.danger+"44",borderRadius:14}}><p style={{fontSize:13,color:th.danger,margin:"0 0 2px",fontWeight:600}}>Supprimer le compte</p><p style={{fontSize:11,color:th.muted,margin:"0 0 12px"}}>Efface toutes les données Supabase et déconnecte</p><button onClick={()=>{setDelAccMod(true);setDelAccInput("");}} style={{fontSize:13,color:th.danger,background:"none",border:"1px solid "+th.danger,borderRadius:10,padding:"8px 16px",cursor:"pointer"}}>Supprimer le compte</button></div>
-          <div style={{marginTop:32,paddingTop:20,borderTop:"1px solid "+th.border,textAlign:"center"}}><p onClick={handleVersionClick} style={{fontSize:11,color:showTroubleshoot?"#6366f1":th.muted,letterSpacing:"0.1em",cursor:"pointer",userSelect:"none"}}>v0.042</p></div>
+          <div style={{marginTop:32,paddingTop:20,borderTop:"1px solid "+th.border,textAlign:"center"}}><p onClick={handleVersionClick} style={{fontSize:11,color:showTroubleshoot?"#6366f1":th.muted,letterSpacing:"0.1em",cursor:"pointer",userSelect:"none"}}>v0.043</p></div>
         </div>)}
       </div>
 
